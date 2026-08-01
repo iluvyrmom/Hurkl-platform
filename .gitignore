@@ -1,13 +1,24 @@
-# Secrets & environment — never commit these
+# Secrets & environment — never commit these.
+# Patterns are scoped to actual secret-file conventions (env files, key/cert
+# formats, common credential-dump filenames) rather than any file whose name
+# merely contains a word like "secret" or "credentials" — a broad substring
+# match would also ignore legitimate source files (e.g. secretsManager.ts,
+# CredentialsForm.tsx), which is its own kind of accident.
 .env
 .env.*
 !.env.example
 *.pem
 *.key
 *.p12
+*.pfx
 *.cer
-*credentials*
-*secret*
+credentials.json
+service-account*.json
+serviceAccountKey.json
+secrets.json
+secrets.yml
+secrets.yaml
+*.secrets.json
 
 # Dependencies
 node_modules/

@@ -1,6 +1,6 @@
 # ARCHITECTURE.md — HURKL / Mason Technical Architecture
 
-Status: recommendation, not yet approved. Everything in this document is a proposal for the founder to accept, amend, or reject before any scaffolding begins. Nothing here has been implemented. See PRODUCT.md for what the system must do; this document is how.
+Status: **approved by the founder** (initial stack, build location, and cost/retention/MFA policy below). Nothing here has been implemented yet — approval covers the plan, not a working system. One verification step is still required before Phase 1 scaffolding begins (see §2a). See PRODUCT.md for what the system must do; this document is how.
 
 ---
 
@@ -14,7 +14,14 @@ Status: recommendation, not yet approved. Everything in this document is a propo
 - Reliable during failures: external integrations (telephony, AI providers, email) will fail sometimes; the system must degrade gracefully, not silently drop customer conversations.
 - Configuration over hardcoding: industry-specific and even company-specific behavior lives in tenant config, not in platform code branches.
 
-## 2. Recommended stack (proposal — requires founder sign-off)
+## 1a. Official build location (founder-approved)
+
+The GitHub repository `hurkl-platform` is the official source-code repository for HURKL and Mason. All core platform code lives here.
+
+- The existing Lovable HVAC-contractor project (`HVACForge Foundation`) and the existing A-1 Best Moving Netlify site (`a-1bestmoving`) are **unrelated projects** and must not be used as, or merged into, the core platform. They are out of scope for HURKL/Mason engineering work.
+- A-1 Best Moving LLC will become the first pilot **tenant** inside the HURKL platform (see PRODUCT.md), but everything specific to A-1 — its services, pricing, crew model, workflows — is tenant configuration data, never core, hardcoded platform logic. The existing A-1 Netlify site is not the pilot; a properly onboarded A-1 tenant inside this platform is.
+
+## 2. Recommended stack (founder-approved)
 
 | Layer | Recommendation | Why | Alternatives considered |
 |---|---|---|---|
@@ -28,16 +35,26 @@ Status: recommendation, not yet approved. Everything in this document is a propo
 | Speech-to-text | Deepgram (proposed), behind an `STTProvider` interface | Low-latency streaming STT with good pricing for phone-call volumes | AssemblyAI, Google STT — both fit the same interface, swappable without touching call logic |
 | Telephony / SMS | Twilio (proposed), behind a `TelephonyProvider` / `SMSProvider` interface | Mature call-forwarding, programmable voice (media streams for real-time STT/TTS), SMS, and multi-simultaneous-call support; widest documentation surface | Vonage, Telnyx — both viable, same interface |
 | Email | Resend or Postmark (proposed), behind an `EmailProvider` interface | Simple transactional + conversational email APIs, reasonable pilot pricing | SendGrid, AWS SES — same interface |
-| Hosting (web/API) | Vercel or Netlify | Zero-ops deploys for Next.js, preview environments per branch, this account already has Netlify access | Self-managed containers (more control, more ops burden not justified at pilot scale) |
+| Hosting (web/API) | Netlify (founder-approved default), or another platform if the compatibility check in §2a surfaces a better fit | Zero-ops deploys, preview environments per branch, this account already has Netlify access | Vercel (equally viable for Next.js, approved fallback if Netlify's compatibility check turns up a real gap); self-managed containers (more control, more ops burden not justified at pilot scale) |
 | Error tracking / logging | Sentry + structured logging (pino or similar) | Fast to wire up, distinguishes real incidents from noise | — |
 | Testing | Vitest (unit/integration) + Playwright (end-to-end) | Standard, well-supported in the TS/Next.js ecosystem | — |
 | Feature flags | Simple DB-backed flags table for pilot; revisit a dedicated flag service only if complexity demands it | Avoids adding a new vendor before it's needed | GrowthBook, LaunchDarkly — reasonable later additions |
 
-**Open decision for the founder:** this account already has an active Lovable workspace (AI app-builder) and an active Netlify hosting account (currently used for an unrelated site, `a-1bestmoving`). Building Mason as a hand-coded repository (this recommendation) versus building it inside Lovable's builder platform are both viable paths with different tradeoffs (code ownership and provider flexibility vs. speed of iteration). This document assumes a hand-coded repository per the technical principles given (typed provider interfaces, RLS, background jobs), but this choice should be explicitly confirmed, not assumed.
+**Resolved:** the founder has confirmed `hurkl-platform` (this repository) as the official, hand-coded source of truth — not Lovable's builder platform, and not the existing A-1 Netlify site. See §1a.
+
+## 2a. Required pre-implementation step: compatibility verification
+
+Before Phase 1 scaffolding begins, verify current, real compatibility among:
+- The chosen framework (Next.js, target version)
+- The chosen hosting platform (Netlify, or the approved fallback)
+- The chosen background-job system (Trigger.dev or Inngest)
+- Supabase (Postgres, Auth, RLS, Storage)
+
+This means confirming — against current provider documentation at implementation time, not assumed from this document — that Netlify's Next.js runtime supports the server-side/edge features Mason needs (streaming responses, long-running server actions for voice/webhook handling), and that the chosen background-job provider has a supported, documented integration path with that hosting choice and with Supabase. If a real incompatibility turns up, the approved fallback is Vercel for hosting; the interface-based design means swapping the background-job provider or hosting platform should not require changing business logic. Record the outcome of this check at the start of Phase 1 in `ROADMAP.md`.
 
 ### Estimated monthly cost during pilot (single tenant, A-1 Best Moving, light-moderate call volume)
 
-These are rough planning estimates, not quotes, and should be revisited once real usage data exists:
+**This is a planning ceiling, not a spending target.** The founder-approved cost policy is to spend as little as possible below this ceiling, not to spend up to it. These are rough planning estimates, not quotes, and should be revisited once real usage data exists:
 
 | Item | Estimate |
 |---|---|
@@ -52,6 +69,20 @@ These are rough planning estimates, not quotes, and should be revisited once rea
 | Trigger.dev/Inngest (likely free tier at pilot volume) | $0–20/mo |
 | Sentry (likely free tier at pilot volume) | $0 |
 | **Estimated total** | **~$100–250/month**, scaling mostly with call/SMS volume |
+
+### Cost policy & guardrails (founder-approved)
+
+These are binding engineering requirements, not aspirations:
+
+- **Prefer free tiers** for every provider during development and pilot — Supabase, Netlify/Vercel, Trigger.dev/Inngest, Sentry, Resend, and Deepgram all have usable free tiers at low pilot volume; stay on them until a real limit forces an upgrade.
+- **No paid infrastructure is activated without explicit founder approval.** Development work proceeds on free tiers and sandbox/test credentials wherever a provider offers them (e.g., Twilio trial credentials, ElevenLabs existing subscription rather than a new one).
+- **Build text-based Mason before any paid voice testing.** Phase 6 (text) is built and validated before Phase 8 (voice) incurs any real Twilio/Deepgram/ElevenLabs usage cost — this is already how ROADMAP.md sequences phases, and is now an explicit cost control, not just a technical one.
+- **Cheapest capable model for routine work, always.** The AI Router (§5) defaults every task to the lowest-cost model tier and escalates only when routine-tier output is genuinely insufficient.
+- **Model-routing controls are a required feature, not an optimization to add later.** The AI Router must be configurable per tenant (which tiers are allowed, whether escalation is allowed at all) from the first version that calls a real AI provider.
+- **Usage tracking is required from the first real provider call.** Every AI request, call minute, SMS, and email send is metered per tenant from day one — not retrofitted after costs are already a problem.
+- **Configurable spending limits are required**, owner-settable per tenant, enforced by the Usage & Cost Metering service (§3).
+- **Alerts fire before a limit is reached**, not only when it's hit — e.g., at 80% and 100% of a configured threshold, so an owner (or the founder, during pilot) has time to react before Mason auto-pauses or auto-slows.
+- **Runaway-usage prevention is a required control, not an assumption:** hard caps on AI request retries, background-job retry counts, concurrent background jobs per tenant, outbound calls/messages per conversation, and AI requests per conversation. No code path may retry or loop without a hard ceiling. This applies at both the Conversation Engine level (a stuck conversation cannot spawn unlimited AI calls) and the Background Jobs level (a failing job cannot retry forever or fan out unboundedly).
 
 ## 3. High-level service map
 
@@ -119,6 +150,8 @@ These are rough planning estimates, not quotes, and should be revisited once rea
 
 ## 6. Voice & phone pipeline
 
+Per the founder-approved cost policy (§2), this pipeline is built and exercised with real providers only after text-based Mason (ROADMAP.md Phase 6) is validated — voice testing is the first point at which Twilio, Deepgram, and ElevenLabs usage incurs meaningful real cost, so it does not start until there's confidence the underlying Conversation Engine and Approval Engine already work correctly over text.
+
 1. Customer calls the business's existing number, forwarded (or ported) to the Telephony Provider.
 2. Telephony Provider streams the call to the Voice Gateway.
 3. Voice Gateway streams audio to the STT Provider, producing a live transcript.
@@ -158,6 +191,14 @@ External side effects (sending an SMS, creating a calendar event, charging a car
 
 ## 10. What this document intentionally does not decide
 
-- Whether to build in this repository versus inside Lovable's builder (flagged above — needs founder decision).
+- The §2a compatibility verification (Next.js + Netlify + Trigger.dev/Inngest + Supabase) has not been run yet — approval of the stack is conditional on that check passing or the fallback being used.
 - Exact provider contracts/API versions — decided when each provider integration is actually built, against the typed interface defined here.
 - Native mobile app vs. responsive/PWA web app for the founder's Android usage — recommendation is a mobile-friendly responsive web app first (faster iteration, one codebase), revisit a native app only if push notifications or offline behavior demand it.
+
+## 11. Resolved decisions log
+
+| Decision | Resolution | Date |
+|---|---|---|
+| Official build location | `hurkl-platform` GitHub repo; Lovable HVAC project and A-1 Netlify site are unrelated and out of scope | Founder approval, this session |
+| Initial architecture (§2) | Approved as listed, pending §2a compatibility verification before implementation | Founder approval, this session |
+| Cost policy | $100–250/mo is a ceiling, not a target; free tiers preferred; no paid infra without explicit approval; text before paid voice testing | Founder approval, this session |

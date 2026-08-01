@@ -94,7 +94,7 @@ Mason must escalate to the owner (or configured approver) whenever a decision wo
 
 ## Initial pilot: A-1 Best Moving LLC
 
-A-1 Best Moving LLC is the first real-world pilot company. The platform itself must remain industry-neutral — A-1's rules live entirely in tenant configuration, never in core platform code.
+A-1 Best Moving LLC is the first real-world pilot company, onboarded as a tenant of the HURKL platform built in this repository (`hurkl-platform`). The existing A-1 Netlify marketing site is a separate, unrelated project and is not the pilot — the pilot is A-1 configured and running inside HURKL/Mason. The platform itself must remain industry-neutral — A-1's rules live entirely in tenant configuration, never in core platform code.
 
 - **Business name:** A-1 Best Moving LLC
 - **Slogan:** "The best move you'll make."

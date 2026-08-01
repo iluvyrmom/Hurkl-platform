@@ -42,6 +42,10 @@ Summaries should be concrete: what files changed, why, and what was verified. Re
 
 Get explicit confirmation before: force-pushing, resetting or rewriting history, dropping/truncating database tables, deleting customer or tenant data, disabling a security control (RLS, auth check, rate limit, approval gate), or any other action that is hard to reverse. When in doubt, treat it as destructive.
 
+## Respect the cost policy
+
+The documented pilot cost estimate in `ARCHITECTURE.md` is a ceiling, not a target. Prefer free tiers. Never activate paid infrastructure (a paid Twilio number, a paid Deepgram/ElevenLabs tier, a paid Supabase/hosting plan, etc.) without explicit founder approval. Build and validate text-based Mason before any paid voice testing. When implementing anything that calls an external provider or an AI model, include usage tracking and hard caps on retries/loops/concurrent jobs/requests per conversation from the start — do not ship a code path that can call an external API or an AI model an unbounded number of times.
+
 ## Keep the founder's mobile workflow in mind
 
 The founder primarily operates from an Android phone or tablet. When building or describing UI, testing steps, or setup instructions, favor things that work well on a small touch screen and don't assume a desktop terminal is always at hand.

@@ -15,7 +15,19 @@ This document defines the security and privacy posture required before Mason han
 - Strong authentication for all human users (owners, employees, HURKL admins) via the platform's auth provider (see `ARCHITECTURE.md`).
 - Passwords, if used, are never stored or logged in plaintext — delegated entirely to the auth provider.
 - Session handling favors short-lived tokens with refresh, appropriate for mobile use (see the founder's Android-first workflow).
-- Multi-factor authentication should be available for owner accounts, at minimum as an option, given the sensitivity of financial and customer data behind that role.
+
+### MFA policy (founder-approved, mandatory before production launch)
+
+MFA support must exist in the authentication layer well before this matters — the requirement below is about what's enforced by the time any real tenant goes live, not when the capability is technically buildable:
+
+| Who | MFA requirement |
+|---|---|
+| HURKL platform administrators | **Mandatory** |
+| Client business owners and administrators | **Mandatory** |
+| Anyone with billing, data-export, security-configuration, or other broad administrative permissions | **Mandatory** |
+| Ordinary employees with narrowly limited access (e.g., a technician who only sees assigned jobs) | Recommended, not initially mandatory |
+
+"Before production launch" means: no real tenant's owner/admin account, and no HURKL admin account, goes live against real customer data without MFA enforced. This is a launch gate, not a someday-feature.
 
 ## 3. Authorization (RBAC)
 
@@ -80,7 +92,8 @@ Every meaningful autonomous action Mason takes is recorded in an append-only aud
 ## 7. Rate limits & abuse prevention
 
 - Per-tenant and per-channel rate limits (calls, SMS, emails, AI calls) to prevent runaway cost from a bug, abuse, or an unusually chatty caller.
-- Usage & Cost Metering (see `ARCHITECTURE.md`) enforces owner-configured spending limits and can automatically slow down or pause Mason for a tenant that's approaching its limit.
+- Usage & Cost Metering (see `ARCHITECTURE.md`) enforces owner-configured spending limits, alerts before a limit is reached (not only when it's hit), and can automatically slow down or pause Mason for a tenant that's approaching its limit.
+- Hard caps on retries, loop iterations, concurrent background jobs, and AI requests/outbound messages per conversation are a required control (see `ARCHITECTURE.md` §2a cost guardrails) — this is a security control as much as a cost control, since an unbounded loop is also an availability and abuse risk.
 
 ## 8. Emergency pause & slowdown
 
@@ -95,8 +108,23 @@ Every tenant's owner has an always-available control to pause Mason entirely (fa
 ## 10. Backups, retention, and safe deletion
 
 - Automated, regular backups of the primary database with point-in-time recovery.
-- Data retention policy defined per data type (e.g., call recordings/transcripts, conversation history, audit logs) — retention periods are a founder/product decision to be finalized, not assumed by this document.
 - Deletion of customer or business data is soft-delete first (recoverable window) before any hard/irreversible delete, and hard deletes of "critical business records" fall under the Tier 3 "never autonomous" rule — a human authorizes it explicitly.
+
+### Data retention defaults (founder-approved)
+
+These are configurable defaults, not fixed constants — each is adjustable **per tenant** to accommodate that company's legal, contractual, or regulatory requirements (e.g., a tenant operating under a stricter state law or an industry-specific record-keeping rule). The platform must expose retention as tenant configuration, not a hardcoded value.
+
+| Data type | Default retention |
+|---|---|
+| Customer conversations | 12 months |
+| Call recordings | 90 days |
+| Call transcripts and summaries | 12 months |
+| Audit logs | 24 months |
+| Failed integration and diagnostic logs | 90 days |
+| Soft-deleted customer records | 30 days before permanent deletion, where legally permitted |
+| Backups | Rolling 30-day retention |
+
+Where a legal, contractual, or regulatory requirement conflicts with a default above (e.g., a jurisdiction requiring longer retention of call recordings, or a customer-initiated deletion request under applicable privacy law), the specific requirement overrides the default for that tenant/record, and the override itself should be recorded (what changed, why, and under what authority).
 
 ## 11. Incident handling
 
@@ -110,6 +138,12 @@ Because Mason maintains shared customer history across phone, website, text, and
 
 ## 13. Open items requiring founder decision
 
-- Exact data retention periods per data type.
-- Whether/when MFA becomes mandatory (vs. optional) for owner accounts.
-- Formal incident response process once beyond pilot scale.
+- Formal incident response process once beyond pilot scale (informal/founder-notification process is acceptable for the pilot per §11).
+- Any tenant-specific retention override required by that tenant's legal/regulatory environment, evaluated at onboarding time (defaults are set — see §10).
+
+## 14. Resolved decisions log
+
+| Decision | Resolution | Date |
+|---|---|---|
+| Data retention defaults | Set per §10 table; configurable per tenant | Founder approval, this session |
+| MFA policy | Mandatory before production launch for HURKL admins, client owners/admins, and anyone with billing/data-export/security-config/broad admin permissions; recommended (not mandatory) for narrowly-scoped employees | Founder approval, this session |
