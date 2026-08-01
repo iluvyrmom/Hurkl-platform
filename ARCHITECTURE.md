@@ -1,0 +1,204 @@
+# ARCHITECTURE.md — HURKL / Mason Technical Architecture
+
+Status: **approved by the founder** (initial stack, build location, and cost/retention/MFA policy below). Nothing here has been implemented yet — approval covers the plan, not a working system. One verification step is still required before Phase 1 scaffolding begins (see §2a). See PRODUCT.md for what the system must do; this document is how.
+
+---
+
+## 1. Guiding constraints (from product requirements)
+
+- Multi-tenant from day one; tenant isolation is a security requirement, not a nice-to-have.
+- Provider-independent where practical: AI model provider, voice/TTS provider, STT provider, telephony/SMS provider, database/hosting provider must all be swappable behind typed interfaces.
+- Cost-controlled AI usage: cheap models for routine work, expensive models only for genuinely hard reasoning, with owner-configurable spending limits.
+- Auditable: every meaningful autonomous action logged.
+- Mobile-friendly: the founder and business owners operate primarily from Android phones/tablets.
+- Reliable during failures: external integrations (telephony, AI providers, email) will fail sometimes; the system must degrade gracefully, not silently drop customer conversations.
+- Configuration over hardcoding: industry-specific and even company-specific behavior lives in tenant config, not in platform code branches.
+
+## 1a. Official build location (founder-approved)
+
+The GitHub repository `hurkl-platform` is the official source-code repository for HURKL and Mason. All core platform code lives here.
+
+- The existing Lovable HVAC-contractor project (`HVACForge Foundation`) and the existing A-1 Best Moving Netlify site (`a-1bestmoving`) are **unrelated projects** and must not be used as, or merged into, the core platform. They are out of scope for HURKL/Mason engineering work.
+- A-1 Best Moving LLC will become the first pilot **tenant** inside the HURKL platform (see PRODUCT.md), but everything specific to A-1 — its services, pricing, crew model, workflows — is tenant configuration data, never core, hardcoded platform logic. The existing A-1 Netlify site is not the pilot; a properly onboarded A-1 tenant inside this platform is.
+
+## 2. Recommended stack (founder-approved)
+
+| Layer | Recommendation | Why | Alternatives considered |
+|---|---|---|---|
+| Language | TypeScript everywhere (web, API, background jobs) | One language across the stack lowers cognitive load for a small/solo dev team, strong typing supports the "typed provider interface" requirement, huge ecosystem for AI/telephony SDKs | Python (better for some AI tooling, but splits the stack); Go (great for services, weaker for a founder-operated fast-moving product) |
+| Web framework | Next.js (App Router) | Full-stack in one framework (UI + API routes + server actions), strong TypeScript support, deploys cleanly to Vercel or Netlify, large talent/AI-assistance surface since it's extremely well-documented | Remix (similar tradeoffs, smaller ecosystem); SvelteKit (lighter, less AI/agent tooling precedent); separate Express API + React SPA (more moving parts, more to operate) |
+| Database | PostgreSQL | Required by the "row-level tenant security" principle — Postgres Row-Level Security (RLS) is the most mature, battle-tested mechanism for enforcing multi-tenant isolation at the database layer, not just in application code | MySQL/PlanetScale (no native RLS equivalent); MongoDB (no RLS, weaker fit for relational business data like jobs/estimates/schedules) |
+| DB + Auth hosting | Supabase (managed Postgres + Auth + Storage + RLS + Realtime) | Ships Postgres RLS, auth, and storage as one managed product — directly matches the RLS-based tenant isolation requirement, fast to stand up for a pilot, this account already has Lovable/Supabase-adjacent tooling available | Self-managed Postgres on Fly.io/Render + a separate auth provider (more control, meaningfully more operational burden for a one-person-operated pilot); Neon (good Postgres, no built-in auth/RLS tooling) |
+| Background jobs / durable workflows | Trigger.dev or Inngest (event-driven, retry-aware job runner) | Telephony webhooks, call summarization, follow-ups, and reminders all need reliable async processing with retries and idempotency — hand-rolled cron/queues would re-invent this | Plain Postgres-backed queue (pg-boss) — viable cheaper fallback for pilot-scale volume, more manual retry/observability work; AWS SQS/Lambda (more infra to operate) |
+| AI provider | Anthropic Claude, behind an `AIModelProvider` interface | Strong reasoning-per-dollar, tiered model family (a low-cost tier for routine classification/replies, a high-capability tier for hard reasoning) fits the cost-routing requirement directly | OpenAI, Google Gemini — both viable and should be swappable later; not chosen as default only because Claude's tiering and instruction-following fit the office-manager persona work well today |
+| Voice output (TTS) | ElevenLabs, behind a `TTSProvider` interface | Mason's custom voice already exists in ElevenLabs (founder-confirmed) | N/A — already decided by founder; interface exists so it's replaceable if ElevenLabs pricing/availability changes |
+| Speech-to-text | Deepgram (proposed), behind an `STTProvider` interface | Low-latency streaming STT with good pricing for phone-call volumes | AssemblyAI, Google STT — both fit the same interface, swappable without touching call logic |
+| Telephony / SMS | Twilio (proposed), behind a `TelephonyProvider` / `SMSProvider` interface | Mature call-forwarding, programmable voice (media streams for real-time STT/TTS), SMS, and multi-simultaneous-call support; widest documentation surface | Vonage, Telnyx — both viable, same interface |
+| Email | Resend or Postmark (proposed), behind an `EmailProvider` interface | Simple transactional + conversational email APIs, reasonable pilot pricing | SendGrid, AWS SES — same interface |
+| Hosting (web/API) | Netlify (founder-approved default), or another platform if the compatibility check in §2a surfaces a better fit | Zero-ops deploys, preview environments per branch, this account already has Netlify access | Vercel (equally viable for Next.js, approved fallback if Netlify's compatibility check turns up a real gap); self-managed containers (more control, more ops burden not justified at pilot scale) |
+| Error tracking / logging | Sentry + structured logging (pino or similar) | Fast to wire up, distinguishes real incidents from noise | — |
+| Testing | Vitest (unit/integration) + Playwright (end-to-end) | Standard, well-supported in the TS/Next.js ecosystem | — |
+| Feature flags | Simple DB-backed flags table for pilot; revisit a dedicated flag service only if complexity demands it | Avoids adding a new vendor before it's needed | GrowthBook, LaunchDarkly — reasonable later additions |
+
+**Resolved:** the founder has confirmed `hurkl-platform` (this repository) as the official, hand-coded source of truth — not Lovable's builder platform, and not the existing A-1 Netlify site. See §1a.
+
+## 2a. Required pre-implementation step: compatibility verification
+
+Before Phase 1 scaffolding begins, verify current, real compatibility among:
+- The chosen framework (Next.js, target version)
+- The chosen hosting platform (Netlify, or the approved fallback)
+- The chosen background-job system (Trigger.dev or Inngest)
+- Supabase (Postgres, Auth, RLS, Storage)
+
+This means confirming — against current provider documentation at implementation time, not assumed from this document — that Netlify's Next.js runtime supports the server-side/edge features Mason needs (streaming responses, long-running server actions for voice/webhook handling), and that the chosen background-job provider has a supported, documented integration path with that hosting choice and with Supabase. If a real incompatibility turns up, the approved fallback is Vercel for hosting; the interface-based design means swapping the background-job provider or hosting platform should not require changing business logic. Record the outcome of this check at the start of Phase 1 in `ROADMAP.md`.
+
+### Estimated monthly cost during pilot (single tenant, A-1 Best Moving, light-moderate call volume)
+
+**This is a planning ceiling, not a spending target.** The founder-approved cost policy is to spend as little as possible below this ceiling, not to spend up to it. These are rough planning estimates, not quotes, and should be revisited once real usage data exists:
+
+| Item | Estimate |
+|---|---|
+| Supabase (Pro tier, once past free tier) | ~$25/mo |
+| Hosting (Vercel/Netlify, likely free tier at pilot scale) | $0–20/mo |
+| Twilio phone number + call minutes | ~$1/mo number + usage (~$20–50/mo at low-moderate call volume) |
+| Twilio SMS | Usage-based, likely <$10/mo at pilot volume |
+| ElevenLabs | Existing subscription (founder already has this) |
+| Deepgram (STT) | Usage-based, likely $10–30/mo at pilot volume |
+| Claude API usage (tiered routing keeps this low) | ~$10–40/mo at pilot volume, spikes only if deep-reasoning tier is invoked often |
+| Email (Resend, likely free tier at pilot volume) | $0–20/mo |
+| Trigger.dev/Inngest (likely free tier at pilot volume) | $0–20/mo |
+| Sentry (likely free tier at pilot volume) | $0 |
+| **Estimated total** | **~$100–250/month**, scaling mostly with call/SMS volume |
+
+### Cost policy & guardrails (founder-approved)
+
+These are binding engineering requirements, not aspirations:
+
+- **Prefer free tiers** for every provider during development and pilot — Supabase, Netlify/Vercel, Trigger.dev/Inngest, Sentry, Resend, and Deepgram all have usable free tiers at low pilot volume; stay on them until a real limit forces an upgrade.
+- **No paid infrastructure is activated without explicit founder approval.** Development work proceeds on free tiers and sandbox/test credentials wherever a provider offers them (e.g., Twilio trial credentials, ElevenLabs existing subscription rather than a new one).
+- **Build text-based Mason before any paid voice testing.** Phase 6 (text) is built and validated before Phase 8 (voice) incurs any real Twilio/Deepgram/ElevenLabs usage cost — this is already how ROADMAP.md sequences phases, and is now an explicit cost control, not just a technical one.
+- **Cheapest capable model for routine work, always.** The AI Router (§5) defaults every task to the lowest-cost model tier and escalates only when routine-tier output is genuinely insufficient.
+- **Model-routing controls are a required feature, not an optimization to add later.** The AI Router must be configurable per tenant (which tiers are allowed, whether escalation is allowed at all) from the first version that calls a real AI provider.
+- **Usage tracking is required from the first real provider call.** Every AI request, call minute, SMS, and email send is metered per tenant from day one — not retrofitted after costs are already a problem.
+- **Configurable spending limits are required**, owner-settable per tenant, enforced by the Usage & Cost Metering service (§3).
+- **Alerts fire before a limit is reached**, not only when it's hit — e.g., at 80% and 100% of a configured threshold, so an owner (or the founder, during pilot) has time to react before Mason auto-pauses or auto-slows.
+- **Runaway-usage prevention is a required control, not an assumption:** hard caps on AI request retries, background-job retry counts, concurrent background jobs per tenant, outbound calls/messages per conversation, and AI requests per conversation. No code path may retry or loop without a hard ceiling. This applies at both the Conversation Engine level (a stuck conversation cannot spawn unlimited AI calls) and the Background Jobs level (a failing job cannot retry forever or fan out unboundedly).
+
+## 3. High-level service map
+
+```
+                    ┌───────────────────────────┐
+                    │   Owner / Employee Web App │  (Next.js, mobile-friendly)
+                    │  Owner portal · Employee   │
+                    │  portal · Config UI        │
+                    └─────────────┬─────────────┘
+                                  │ API (typed, server-side business rules)
+        ┌─────────────────────────┼─────────────────────────┐
+        │                         │                         │
+┌───────▼────────┐      ┌─────────▼─────────┐     ┌─────────▼─────────┐
+│ Conversation    │      │ CRM / Customer     │     │ Approval Engine    │
+│ Engine          │◄────►│ Service            │     │ (thresholds,       │
+│ (channel-       │      │ (shared history    │     │  escalation,       │
+│  agnostic)      │      │  across channels)   │     │  owner sign-off)   │
+└───┬─────────┬───┘      └────────────────────┘     └────────────────────┘
+    │         │
+    │         └──────────────► AI Router ──────► AIModelProvider (Claude, tiered)
+    │
+┌───▼────────────────────────────────────────────────────────────┐
+│ Channel Gateways                                                 │
+│  Voice Gateway (Telephony + STT + TTS)  ·  SMS Gateway            │
+│  Web Voice/Text Widget  ·  Email Gateway                          │
+└────────────────────────────────────────────────────────────────┘
+
+┌────────────────────────────────────────────────────────────────┐
+│ Supporting services: Scheduler/Calendar · Audit Log · Usage &     │
+│ Cost Metering · Background Jobs (follow-ups, reminders, missed-   │
+│ call recovery, review requests) · Billing                        │
+└────────────────────────────────────────────────────────────────┘
+
+                    PostgreSQL (Supabase) — every tenant-scoped
+                    table carries company_id + RLS policy
+```
+
+### Core services
+
+- **Conversation Engine** — channel-agnostic orchestrator. Every inbound message (call transcript turn, SMS, web chat, email) becomes a normalized "conversation event." The engine holds conversation state, decides intent, calls the AI Router, and decides whether an action needs the Approval Engine before executing.
+- **AI Router** — implements the cost-controlled model routing. Classifies each task by difficulty/risk, picks the cheapest capable model tier, and only escalates to a higher-capability model for genuinely hard reasoning (complex estimates, unusual objections, ambiguous intent). Logs every routing decision and its cost for the Usage & Cost Metering service.
+- **CRM / Customer Service** — the single source of truth for a customer, keyed per tenant, with history merged across phone/web/SMS/email. This is what makes "shared customer history across channels" real instead of aspirational.
+- **Approval Engine** — implements the three autonomy tiers (see SECURITY.md and PRODUCT.md). Routine actions execute; approval-required actions create a pending request the owner sees in the Owner Portal (and can be notified about via SMS/push/email); never-autonomous actions are hard-blocked in code, not just policy.
+- **Scheduler/Calendar service** — owns availability rules, appointment booking, and calendar sync, per tenant.
+- **Audit Log service** — append-only record of every meaningful autonomous action: what Mason did, why (which policy/threshold applied), on whose behalf, and what data it touched. Independent of general application logs.
+- **Usage & Cost Metering** — tracks AI token spend, telephony minutes, SMS/email volume per tenant; enforces owner-configured spending limits; feeds the emergency pause/slowdown controls.
+- **Background Jobs** — durable, retryable workers for anything that shouldn't block a live conversation: call summarization, follow-up scheduling, missed-call recovery, review requests, seasonal reminders.
+- **Billing** — tenant subscription/usage billing (HURKL's own revenue engine); architecturally separate from a tenant's customer-facing payment workflows.
+
+## 4. Multi-tenant strategy
+
+- Single Postgres database (simplest to operate correctly at pilot scale; revisit only if a compliance or scale requirement forces per-tenant databases later).
+- Every tenant-scoped table (customers, leads, conversations, employees, calendars, services, prices, policies, approval thresholds, documents, communications, AI configuration, usage, billing, audit history) carries a `company_id` column.
+- **Postgres Row-Level Security (RLS) enforces isolation at the database layer** — not just application-layer filtering — so a bug in application code cannot leak one tenant's data to another. This is defense-in-depth, matching the "no company must ever access another company's information" requirement.
+- Storage (documents, photos, call recordings) is partitioned per tenant (separate storage prefixes/buckets), with access rules mirroring RLS.
+- Cross-tenant HURKL admin access (for support/billing) goes through a separate, explicitly audited admin path — never through the same query paths tenants use.
+
+## 5. AI model routing (cost control)
+
+- Every AI task is classified before it's dispatched: routine (classification, drafting a standard reply, checking configured availability, summarization) vs. deep-reasoning (complex estimate, unusual objection, ambiguous multi-step request, escalation judgment call).
+- Routine tasks default to the lowest-cost capable model tier. Deep-reasoning tasks escalate to a higher-capability tier, and only when the router (or the routine-tier model itself) determines it's warranted.
+- Every routing decision, token count, and estimated cost is logged per tenant.
+- Owners configure, per company: which model provider is active, usage/spending limits, whether deep-reasoning escalation is allowed at all, and what happens when a limit is hit (slow down, pause, or notify-only).
+- The router is a thin, replaceable layer — the underlying `AIModelProvider` interface means swapping or adding a provider (OpenAI, Google, others) does not touch conversation logic.
+
+## 6. Voice & phone pipeline
+
+Per the founder-approved cost policy (§2), this pipeline is built and exercised with real providers only after text-based Mason (ROADMAP.md Phase 6) is validated — voice testing is the first point at which Twilio, Deepgram, and ElevenLabs usage incurs meaningful real cost, so it does not start until there's confidence the underlying Conversation Engine and Approval Engine already work correctly over text.
+
+1. Customer calls the business's existing number, forwarded (or ported) to the Telephony Provider.
+2. Telephony Provider streams the call to the Voice Gateway.
+3. Voice Gateway streams audio to the STT Provider, producing a live transcript.
+4. Transcript turns flow into the Conversation Engine, which (via the AI Router) produces a response.
+5. The response text goes to the TTS Provider (ElevenLabs) for synthesis and is streamed back to the caller.
+6. The Voice Gateway supports multiple simultaneous calls (one conversation/session per call, horizontally scalable).
+7. The business owner can still answer calls directly — forwarding rules and any configured "owner can intercept" behavior are tenant configuration, not a platform-wide constant.
+8. On call end: full transcript and an AI-generated summary are stored on the customer's shared record; a customer/lead record is created or updated; an appointment may be booked directly in-call when possible; escalation to the owner or callback scheduling happens per configured rules.
+9. All of this is provider-agnostic: `TelephonyProvider`, `STTProvider`, and `TTSProvider` are interfaces, so Twilio/Deepgram could each be replaced without touching the Conversation Engine.
+
+## 7. Background jobs & event-driven integrations
+
+Async, retryable, idempotent workers handle anything that shouldn't happen inline during a live conversation:
+- Call/conversation summarization (if not done synchronously).
+- Follow-up and callback scheduling.
+- Missed-call recovery (detecting an unanswered/abandoned call and proactively reaching back out per tenant policy).
+- Review requests after job completion.
+- Seasonal/recurring reminders (tenant-configured cadence and content).
+- Lead-platform integration ingestion.
+- Usage/cost rollups feeding the Owner Portal and the pause/slowdown controls.
+
+External side effects (sending an SMS, creating a calendar event, charging a card) are implemented as idempotent operations keyed by a stable operation ID, so retries after a failure never double-book, double-charge, or double-message a customer.
+
+## 8. Deployment
+
+- **Environments:** local development, staging (per-branch preview via Vercel/Netlify), production.
+- **Secrets:** environment variables managed by the hosting provider's secret store (never committed — see SECURITY.md and `.gitignore`). ElevenLabs, Twilio, Deepgram, Claude, and database credentials all live here, per environment.
+- **Infrastructure as code:** not necessary at pilot scale given managed providers (Supabase, Vercel/Netlify, Trigger.dev); revisit (e.g., Terraform) if/when self-managed infrastructure is introduced.
+- **CI:** run typechecking, lint, and automated tests on every pull request before merge; block merges to main on failure once the codebase exists.
+
+## 9. Scaling path
+
+- **Pilot (1 tenant):** single Postgres instance, serverless web/API hosting, pay-as-you-go providers. Cost dominated by call/SMS volume, not infrastructure.
+- **Early multi-tenant (a handful of companies):** same architecture; RLS already enforces isolation, so onboarding a new tenant is a data operation, not a code change. Watch background-job throughput and telephony concurrency.
+- **Growth (dozens–hundreds of tenants):** consider read replicas for reporting/dashboards, dedicated worker pools per job type, per-tenant usage-based autoscaling for the AI Router, and splitting the Voice Gateway into its own scalable service if call concurrency demands it.
+- **Commercial scale:** revisit whether any tenant needs dedicated infrastructure (compliance, volume), introduce infrastructure-as-code, and formalize a support/on-call rotation — none of which blocks the pilot.
+
+## 10. What this document intentionally does not decide
+
+- The §2a compatibility verification (Next.js + Netlify + Trigger.dev/Inngest + Supabase) has not been run yet — approval of the stack is conditional on that check passing or the fallback being used.
+- Exact provider contracts/API versions — decided when each provider integration is actually built, against the typed interface defined here.
+- Native mobile app vs. responsive/PWA web app for the founder's Android usage — recommendation is a mobile-friendly responsive web app first (faster iteration, one codebase), revisit a native app only if push notifications or offline behavior demand it.
+
+## 11. Resolved decisions log
+
+| Decision | Resolution | Date |
+|---|---|---|
+| Official build location | `hurkl-platform` GitHub repo; Lovable HVAC project and A-1 Netlify site are unrelated and out of scope | Founder approval, this session |
+| Initial architecture (§2) | Approved as listed, pending §2a compatibility verification before implementation | Founder approval, this session |
+| Cost policy | $100–250/mo is a ceiling, not a target; free tiers preferred; no paid infra without explicit approval; text before paid voice testing | Founder approval, this session |
