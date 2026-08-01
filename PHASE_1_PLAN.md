@@ -29,6 +29,8 @@ Tasks:
 - A written compatibility note exists naming the exact hosting provider and job-runner provider to use, with what was checked and when.
 - No code has been written yet.
 
+**Status: COMPLETE.** Verified (Aug 2026) against current provider docs: Next.js+Netlify, Netlify+Supabase, Trigger.dev+Netlify/Next.js, and Inngest+Netlify/Next.js are all compatible. Full findings, the Trigger.dev-vs-Inngest comparison, and the requirement-by-requirement verification (multi-tenant, background jobs, long-running workflows, provider interfaces, voice, mobile, scaling) are recorded in `ARCHITECTURE.md` §2a. One important finding amends §6: Netlify cannot host the persistent WebSocket Twilio Media Streams needs, so the Voice Gateway (Phase 8) will need its own always-on hosting — not a Phase 1 blocker. Trigger.dev is recommended for background jobs; **pending founder confirmation** before M1.1 begins.
+
 **Founder checkpoint:** confirm the hosting/job-runner pick before M1.1 starts — cheap to change now, more disruptive once M1.1 onward depends on it.
 
 ### M1.1 — Repository scaffold & toolchain
