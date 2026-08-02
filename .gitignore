@@ -38,6 +38,10 @@ build/
 .netlify/
 .turbo/
 
+# TypeScript (auto-regenerated; Next.js recreates next-env.d.ts on dev/build)
+*.tsbuildinfo
+next-env.d.ts
+
 # Supabase local
 .supabase/
 supabase/.branches
