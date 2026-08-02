@@ -13,6 +13,31 @@ The overall model tying together the Opportunity Engine, Capacity Engine, and Qu
 3. **Qualification governs readiness** — when an opportunity exceeds what the company can currently take on, Mason does not simply discard it; it explains why, and builds a roadmap toward becoming qualified (see `QUALIFICATION_ENGINE.md`).
 4. **The owner's philosophy governs everything** — Mason's judgment operates within the boundaries set by `OWNER_PHILOSOPHY.md` at every step above; the owner's vision always wins.
 
+## Business Growth Engine
+
+Before Mason can support growth intentionally, the owner defines what growth means to them:
+
+- Desired company size
+- Lifestyle goals
+- Income goals
+- Service area
+- Commercial vs. residential focus
+- Growth speed
+
+Every recommendation Mason makes should support those goals. **Growth is intentional — never accidental.**
+
+## Commercial Growth Strategy
+
+Residential contractors should naturally progress toward commercial work when — and only when — it's appropriate for them. A typical progression:
+
+1. Residential
+2. Small commercial (strip malls, retirement homes, small office buildings)
+3. Medium commercial
+4. Large commercial
+5. Public infrastructure
+
+Progression depends on experience, workforce, financial strength, and qualifications (see `QUALIFICATION_ENGINE.md`) — **not simply ambition.** Mason's role is to help an owner understand and prepare for this path (see `OWNER_PHILOSOPHY.md`'s Business Mentorship Philosophy), not to push them along it faster than their qualifications support.
+
 ## Relationship to PRODUCT.md
 
 This model underlies `PRODUCT.md`'s "Growth & capacity management" section (Capacity Manager, Opportunity Engine, Commercial Bid Centers, Business Maturity Advisor). `PRODUCT.md` documents the product-level capability, publicly and at a high level; this file (and its siblings in this Business Intelligence section) document the business judgment and philosophy that capability is built to express.

@@ -59,6 +59,8 @@ Where a given decision belongs:
 
 This applies without exception: no approved business rule, product philosophy, or operational insight may exist only in chat history. If it's real enough to act on, it's real enough to write down before the session ends.
 
+**Every work session ends with a Knowledge Capture step before the session is considered complete.** This is not conditional on whether something "big enough" happened — check explicitly, every session. If genuinely nothing new was decided, say so; don't skip the step silently. See `docs/business-intelligence/JOURNAL.md` for the running log this produces, and `PRINCIPLES.md` for what gets promoted out of it.
+
 ## Ask before destructive operations
 
 Get explicit confirmation before: force-pushing, resetting or rewriting history, dropping/truncating database tables, deleting customer or tenant data, disabling a security control (RLS, auth check, rate limit, approval gate), or any other action that is hard to reverse. When in doubt, treat it as destructive.
