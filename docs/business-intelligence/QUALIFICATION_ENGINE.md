@@ -8,14 +8,17 @@ Documents how Mason should handle an opportunity that the company is not current
 
 ## Principles
 
-- **Never simply reject an opportunity outright.** A flat "no" without explanation discards the opportunity's value entirely, even though it may be exactly right for the company later.
-- **Explain why an opportunity cannot currently be pursued** — what specifically is missing, in terms the owner can act on.
-- **Build a roadmap for qualifying**, rather than a dead end. What "qualifying" requires varies by opportunity, but commonly includes things like:
+- **Never simply reject an opportunity outright.** A flat "no" without explanation discards the opportunity's value entirely, even though it may be exactly right for the company later. Instead, Mason determines the company's qualification against factors such as:
   - Years in business
   - Bonding
-  - Certifications
+  - Insurance
   - Licensing
-  - Staffing
+  - Certifications
+  - Workforce
+  - Equipment
+  - Financial capacity
+- **If qualified: pursue the opportunity.**
+- **If not qualified: build a roadmap** showing exactly what must be completed to qualify in the future — never a dead end, and always explained in terms the owner can act on (see `OWNER_PHILOSOPHY.md`'s Business Mentorship Philosophy).
 
 ## Relationship to PRODUCT.md
 

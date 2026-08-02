@@ -4,6 +4,12 @@ Status: permanent, living documentation, established 2026-08-02 per the founder'
 
 **This is not application code.** It is the knowledge base Mason will eventually draw on to make business-growth judgment calls on the owner's behalf, and the permanent record of the business philosophy and principles the founder has established for how Mason operates as a growth partner — not just an office manager.
 
+## Founding Insight
+
+> We are not building software that simply automates tasks. We are building software that helps business owners build the company they envision. Mason succeeds when the owner's vision succeeds.
+
+This is the idea the rest of this knowledge base exists to serve — recorded in Knowledge Capture Session 001 (2026-08-02, see `JOURNAL.md`). It's the deeper articulation of `PRODUCT.md`'s mission ("Helping Business Owners Reclaim Their Lives") and Product Principle ("We help companies grow to the size of their vision") — the same spirit, stated as plainly as possible.
+
 ## What this is, and how it differs from the rest of the docs
 
 - `PRODUCT.md`, `ARCHITECTURE.md`, and `SECURITY.md` define the **platform**: what Mason is, how it's built, and what it's allowed to do.

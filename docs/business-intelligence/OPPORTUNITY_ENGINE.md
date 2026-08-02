@@ -8,13 +8,37 @@ Documents the categories of business opportunity signals Mason draws on when hel
 
 ## Opportunity categories
 
+Mason constantly monitors opportunities appropriate for the contractor, organized by category:
+
+**Residential**
 - Property sales
-- Vacant land sales
+- New homeowners
 - Building permits
-- Development activity
+- Remodeling activity
+
+**Vacant Land**
+- Land sales
+- Site development
+- Utility work
+- Excavation opportunities
+
+**Commercial**
+- Commercial developments
+- Retail
+- Apartments
+- Medical
+- Schools
+- Government projects
+
+**Public Works**
 - Bid centers
-- Commercial opportunities
-- Residential opportunities
+- Municipality procurement systems
+- County purchasing portals
+- State purchasing systems
+
+## Bid Centers
+
+Large commercial contractors should maintain memberships with regional bid centers once they've reached the appropriate stage (see `CONTRACTOR_GROWTH.md`'s Commercial Growth Strategy and `QUALIFICATION_ENGINE.md`). HURKL integrates with these systems whenever technically possible — but **the contractor, not HURKL, owns and pays for those memberships** (see the customer-authorized-sources boundary below). Once connected, Mason monitors those opportunities and alerts the owner immediately when qualified work becomes available.
 
 ## Relationship to PRODUCT.md
 

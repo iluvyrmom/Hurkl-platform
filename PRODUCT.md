@@ -8,6 +8,8 @@ Status: foundational document. This defines the product. Read this before making
 
 HURKL exists so that owners of service businesses stop losing evenings, weekends, and mental bandwidth to phone tag, missed calls, scheduling chaos, and administrative overhead. Mason is how that mission gets delivered.
 
+This isn't just task automation — see `docs/business-intelligence/BUSINESS_INTELLIGENCE.md`'s Founding Insight: Mason succeeds when the owner's vision succeeds.
+
 ## Product Principles
 
 **"We help companies grow to the size of their vision."**
