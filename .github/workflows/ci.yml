@@ -1,0 +1,52 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+# No real credentials here, ever. NEXT_PUBLIC_APP_ENV=test is a fixed,
+# non-secret placeholder — see docs/development.md and lib/env.ts. This
+# workflow never connects to Supabase, Trigger.dev, or any other external
+# provider, and never uses A-1 Best Moving's credentials.
+env:
+  NEXT_PUBLIC_APP_ENV: test
+
+jobs:
+  verify:
+    name: Verify
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install dependencies (npm ci)
+        run: npm ci
+
+      - name: Environment validation (npm run env:check)
+        run: npm run env:check
+
+      - name: Formatting check
+        run: npm run format:check
+
+      - name: Type check
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Production build
+        run: npm run build
+
+      - name: Dependency security audit (report only — never auto-fixes)
+        run: npm run audit:report

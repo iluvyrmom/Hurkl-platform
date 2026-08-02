@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { getClientEnv, getServerEnv } from "./env";
+import { APP_ENVS, getClientEnv, getServerEnv } from "./env";
 
 const ENV_KEYS = [
   "NEXT_PUBLIC_APP_ENV",
@@ -68,12 +68,21 @@ describe("getServerEnv", () => {
     expect(env.ANTHROPIC_API_KEY).toBe("test-placeholder-value");
   });
 
-  it("accepts every documented AppEnv value", () => {
-    for (const value of ["local", "staging", "production"]) {
+  it("accepts every value in the canonical APP_ENVS list, including the CI placeholder 'test'", () => {
+    expect(APP_ENVS).toContain("test");
+    for (const value of APP_ENVS) {
       process.env.NEXT_PUBLIC_APP_ENV = value;
       expect(() => getServerEnv()).not.toThrow();
     }
   });
+
+  it.each(["", "production-ish", "TEST", "Production", "prod", "0"])(
+    "rejects invalid value %j",
+    (value) => {
+      process.env.NEXT_PUBLIC_APP_ENV = value;
+      expect(() => getServerEnv()).toThrowError(/NEXT_PUBLIC_APP_ENV is required/);
+    },
+  );
 });
 
 describe("getClientEnv", () => {

@@ -15,9 +15,10 @@
  * Do not flip a field to required ahead of the phase that actually uses it.
  */
 
-export type AppEnv = "local" | "staging" | "production";
+export type AppEnv = "local" | "test" | "staging" | "production";
 
-const APP_ENVS: readonly AppEnv[] = ["local", "staging", "production"];
+/** The single canonical list of valid values — import this, never re-list them. */
+export const APP_ENVS: readonly AppEnv[] = ["local", "test", "staging", "production"];
 
 function isAppEnv(value: string | undefined): value is AppEnv {
   return !!value && (APP_ENVS as readonly string[]).includes(value);

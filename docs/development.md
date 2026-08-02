@@ -43,7 +43,7 @@ Run `npm run build && npm run lint && npm run typecheck && npm run test` before 
 
 The app validates its environment at startup via `instrumentation.ts`, which calls `lib/env.ts`'s `getServerEnv()` once when the server process starts (Next.js's official `register()` hook — stable since Next.js 15, no config flag needed). As of Phase 1, exactly one variable is required:
 
-- `NEXT_PUBLIC_APP_ENV` — must be `local`, `staging`, or `production`. Missing or invalid values throw a clear, aggregated error immediately at startup rather than failing confusingly later inside some feature.
+- `NEXT_PUBLIC_APP_ENV` — must be `local`, `test`, `staging`, or `production`. Missing or invalid values throw a clear, aggregated error immediately at startup rather than failing confusingly later inside some feature. `test` is the CI-safe placeholder value (see `npm run env:check` and `.github/workflows/ci.yml`) — it's not a real deployed environment, just a valid, honest value for automated builds/tests that don't correspond to an actual site.
 
 Every other variable in `.env.example` is optional today and stays that way until the milestone that wires up its provider — see the phase comments in both `.env.example` and `lib/env.ts`. Do not set a future-phase variable's real value just because it's listed; leave it blank until that milestone actually needs it.
 
@@ -67,6 +67,7 @@ Once a variable becomes required in a later phase (e.g., Supabase's URL once M1.
 | Value | Where it's set | Purpose |
 |---|---|---|
 | `local` | Your own `.env.local`, never committed | Your machine, `npm run dev` |
+| `test` | Set inline in the GitHub Actions workflow (not a secret — it's a fixed, safe placeholder) | CI runs of `npm run env:check`, `npm test`, and `npm run build` — no real environment exists for these |
 | `staging` | Netlify environment variables for the staging site (M1.8) | Fake/test data only, `STAGING` banner, `noindex`/`nofollow` — per the founder-approved staging requirements in `ARCHITECTURE.md` |
 | `production` | Netlify environment variables for the production site (later phase) | Real tenants, real customer data |
 

@@ -6,11 +6,13 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "env:check": "NODE_NO_WARNINGS=1 node --env-file-if-exists=.env.local --env-file-if-exists=.env scripts/check-env.ts",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "test": "vitest run"
+    "test": "vitest run",
+    "audit:report": "node scripts/check-dependency-audit.mjs"
   },
   "dependencies": {
     "next": "16.2.12",
