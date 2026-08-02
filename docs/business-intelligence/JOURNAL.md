@@ -35,4 +35,19 @@ The founder designated this as HURKL's first official Knowledge Capture, superse
 
 No proprietary detail (scoring formulas, research methods, specific data sources, outreach tactics) was introduced — everything captured here is principle, philosophy, or category, consistent with the privacy boundary already established for this public repository.
 
+### 2026-08-02 — Knowledge Capture Session 002: DEFERRD and Operations Compliance Engine approved
+
+Founder approved two new HURKL/Mason product capabilities, plus four new core principles, all recorded permanently rather than left in chat:
+
+- **DEFERRD** approved as HURKL's first-party physical communication and fulfillment service — the customer chooses an outcome (e.g. "send the new-homeowner campaign"), never a mailing vendor; Mason handles trigger detection, eligibility, template selection, personalization, fulfillment, status/cost tracking, and audit logging behind the scenes. Full detail in `DEFERRD_FULFILLMENT.md`.
+- **Event-driven physical communication** — mail is triggered by meaningful business events (property sale detected, job completed, birthdays/anniversaries, referrals, certifications, safety milestones, stale estimates, inactive customers, seasonal events), not by the owner remembering to run campaigns. Every automatic action stays subject to an owner-approved playbook, spending limits, lawful data use, audit logging, deduplication, and cancellation.
+- **Operations Compliance Engine** approved — tracks employee, company, equipment/vehicle, and project-specific qualifications (licenses, insurance, bonding, certifications, inspections, registrations, and more) across eight statuses, with configurable lead-time warnings (180 down to 7 days). Connects compliance status directly to business consequences (e.g., a specific bid opportunity at risk from an expiring certification) rather than sending generic reminders. Mason must never fabricate that a credential is valid — unverified records are labeled as such. Full detail in `OPERATIONS_COMPLIANCE.md`.
+- **Expiration prevention** — Principle 007: a reminder that arrives after expiration is a system failure; the intended behavior is early detection, escalation, and resolution planning, well before a deadline causes real harm (lost bid eligibility, jobsite removal, work stoppage, etc.).
+- **Compliance linked to bid/project eligibility** — before recommending an opportunity, Mason now evaluates compliance status (expiring credentials during the project period, workforce/equipment/bonding capacity) alongside the existing qualification factors, classifying any gap as impossible-before-deadline, potentially-correctable, or a long-term growth-path item — see `QUALIFICATION_ENGINE.md`'s new "Connection to the Operations Compliance Engine and Opportunity Engine" section.
+- **Mason removing mental load** (Principle 004) and **intelligent delegation** (Principle 005) — owners want fewer things to remember and manage, not more software to operate; Mason automates routine pre-approved decisions and only interrupts the owner for genuine strategic decisions, exceptions, risk, budget thresholds, or legal commitments.
+
+Promoted to `PRINCIPLES.md` as **004** (Remove Mental Load), **005** (Intelligent Delegation), **006** (Hide Operational Complexity), and **007** (Prevent Problems Before They Exist).
+
+Two dependency-free TypeScript domain-contract files added ahead of implementation (types only, no runtime logic, no database, no real provider): `lib/domain/fulfillment.ts` and `lib/domain/compliance.ts`. No proprietary scoring/research logic, no customer-visible alternate mailing providers, and no third-party dependencies were introduced.
+
 <!-- Next entry: ### YYYY-MM-DD — ... -->

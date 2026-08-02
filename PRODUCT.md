@@ -16,7 +16,7 @@ This isn't just task automation — see `docs/business-intelligence/BUSINESS_INT
 
 HURKL does not assume every business owner wants maximum growth. Mason must help each owner maintain, reduce, or grow their company toward the size and lifestyle that owner actually chooses — HURKL never forces or defaults a company toward growth for its own sake. This principle governs every growth-and-capacity-related capability in this document (Capacity Manager, Opportunity Engine, Business Maturity Advisor): all of them serve the owner's chosen vision, not an assumption that bigger is always better.
 
-The underlying business philosophy and judgment behind this principle — how Mason is meant to relate to the owner, and how it reasons about opportunity, capacity, and qualification — is recorded in full in `docs/business-intelligence/` (see `BUSINESS_INTELLIGENCE.md` for the index, and `OWNER_PHILOSOPHY.md` in particular).
+The underlying business philosophy and judgment behind this principle — how Mason is meant to relate to the owner, and how it reasons about opportunity, capacity, and qualification — is recorded in full in `docs/business-intelligence/` (see `BUSINESS_INTELLIGENCE.md` for the index, and `OWNER_PHILOSOPHY.md` in particular). That knowledge base also holds the full numbered set of core principles (`PRINCIPLES.md`), including Remove Mental Load, Intelligent Delegation, Hide Operational Complexity, and Prevent Problems Before They Exist.
 
 ## What HURKL is
 
@@ -169,6 +169,14 @@ Mason may automatically perform low-risk outreach only when **all** of the follo
 
 Mason should prefer the lowest-cost effective approved channel. Potential channels may include approved email, permitted social or digital outreach, and physical mail. Mason must never assume that a given social or digital platform permits automated outreach — that platform's specific rules, and any applicable law, must be verified before any such channel is implemented, not assumed from this document.
 
+### DEFERRD — first-party fulfillment
+
+DEFERRD is HURKL's approved first-party physical communication and fulfillment service — the channel that fulfills the "physical mail" playbook above. The customer chooses an outcome (e.g. "send the new-homeowner campaign"), never a mailing vendor; there is no customer-facing provider selector. Full detail — customer experience, event triggers, and the internal-only provider abstraction — is in `docs/business-intelligence/DEFERRD_FULFILLMENT.md`.
+
+### Operations Compliance Engine
+
+A future capability that tracks employee, company, equipment/vehicle, and project-specific qualifications (licenses, insurance, bonding, certifications, inspections) so Mason can flag renewal needs early enough to prevent real business consequences (lost bid eligibility, jobsite removal, work stoppage) — never merely reminding after the fact. Connects directly to the Opportunity and Qualification Engines above. Full detail in `docs/business-intelligence/OPERATIONS_COMPLIANCE.md`.
+
 ## Boundaries — what Mason must never do
 
 Mason collects only the information reasonably needed to complete the customer's request — no unnecessary intake friction.
@@ -215,6 +223,6 @@ A-1 validates the platform end-to-end. Success with A-1 should never come at the
 
 **This repository (`hurkl-platform`) is currently public.** Only high-level product capabilities and principles are documented here — never the detailed logic behind them.
 
-HURKL's business-development and public-record research methods (how HURKL finds and qualifies prospective client businesses) are proprietary. The same applies to the growth-and-capacity capabilities above (Capacity Manager, Opportunity Engine, property/development signal evaluation, territory-and-trade exclusivity matching, Commercial Bid Centers, Business Maturity Advisor, Approved Outreach Playbooks): this document describes what they do and the controls the owner has over them, never the underlying opportunity-scoring formulas, signal timing/staging rules, territory-matching logic, detailed commercial research methods, outreach tactics, data-source discovery methods, or the founder's private business-development playbooks.
+HURKL's business-development and public-record research methods (how HURKL finds and qualifies prospective client businesses) are proprietary. The same applies to the growth-and-capacity capabilities above (Capacity Manager, Opportunity Engine, property/development signal evaluation, territory-and-trade exclusivity matching, Commercial Bid Centers, Business Maturity Advisor, Approved Outreach Playbooks, DEFERRD, Operations Compliance Engine): this document describes what they do and the controls the owner has over them, never the underlying opportunity-scoring formulas, signal timing/staging rules, territory-matching logic, detailed commercial research methods, outreach tactics, data-source discovery methods, compliance risk-scoring logic, renewal-sourcing methods, or the founder's private business-development playbooks.
 
 This documentation intentionally does not describe those methods, formulas, or tactics. They are private intellectual property, to be implemented later through protected configuration and internal rules that are not committed to this public repository. Keep this area abstract in all public-facing documentation and code — comments included — unless the founder explicitly authorizes disclosure.
