@@ -54,7 +54,10 @@ Where a given decision belongs:
 - Security, autonomy-tier, or tenant-isolation decisions → `SECURITY.md`.
 - Phase sequencing and milestone status → `ROADMAP.md` (or `PHASE_1_PLAN.md` while Phase 1 is active).
 - Local/CI/operational workflow decisions → `docs/development.md`.
+- **Business rules, product philosophy, or operational/business-judgment insight about how Mason should make growth decisions** (owner relationship, opportunity/capacity/qualification judgment) → `docs/business-intelligence/` — start in `JOURNAL.md`, promote durable ones to `PRINCIPLES.md`. See `BUSINESS_INTELLIGENCE.md` for which specific file. Same privacy rule as everywhere else in this public repo applies: principles and philosophy only, never the proprietary scoring/research logic behind them.
 - Standing operating rules for future sessions (like this one) → this file, `CLAUDE.md`.
+
+This applies without exception: no approved business rule, product philosophy, or operational insight may exist only in chat history. If it's real enough to act on, it's real enough to write down before the session ends.
 
 ## Ask before destructive operations
 
