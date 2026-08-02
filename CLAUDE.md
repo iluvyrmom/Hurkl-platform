@@ -38,6 +38,24 @@ Once a test suite exists, run it before declaring work complete. If you add new 
 
 Summaries should be concrete: what files changed, why, and what was verified. Reference `file:line` where useful. Avoid vague summaries like "improved the system."
 
+## Capture every approved decision — never let it live only in chat
+
+The founder's conversations with Claude Code are part of the product record, not a side channel. Whenever a new business rule, product principle, workflow, or architectural decision is agreed upon in a session:
+
+1. Record it in the appropriate project document **before ending the work session** — not "next time."
+2. If no appropriate document exists yet, create one, rather than skipping the capture.
+3. Cross-reference related documents: if a decision touches two docs, add a pointer in both so they can't silently drift out of sync.
+4. Summarize what was added — and where — in that session's final report.
+5. Never let an approved decision exist only in chat history. If it's real enough to act on, it's real enough to write down.
+
+Where a given decision belongs:
+- Product principles, capabilities, and business rules → `PRODUCT.md`.
+- Technical/architecture decisions (stack, service boundaries, provider choices) → `ARCHITECTURE.md`.
+- Security, autonomy-tier, or tenant-isolation decisions → `SECURITY.md`.
+- Phase sequencing and milestone status → `ROADMAP.md` (or `PHASE_1_PLAN.md` while Phase 1 is active).
+- Local/CI/operational workflow decisions → `docs/development.md`.
+- Standing operating rules for future sessions (like this one) → this file, `CLAUDE.md`.
+
 ## Ask before destructive operations
 
 Get explicit confirmation before: force-pushing, resetting or rewriting history, dropping/truncating database tables, deleting customer or tenant data, disabling a security control (RLS, auth check, rate limit, approval gate), or any other action that is hard to reverse. When in doubt, treat it as destructive.
