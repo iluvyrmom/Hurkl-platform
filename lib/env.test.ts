@@ -90,12 +90,33 @@ describe("getClientEnv", () => {
     expect(() => getClientEnv()).toThrowError(/NEXT_PUBLIC_APP_ENV is required/);
   });
 
+  it("throws when NEXT_PUBLIC_SUPABASE_URL is missing (required as of Phase 4)", () => {
+    process.env.NEXT_PUBLIC_APP_ENV = "local";
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY = "test-publishable-key";
+    expect(() => getClientEnv()).toThrowError(/NEXT_PUBLIC_SUPABASE_URL is required/);
+  });
+
+  it("throws when NEXT_PUBLIC_SUPABASE_URL doesn't look like a Supabase project URL", () => {
+    process.env.NEXT_PUBLIC_APP_ENV = "local";
+    process.env.NEXT_PUBLIC_SUPABASE_URL = "https://example.com";
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY = "test-publishable-key";
+    expect(() => getClientEnv()).toThrowError(/does not look like a Supabase project URL/);
+  });
+
+  it("throws when NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY is missing (required as of Phase 4)", () => {
+    process.env.NEXT_PUBLIC_APP_ENV = "local";
+    process.env.NEXT_PUBLIC_SUPABASE_URL = "https://example.supabase.co";
+    expect(() => getClientEnv()).toThrowError(/NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY is required/);
+  });
+
   it("only exposes NEXT_PUBLIC_ prefixed values", () => {
     process.env.NEXT_PUBLIC_APP_ENV = "local";
     process.env.NEXT_PUBLIC_SUPABASE_URL = "https://example.supabase.co";
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY = "test-publishable-key";
     process.env.SUPABASE_SERVICE_ROLE_KEY = "should-never-appear-here";
     const env = getClientEnv();
     expect(env.NEXT_PUBLIC_SUPABASE_URL).toBe("https://example.supabase.co");
+    expect(env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY).toBe("test-publishable-key");
     expect(Object.keys(env)).not.toContain("SUPABASE_SERVICE_ROLE_KEY");
   });
 });

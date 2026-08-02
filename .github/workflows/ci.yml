@@ -6,12 +6,16 @@ on:
     branches:
       - main
 
-# No real credentials here, ever. NEXT_PUBLIC_APP_ENV=test is a fixed,
-# non-secret placeholder — see docs/development.md and lib/env.ts. This
-# workflow never connects to Supabase, Trigger.dev, or any other external
-# provider, and never uses A-1 Best Moving's credentials.
+# No real credentials here, ever. NEXT_PUBLIC_APP_ENV=test and the two
+# NEXT_PUBLIC_SUPABASE_* values below are fixed, non-secret placeholders that
+# only satisfy lib/env.ts's format validation (a well-formed *.supabase.co
+# URL, a non-empty key string) — see docs/development.md. CI never actually
+# connects to Supabase, Trigger.dev, or any other external provider, and
+# never uses A-1 Best Moving's credentials.
 env:
   NEXT_PUBLIC_APP_ENV: test
+  NEXT_PUBLIC_SUPABASE_URL: https://ci-placeholder.supabase.co
+  NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ci-placeholder-not-a-real-key
 
 jobs:
   verify:

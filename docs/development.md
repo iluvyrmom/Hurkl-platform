@@ -20,9 +20,11 @@ Then edit `.env.local` and set at minimum:
 
 ```
 NEXT_PUBLIC_APP_ENV=local
+NEXT_PUBLIC_SUPABASE_URL=<the Hurkl-production project URL>
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=<its publishable key>
 ```
 
-That's the only variable Phase 1 actually requires — see "What's required right now" below.
+Both Supabase values are safe to ask a teammate for directly (they're not secrets — see the `.env.example` comments) but are never committed. See "What's required right now" below for exactly what's enforced.
 
 ## Running the app
 
@@ -39,13 +41,21 @@ That's the only variable Phase 1 actually requires — see "What's required righ
 
 Run `npm run build && npm run lint && npm run typecheck && npm run test` before considering any change done — this mirrors what CI will check once M1.3 stands it up.
 
-## What's required right now (Phase 1)
+## What's required right now (Phase 4 / M1.4)
 
-The app validates its environment at startup via `instrumentation.ts`, which calls `lib/env.ts`'s `getServerEnv()` once when the server process starts (Next.js's official `register()` hook — stable since Next.js 15, no config flag needed). As of Phase 1, exactly one variable is required:
+The app validates its environment at startup via `instrumentation.ts`, which calls `lib/env.ts`'s `getServerEnv()` and `getClientEnv()` once when the server process starts (Next.js's official `register()` hook — stable since Next.js 15, no config flag needed). As of Phase 4 (M1.4), three variables are required:
 
-- `NEXT_PUBLIC_APP_ENV` — must be `local`, `test`, `staging`, or `production`. Missing or invalid values throw a clear, aggregated error immediately at startup rather than failing confusingly later inside some feature. `test` is the CI-safe placeholder value (see `npm run env:check` and `.github/workflows/ci.yml`) — it's not a real deployed environment, just a valid, honest value for automated builds/tests that don't correspond to an actual site.
+- `NEXT_PUBLIC_APP_ENV` — must be `local`, `test`, `staging`, or `production`. `test` is the CI-safe placeholder value (see `npm run env:check` and `.github/workflows/ci.yml`) — it's not a real deployed environment, just a valid, honest value for automated builds/tests that don't correspond to an actual site.
+- `NEXT_PUBLIC_SUPABASE_URL` — must look like `https://<ref>.supabase.co`.
+- `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` — must be non-empty.
+
+Missing or invalid values throw a clear, aggregated error immediately at startup rather than failing confusingly later inside some feature. CI supplies fixed, non-secret placeholder values for the two Supabase variables (`https://ci-placeholder.supabase.co` / `ci-placeholder-not-a-real-key`) purely to satisfy this format validation — CI never actually connects to Supabase.
 
 Every other variable in `.env.example` is optional today and stays that way until the milestone that wires up its provider — see the phase comments in both `.env.example` and `lib/env.ts`. Do not set a future-phase variable's real value just because it's listed; leave it blank until that milestone actually needs it.
+
+### `/api/health` — Supabase connectivity check
+
+`GET /api/health` proves the app can reach the configured Supabase project. It queries a deliberately nonexistent table (`__health_check_no_such_table__`) — Postgres/PostgREST responding with "relation does not exist" (`42P01`/`PGRST205`) proves a live, authenticated round trip to the database, without needing any real application table to exist yet (none do — schema work is M1.5). Responses are intentionally minimal: `{ status, database, timestamp }`, where `database` is one of `connected` / `unreachable` / `misconfigured` — never a raw provider error, stack trace, URL, or key. Uses the RLS-protected publishable key only (`lib/supabase/client.ts`); never the service-role key.
 
 ### Server-only vs. public variables
 

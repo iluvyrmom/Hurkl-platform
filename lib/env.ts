@@ -9,10 +9,12 @@
  *    a NEXT_PUBLIC_ variable, because only those are inlined by Next.js at
  *    build time; anything else silently reads as undefined on the client.
  *
- * Phase discipline: only APP_ENV is required as of Phase 1 (M1.2). Every
- * other field is optional and stays that way until the milestone that wires
- * up its provider makes it required — see the `phase` comment on each field.
- * Do not flip a field to required ahead of the phase that actually uses it.
+ * Phase discipline: APP_ENV was required as of Phase 1 (M1.2). Phase 4
+ * (M1.4) adds the Supabase project URL and publishable key as required too,
+ * now that this app actually connects to Supabase. Every other field is
+ * optional and stays that way until the milestone that wires up its
+ * provider makes it required — see the `phase` comment on each field. Do
+ * not flip a field to required ahead of the phase that actually uses it.
  */
 
 export type AppEnv = "local" | "test" | "staging" | "production";
@@ -68,13 +70,13 @@ export interface ServerEnv {
 export interface ClientEnv {
   NEXT_PUBLIC_APP_ENV: AppEnv;
 
-  // Phase 4 (M1.4) — Supabase project URL and publishable ("anon") key.
-  // Both are designed by Supabase to be public: the URL is just the
-  // project's REST endpoint, and the publishable key is safe to ship to the
-  // browser because Row-Level Security — not secrecy of this key — is what
-  // actually protects tenant data.
-  NEXT_PUBLIC_SUPABASE_URL?: string;
-  NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY?: string;
+  // Phase 4 (M1.4) — required as of this phase. Supabase project URL and
+  // publishable ("anon") key. Both are designed by Supabase to be public:
+  // the URL is just the project's REST endpoint, and the publishable key is
+  // safe to ship to the browser because Row-Level Security — not secrecy of
+  // this key — is what actually protects tenant data.
+  NEXT_PUBLIC_SUPABASE_URL: string;
+  NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: string;
 }
 
 /**
@@ -115,9 +117,23 @@ export function getServerEnv(): ServerEnv {
 export function getClientEnv(): ClientEnv {
   const errors: string[] = [];
   const rawAppEnv = process.env.NEXT_PUBLIC_APP_ENV;
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabasePublishableKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 
   if (!isAppEnv(rawAppEnv)) {
     errors.push(invalidAppEnvMessage(rawAppEnv));
+  }
+
+  if (!supabaseUrl) {
+    errors.push("NEXT_PUBLIC_SUPABASE_URL is required as of Phase 4 (got: unset)");
+  } else if (!/^https:\/\/.+\.supabase\.co$/.test(supabaseUrl)) {
+    errors.push(
+      `NEXT_PUBLIC_SUPABASE_URL does not look like a Supabase project URL (expected https://<ref>.supabase.co, got: ${JSON.stringify(supabaseUrl)})`,
+    );
+  }
+
+  if (!supabasePublishableKey) {
+    errors.push("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY is required as of Phase 4 (got: unset)");
   }
 
   if (errors.length > 0) {
@@ -126,7 +142,7 @@ export function getClientEnv(): ClientEnv {
 
   return {
     NEXT_PUBLIC_APP_ENV: rawAppEnv as AppEnv,
-    NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
-    NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
+    NEXT_PUBLIC_SUPABASE_URL: supabaseUrl as string,
+    NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: supabasePublishableKey as string,
   };
 }
