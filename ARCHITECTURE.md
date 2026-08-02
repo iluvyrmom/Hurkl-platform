@@ -165,6 +165,12 @@ These are binding engineering requirements, not aspirations:
 - **Background Jobs** — durable, retryable workers for anything that shouldn't block a live conversation: call summarization, follow-up scheduling, missed-call recovery, review requests, seasonal reminders.
 - **Billing** — tenant subscription/usage billing (HURKL's own revenue engine); architecturally separate from a tenant's customer-facing payment workflows.
 
+### Future services (not yet designed in detail)
+
+`PRODUCT.md` documents several growth-and-capacity capabilities that don't have services in the map above yet, because they aren't being built now: a **Capacity Manager**, an **Opportunity Engine** (including property/development signal ingestion), a **Business Maturity Advisor**, and **Approved Outreach Playbooks**. When these are eventually built:
+- Outreach channels (email, permitted social/digital outreach, physical mail) follow the same provider-interface pattern as every other integration — an `EmailProvider` already exists in the stack table below; a future outreach channel gets its own typed interface, never a hardcoded call to a specific platform's API. Each channel's platform rules and applicable law must be verified before that channel's provider is implemented — this is a precondition, not a detail to assume from this document.
+- None of these services' internal ranking/scoring/timing logic belongs in this document or in code comments — see `PRODUCT.md`'s "Proprietary methods" section.
+
 ## 4. Multi-tenant strategy
 
 - Single Postgres database (simplest to operate correctly at pilot scale; revisit only if a compliance or scale requirement forces per-tenant databases later).
@@ -172,6 +178,12 @@ These are binding engineering requirements, not aspirations:
 - **Postgres Row-Level Security (RLS) enforces isolation at the database layer** — not just application-layer filtering — so a bug in application code cannot leak one tenant's data to another. This is defense-in-depth, matching the "no company must ever access another company's information" requirement.
 - Storage (documents, photos, call recordings) is partitioned per tenant (separate storage prefixes/buckets), with access rules mirroring RLS.
 - Cross-tenant HURKL admin access (for support/billing) goes through a separate, explicitly audited admin path — never through the same query paths tenants use.
+
+### Territory and trade exclusivity: a narrow, explicit exception
+
+`PRODUCT.md`'s configurable trade-and-territory exclusivity (a protected market per tenant, based on both territory and competing trade/service category) requires checking a new or expanding tenant's requested protected market against other tenants' existing ones. That is, by definition, a cross-tenant read — the one deliberate, narrowly-scoped exception to the tenant-isolation rule above, not a precedent for any other feature.
+
+This exception must stay narrow in implementation: a minimal territory-and-trade registry (trade/service category, territory definition, status, duration — no customer data, no financials, no conversation content, no anything else) exposed only to a dedicated onboarding/expansion workflow, never to ordinary tenant-facing queries or RLS-bound application code paths. Extending this exception to expose any other cross-tenant data requires a conscious, reviewed architecture decision, not an assumption that "territory already does this so this can too."
 
 ## 5. AI model routing (cost control)
 
