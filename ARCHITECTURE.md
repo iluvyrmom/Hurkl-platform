@@ -170,6 +170,7 @@ These are binding engineering requirements, not aspirations:
 `PRODUCT.md` documents several growth-and-capacity capabilities that don't have services in the map above yet, because they aren't being built now: a **Capacity Manager**, an **Opportunity Engine** (including property/development signal ingestion), a **Business Maturity Advisor**, and **Approved Outreach Playbooks**. When these are eventually built:
 - Outreach channels (email, permitted social/digital outreach, physical mail) follow the same provider-interface pattern as every other integration — an `EmailProvider` already exists in the stack table below; a future outreach channel gets its own typed interface, never a hardcoded call to a specific platform's API. Each channel's platform rules and applicable law must be verified before that channel's provider is implemented — this is a precondition, not a detail to assume from this document.
 - None of these services' internal ranking/scoring/timing logic belongs in this document or in code comments — see `PRODUCT.md`'s "Proprietary methods" section.
+- The business judgment these services will eventually implement (how Mason reasons about opportunity, capacity, qualification, and owner philosophy) is recorded in `docs/business-intelligence/` — that knowledge base, not this architecture document, is the source of truth for what these services are meant to express once built.
 
 ## 4. Multi-tenant strategy
 
