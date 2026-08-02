@@ -1,0 +1,10 @@
+{
+  "_comment": "Tracked baseline for scripts/check-dependency-audit.mjs. Advisory IDs recorded in docs/dependency-security.md. Do not add an ID here without also updating that file's exposure classification and recheck notes — this file is a mechanical comparison list, not the record of why each finding is currently acceptable.",
+  "lastUpdated": "2026-08-02",
+  "knownAdvisories": [
+    "GHSA-qx2v-qp2m-jg93",
+    "GHSA-6g55-p6wh-862q",
+    "GHSA-r28c-9q8g-f849",
+    "GHSA-f88m-g3jw-g9cj"
+  ]
+}

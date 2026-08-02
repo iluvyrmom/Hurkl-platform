@@ -65,6 +65,7 @@ Mason's actions are classified into three tiers. This classification is a securi
 - Sensitive messages
 - Production configuration changes
 - Purchases or paid actions
+- Bid submissions and other legally binding commitments (see `PRODUCT.md`'s Commercial Bid Centers capability) — unless a narrowly defined, pre-approved workflow has been explicitly configured by the owner, in which case it may run as Tier 1
 
 **Tier 3 — Never autonomous** (hard-blocked in code, not policy-only):
 - Transfer money

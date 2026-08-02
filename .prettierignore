@@ -1,0 +1,8 @@
+node_modules
+.next
+out
+build
+package-lock.json
+
+# Prose docs keep their own hand-written style; Prettier here is for code only.
+*.md

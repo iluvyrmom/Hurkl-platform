@@ -8,6 +8,12 @@ Status: foundational document. This defines the product. Read this before making
 
 HURKL exists so that owners of service businesses stop losing evenings, weekends, and mental bandwidth to phone tag, missed calls, scheduling chaos, and administrative overhead. Mason is how that mission gets delivered.
 
+## Product Principles
+
+**"We help companies grow to the size of their vision."**
+
+HURKL does not assume every business owner wants maximum growth. Mason must help each owner maintain, reduce, or grow their company toward the size and lifestyle that owner actually chooses — HURKL never forces or defaults a company toward growth for its own sake. This principle governs every growth-and-capacity-related capability in this document (Capacity Manager, Opportunity Engine, Business Maturity Advisor): all of them serve the owner's chosen vision, not an assumption that bigger is always better.
+
 ## What HURKL is
 
 HURKL is the platform. It is the company/product umbrella that hosts Mason, manages multi-tenant business accounts, and provides the dashboards, billing, and infrastructure that let a service business run Mason safely.
@@ -77,6 +83,88 @@ Mason is **not** industry-specific. It must never be hardcoded to moving, HVAC, 
 - Cost and usage controls, owned by the business owner.
 - Multi-company tenant isolation — no company ever sees another company's data.
 
+## Growth & capacity management (future capabilities)
+
+These capabilities are documented here at a product level only, per the public-repository privacy rule in "Proprietary methods" below: they describe *what* Mason will do and the controls the owner has over it, not the specific methods, scoring logic, or research techniques behind it. Those details are private intellectual property, to be implemented later through protected configuration and internal rules that live outside this public repository.
+
+### Capacity Manager
+
+Mason will include a Capacity Manager that regulates how aggressively it pursues new work on the owner's behalf, based on configurable factors such as: desired company size, number and size of crews, current workload, backlog, average job duration, available equipment, hiring plans, seasonal demand, and revenue/margin goals.
+
+The owner has direct, explicit control over pursuit intensity, including the ability to:
+- Maintain the current business size
+- Grow slowly
+- Grow aggressively
+- Pause new-opportunity pursuit entirely
+- Set a custom employee, crew, revenue, or workload target
+
+Mason must recognize when a company already has enough work and reduce or stop unnecessary marketing/outreach activity accordingly. The Capacity Manager exists specifically so growth pursuit reflects the owner's actual capacity and choices — see Product Principles above — not a default assumption that more work is always better.
+
+### Opportunity Engine
+
+Mason will include an Opportunity Engine that receives opportunities from customer-authorized sources, which may include: residential lead providers; publicly available property and permit information; planning and development signals; the contractor's own commercial bid-center memberships; the contractor's own lead subscriptions; CRM imports; referral sources; and future approved integrations.
+
+A firm boundary: **HURKL does not purchase or resell a customer's paid memberships or subscriptions.** Where a contractor already owns and pays for a service — a commercial bid-center membership, for example — HURKL connects to it only through authorized integrations, APIs, notifications, imports, email forwarding, or other permitted methods, never by acquiring or reselling access on the contractor's behalf.
+
+Mason's value is to identify, rank, track, and act on relevant opportunities across these sources so the owner doesn't have to manually watch every system. The specific methods Mason uses to identify and rank opportunities are intentionally not documented here — see "Proprietary methods" below.
+
+### Property and development signal evaluation
+
+As part of the Opportunity Engine, Mason will eventually evaluate property and development signals differently depending on property type, project stage, and the customer's own trade — the same signal means something different to different trades. For example:
+
+- An ordinary residential property sale may matter to painters, landscapers, handymen, cleaners, and similar trades.
+- A vacant lot may matter early to general contractors, excavation, grading, utilities, concrete, masonry, surveying, and site-development companies.
+- Commercial property activity may matter early to architects, engineers, general contractors, design-build firms, and larger specialty contractors.
+- Later project stages should notify the trades that enter later in the construction lifecycle.
+
+The detailed timing and scoring rules behind this evaluation are intentionally not documented here — see "Proprietary methods" below. Industry defaults will be configurable per tenant and improved over time based on real company outcomes, not fixed once and left static.
+
+### Territory and trade exclusivity
+
+Mason will support configurable trade-and-territory exclusivity — a protected market for each tenant. Exclusivity is never hardcoded to fixed city or county boundaries, and it is always based on **both** territory **and** competing trade or service category together: a moving company's protected market must never block an unrelated HVAC, painting, or landscaping company operating in the same territory.
+
+The protected-market model supports:
+- A primary business location
+- A configurable service radius
+- A suggested starting radius (for example, 50 miles), offered as a default — never made mandatory
+- Future support for drive-time-based or custom-map-drawn territory, beyond a simple radius
+- Protected trades and service categories (defining what actually counts as "competing")
+- Expansion into additional territories over time
+- Clear status, duration, and renewal rules for how long a protected market stays in effect
+
+### Commercial bid centers
+
+Commercial bid-center monitoring is mission-critical for eligible larger contractors. When a contractor reaches an appropriate level of growth, Mason should recommend that the owner evaluate the relevant bid-center membership or professional service — not before. Mason must not reveal future proprietary growth strategies prematurely; it recommends the next tool, membership, employee, service, or process only when the company's capacity, goals, and opportunity volume actually show readiness for it.
+
+For bid centers a contractor has connected, Mason should eventually:
+- Detect new relevant bid opportunities promptly
+- Match opportunities to the company's trades and territory
+- Track bid deadlines and addenda
+- Alert the correct employees
+- Prepare checklists and internal summaries
+- Track bid status
+- Prevent important bid windows from being missed
+
+Monitoring may be automatic (Tier 1 — see SECURITY.md's autonomy tiers). **Actual bid submission, and any other legally binding commitment, requires appropriate company approval** (Tier 2, or Tier 3 for anything resembling signing a legal agreement) unless a narrowly defined, pre-approved workflow has been explicitly configured by the owner.
+
+### Business Maturity Advisor
+
+Mason should recognize when a company has outgrown its current tools or processes and recommend the next appropriate investment — for example: a commercial bid-center membership, dedicated estimating software, additional crews or employees, a dispatcher or estimator, expanded service territory, new equipment, more advanced accounting or CRM systems, or additional offices/operating capacity.
+
+Every recommendation must support the owner's chosen vision (see Product Principles above) — never growth for its own sake.
+
+### Approved outreach playbooks
+
+Mason may automatically perform low-risk outreach only when **all** of the following hold:
+- The owner approved the specific playbook in advance
+- The opportunity matches that company's configured rules
+- The company actually needs additional work (see Capacity Manager above — Mason must not pursue outreach on behalf of a company that has paused pursuit or already has enough work)
+- The channel and the data use involved are lawful and permitted
+- Configured spending limits are respected
+- Every action is recorded in the audit log
+
+Mason should prefer the lowest-cost effective approved channel. Potential channels may include approved email, permitted social or digital outreach, and physical mail. Mason must never assume that a given social or digital platform permits automated outreach — that platform's specific rules, and any applicable law, must be verified before any such channel is implemented, not assumed from this document.
+
 ## Boundaries — what Mason must never do
 
 Mason collects only the information reasonably needed to complete the customer's request — no unnecessary intake friction.
@@ -121,4 +209,8 @@ A-1 validates the platform end-to-end. Success with A-1 should never come at the
 
 ## Proprietary methods
 
-HURKL's business-development and public-record research methods (how HURKL finds and qualifies prospective client businesses) are proprietary. This documentation intentionally does not describe those methods. Keep this area abstract in all documentation and code unless the founder explicitly authorizes disclosure.
+**This repository (`hurkl-platform`) is currently public.** Only high-level product capabilities and principles are documented here — never the detailed logic behind them.
+
+HURKL's business-development and public-record research methods (how HURKL finds and qualifies prospective client businesses) are proprietary. The same applies to the growth-and-capacity capabilities above (Capacity Manager, Opportunity Engine, property/development signal evaluation, territory-and-trade exclusivity matching, Commercial Bid Centers, Business Maturity Advisor, Approved Outreach Playbooks): this document describes what they do and the controls the owner has over them, never the underlying opportunity-scoring formulas, signal timing/staging rules, territory-matching logic, detailed commercial research methods, outreach tactics, data-source discovery methods, or the founder's private business-development playbooks.
+
+This documentation intentionally does not describe those methods, formulas, or tactics. They are private intellectual property, to be implemented later through protected configuration and internal rules that are not committed to this public repository. Keep this area abstract in all public-facing documentation and code — comments included — unless the founder explicitly authorizes disclosure.

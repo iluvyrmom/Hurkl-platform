@@ -76,3 +76,7 @@ This roadmap is phase-based, not date-based — phases are sequenced by dependen
 ---
 
 **Sequencing note:** Phases 6–7 (text-based Mason, A-1 pilot) intentionally precede Phase 8 (voice). Validating the AI Router, Approval Engine, and shared customer history over text — which is cheaper to build, test, and debug — de-risks voice, which adds telephony, STT/TTS, and real-time concurrency on top of everything text already proved.
+
+## Future phase — Growth & capacity management (not yet sequenced)
+
+`PRODUCT.md` documents a set of growth-and-capacity capabilities — Capacity Manager, Opportunity Engine (including property/development signal evaluation), territory-and-trade exclusivity, Commercial Bid Centers, Business Maturity Advisor, and Approved Outreach Playbooks — that are founder-approved product decisions but are **intentionally not yet placed into the numbered phase sequence above**. Where these land relative to Phase 7 (A-1 pilot) and Phase 14 (commercial release) is a real sequencing decision the founder still needs to make, not something to assume or guess at. None of this is implemented yet; see `PRODUCT.md`'s "Proprietary methods" section for what stays undocumented even once it is.

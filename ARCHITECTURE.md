@@ -1,6 +1,6 @@
 # ARCHITECTURE.md — HURKL / Mason Technical Architecture
 
-Status: **approved by the founder** (initial stack, build location, and cost/retention/MFA policy below). Nothing here has been implemented yet — approval covers the plan, not a working system. One verification step is still required before Phase 1 scaffolding begins (see §2a). See PRODUCT.md for what the system must do; this document is how.
+Status: **approved by the founder** (initial stack, build location, and cost/retention/MFA policy below). Nothing here has been implemented yet — approval covers the plan, not a working system. The §2a compatibility verification (M1.0) is complete; the Trigger.dev-vs-Inngest pick it recommends still needs founder confirmation before M1.1 scaffolding begins. See PRODUCT.md for what the system must do; this document is how.
 
 ---
 
@@ -29,7 +29,7 @@ The GitHub repository `hurkl-platform` is the official source-code repository fo
 | Web framework | Next.js (App Router) | Full-stack in one framework (UI + API routes + server actions), strong TypeScript support, deploys cleanly to Vercel or Netlify, large talent/AI-assistance surface since it's extremely well-documented | Remix (similar tradeoffs, smaller ecosystem); SvelteKit (lighter, less AI/agent tooling precedent); separate Express API + React SPA (more moving parts, more to operate) |
 | Database | PostgreSQL | Required by the "row-level tenant security" principle — Postgres Row-Level Security (RLS) is the most mature, battle-tested mechanism for enforcing multi-tenant isolation at the database layer, not just in application code | MySQL/PlanetScale (no native RLS equivalent); MongoDB (no RLS, weaker fit for relational business data like jobs/estimates/schedules) |
 | DB + Auth hosting | Supabase (managed Postgres + Auth + Storage + RLS + Realtime) | Ships Postgres RLS, auth, and storage as one managed product — directly matches the RLS-based tenant isolation requirement, fast to stand up for a pilot, this account already has Lovable/Supabase-adjacent tooling available | Self-managed Postgres on Fly.io/Render + a separate auth provider (more control, meaningfully more operational burden for a one-person-operated pilot); Neon (good Postgres, no built-in auth/RLS tooling) |
-| Background jobs / durable workflows | Trigger.dev or Inngest (event-driven, retry-aware job runner) | Telephony webhooks, call summarization, follow-ups, and reminders all need reliable async processing with retries and idempotency — hand-rolled cron/queues would re-invent this | Plain Postgres-backed queue (pg-boss) — viable cheaper fallback for pilot-scale volume, more manual retry/observability work; AWS SQS/Lambda (more infra to operate) |
+| Background jobs / durable workflows | **Trigger.dev — founder-approved Phase 1 `BackgroundJobProvider`** (see §2a) | Verified-compatible with Netlify + Next.js; Waitpoints (pause a run at zero idle cost, resume via SDK/webhook when a human responds) map directly onto the Approval Engine's core mechanic; open-source (Apache 2.0) and self-hostable, backing the provider-independence principle; single-tenant pilot means the known multi-tenant fairness limitation isn't currently a blocker. Job definitions call shared application services only — no domain logic lives in Trigger.dev task files | **Inngest — recorded fallback candidate** for later multi-tenant scale, if the fairness gap becomes real (see §2a) |
 | AI provider | Anthropic Claude, behind an `AIModelProvider` interface | Strong reasoning-per-dollar, tiered model family (a low-cost tier for routine classification/replies, a high-capability tier for hard reasoning) fits the cost-routing requirement directly | OpenAI, Google Gemini — both viable and should be swappable later; not chosen as default only because Claude's tiering and instruction-following fit the office-manager persona work well today |
 | Voice output (TTS) | ElevenLabs, behind a `TTSProvider` interface | Mason's custom voice already exists in ElevenLabs (founder-confirmed) | N/A — already decided by founder; interface exists so it's replaceable if ElevenLabs pricing/availability changes |
 | Speech-to-text | Deepgram (proposed), behind an `STTProvider` interface | Low-latency streaming STT with good pricing for phone-call volumes | AssemblyAI, Google STT — both fit the same interface, swappable without touching call logic |
@@ -42,15 +42,48 @@ The GitHub repository `hurkl-platform` is the official source-code repository fo
 
 **Resolved:** the founder has confirmed `hurkl-platform` (this repository) as the official, hand-coded source of truth — not Lovable's builder platform, and not the existing A-1 Netlify site. See §1a.
 
-## 2a. Required pre-implementation step: compatibility verification
+## 2a. Compatibility verification — COMPLETE (M1.0)
 
-Before Phase 1 scaffolding begins, verify current, real compatibility among:
-- The chosen framework (Next.js, target version)
-- The chosen hosting platform (Netlify, or the approved fallback)
-- The chosen background-job system (Trigger.dev or Inngest)
-- Supabase (Postgres, Auth, RLS, Storage)
+Verified against current provider documentation (checked August 2026), not assumed. Findings:
 
-This means confirming — against current provider documentation at implementation time, not assumed from this document — that Netlify's Next.js runtime supports the server-side/edge features Mason needs (streaming responses, long-running server actions for voice/webhook handling), and that the chosen background-job provider has a supported, documented integration path with that hosting choice and with Supabase. If a real incompatibility turns up, the approved fallback is Vercel for hosting; the interface-based design means swapping the background-job provider or hosting platform should not require changing business logic. Record the outcome of this check at the start of Phase 1 in `ROADMAP.md`.
+**Next.js + Netlify:** confirmed compatible. Netlify's current Next.js Runtime fully supports the App Router, Server Components, streaming, Server Actions, and edge middleware out of the box — no adapter workarounds needed. ([Netlify docs](https://docs.netlify.com/build/frameworks/framework-setup-guides/nextjs/overview/), [new Next.js Runtime](https://www.netlify.com/blog/introducing-the-new-next-js-runtime/))
+
+**Netlify + Supabase:** confirmed compatible. Netlify has a first-party Supabase integration/extension that auto-provisions `SUPABASE_URL`/`SUPABASE_ANON_KEY` environment variables per framework (Next.js supported directly), including local dev via `netlify dev`. ([Netlify Supabase integration docs](https://docs.netlify.com/extend/install-and-use/setup-guides/supabase-integration/))
+
+**Trigger.dev + Netlify/Next.js:** confirmed compatible. Official setup guide covers Next.js App/Pages Router and Server Actions; deploys via CLI or GitHub Actions independent of the host. ([Trigger.dev Next.js guide](https://trigger.dev/docs/guides/frameworks/nextjs))
+
+**Inngest + Netlify/Next.js:** confirmed compatible. Inngest has a dedicated Netlify integration and a published Next.js+Netlify reference project; functions run as ordinary Netlify Functions invoked by Inngest's event hub. ([Inngest×Netlify](https://www.netlify.com/integrations/inngest/), [reference repo](https://github.com/inngest/sdk-example-nextjs-netlify))
+
+**Decision: Trigger.dev — founder-approved as the Phase 1 `BackgroundJobProvider` implementation.** Rationale: Waitpoints align closely with Mason's human-approval/owner-signoff workflows; it supports durable, long-running jobs with retries, idempotency, and resumable execution; and with the A-1 pilot as the only tenant, the known multi-tenant fairness limitation (below) isn't currently a blocker. **Inngest is recorded as the leading fallback candidate** for later multi-tenant scale, should the fairness gap become real once HURKL has multiple simultaneously-active tenants with heavy background-job load. The `BackgroundJobProvider` interface must stay intact regardless: job definitions call shared application services for all business rules, never the other way around — Trigger.dev-specific APIs (tasks, waitpoints, retries) belong only in thin adapter code, so swapping to Inngest later doesn't touch domain logic.
+
+**A note on the numbers above:** the free-tier limits, concurrency ceilings, and pricing figures in the comparison table (20 vs. 5 concurrent, $5 vs. free-execution allowances, etc.) are time-sensitive observations from provider docs checked in August 2026, not permanent facts — both companies change pricing and limits over time. Re-verify them against current provider documentation before production launch (Phase 7/8), not just trust what's written here.
+
+**Important finding — amends §6, not a Phase 1 blocker:** Netlify Functions (standard, background, and edge) are all request/response or bounded-duration (15-minute max for background functions) and do **not** support long-lived WebSocket connections. Twilio Media Streams — the mechanism Mason's real-time, bidirectional phone-call audio depends on — requires a persistent WebSocket server that stays open for the duration of each call. This means the live voice-audio leg of the pipeline cannot run on Netlify itself; it needs a separate, always-on WebSocket-capable service (e.g., a small Node/Fastify process on Fly.io, Render, or Railway) that Twilio streams audio to and from, which then talks to the rest of the platform (Conversation Engine, database, AI Router) over ordinary HTTP. This is exactly what the §3 service map already called a "Voice Gateway" as a distinct service — this finding confirms that separation is a hard technical requirement, not just a clean-architecture preference. No action needed until Phase 8; flagging now so Phase 8 isn't planned around a false assumption that the whole stack runs on Netlify. ([Netlify functions limits](https://docs.netlify.com/build/functions/background-functions/), [Twilio Media Streams overview](https://www.twilio.com/docs/voice/media-streams))
+
+### Trigger.dev vs. Inngest — comparison for HURKL/Mason
+
+| Dimension | Trigger.dev | Inngest | Relevance to Mason |
+|---|---|---|---|
+| Core model | Durable tasks called like remote functions; open-source (Apache 2.0), self-hostable with unlimited runs | Event-driven: events route to functions with durable, individually-retriable steps | Both fit; Inngest's event model aligns slightly more with ARCHITECTURE.md's "event-driven integrations" principle, but Trigger.dev's simpler call-style model is easier for a small team to reason about |
+| Human-in-the-loop / long waits | **Waitpoints** — a run checkpoints at zero idle compute cost and resumes via SDK, React hook, or webhook callback when a human responds | `step.waitForEvent` / `step.sleep` — functionally equivalent, event-driven framing | **Directly maps to the Approval Engine** (Tier 2 actions pausing for owner sign-off, possibly hours later) — both work; Trigger.dev's callback-URL pattern is a slightly more direct fit for an owner tapping "approve" from a phone notification |
+| Multi-tenant concurrency fairness | `concurrencyKey` gives each tenant its own queue/limit, but a **known, actively-tracked limitation**: per-key limits aren't fairly capped against the shared environment-wide pool, so one very busy tenant could consume more shared capacity than others at scale | First-class treatment of this exact problem (published engineering work on "fixing noisy-neighbor problems in multi-tenant queueing"), plus separate concurrency + throttle + priority controls | Low risk at pilot scale (one tenant, A-1); becomes a real Phase 14 (multi-company) consideration — worth revisiting the choice then, not now |
+| Free tier | $0/mo, $5 compute credit, **20 concurrent runs**, unlimited tasks, 10 schedules | $0/mo, 50K executions/mo, **5 concurrent steps**, 3 users | Trigger.dev's higher concurrency ceiling matters directly for "multiple simultaneous conversations" during pilot testing |
+| Paid tier cost curve | Hobby $10/mo (50 concurrent), Pro $50/mo (200+ concurrent) | Pro $75/mo | Trigger.dev is cheaper to grow into, matching the cost policy's "prefer free tiers, spend as little as possible" default |
+| Self-hosting / vendor lock-in | Open-source, explicitly designed for self-hosting with no run limits | Core is open-source too, but self-hosting is less emphasized/documented in what's publicly available today | Trigger.dev gives a clearer exit ramp if HURKL ever needs to leave the managed cloud product — stronger fit with the "do not permanently couple to any outside provider" instruction |
+
+**Approved: Trigger.dev for Phase 1.** Its free-tier concurrency headroom and Waitpoints feature are a better match for Mason's near-term needs (simultaneous conversations, an Approval Engine built around pausing for a human), and its self-hosting story protects against lock-in. Inngest remains the recorded fallback candidate for later multi-tenant scale — the `BackgroundJobProvider` interface exists specifically so that switch stays cheap if it becomes worth it once fairness across many active tenants is a real, not theoretical, concern.
+
+### Verification against Mason's specific requirements
+
+| Requirement | Status | Notes |
+|---|---|---|
+| Multi-tenant architecture | ✅ Confirmed | Supabase Postgres RLS (existing `Hurkl-production` project, verified empty and healthy) + per-tenant `concurrencyKey` in the job runner |
+| Background jobs | ✅ Confirmed | Both Trigger.dev and Inngest verified-compatible with Netlify + Next.js |
+| Long-running workflows | ✅ Confirmed | Trigger.dev Waitpoints (or Inngest `step.waitForEvent`/`step.sleep`) checkpoint at zero idle cost — suited to Approval Engine waits and scheduled follow-ups/reminders spanning hours or days |
+| Provider interfaces | ✅ Confirmed | Both job runners are plain TypeScript SDKs, easily wrapped behind a `BackgroundJobProvider` interface with no business-logic leakage |
+| Voice integrations | ⚠️ Confirmed with an amendment | AI/TTS/STT/telephony orchestration and post-call async work (summarization, etc.) run fine on Netlify; the **live bidirectional call audio (Twilio Media Streams) cannot** — needs a separate always-on WebSocket service, as detailed above. Applies to Phase 8, not Phase 1 |
+| Mobile-friendly deployment | ✅ Confirmed | Next.js on Netlify serves a responsive web app fine on mobile browsers; nothing here blocks the founder's Android-first workflow |
+| Future scaling | ✅ Confirmed | Netlify and Supabase both scale incrementally (paid tiers raise limits); Trigger.dev/Inngest scale execution automatically; the Voice Gateway will need its own independent scaling story when built (Phase 8), which the service map already anticipated |
 
 ### Estimated monthly cost during pilot (single tenant, A-1 Best Moving, light-moderate call volume)
 
@@ -132,6 +165,12 @@ These are binding engineering requirements, not aspirations:
 - **Background Jobs** — durable, retryable workers for anything that shouldn't block a live conversation: call summarization, follow-up scheduling, missed-call recovery, review requests, seasonal reminders.
 - **Billing** — tenant subscription/usage billing (HURKL's own revenue engine); architecturally separate from a tenant's customer-facing payment workflows.
 
+### Future services (not yet designed in detail)
+
+`PRODUCT.md` documents several growth-and-capacity capabilities that don't have services in the map above yet, because they aren't being built now: a **Capacity Manager**, an **Opportunity Engine** (including property/development signal ingestion), a **Business Maturity Advisor**, and **Approved Outreach Playbooks**. When these are eventually built:
+- Outreach channels (email, permitted social/digital outreach, physical mail) follow the same provider-interface pattern as every other integration — an `EmailProvider` already exists in the stack table below; a future outreach channel gets its own typed interface, never a hardcoded call to a specific platform's API. Each channel's platform rules and applicable law must be verified before that channel's provider is implemented — this is a precondition, not a detail to assume from this document.
+- None of these services' internal ranking/scoring/timing logic belongs in this document or in code comments — see `PRODUCT.md`'s "Proprietary methods" section.
+
 ## 4. Multi-tenant strategy
 
 - Single Postgres database (simplest to operate correctly at pilot scale; revisit only if a compliance or scale requirement forces per-tenant databases later).
@@ -139,6 +178,12 @@ These are binding engineering requirements, not aspirations:
 - **Postgres Row-Level Security (RLS) enforces isolation at the database layer** — not just application-layer filtering — so a bug in application code cannot leak one tenant's data to another. This is defense-in-depth, matching the "no company must ever access another company's information" requirement.
 - Storage (documents, photos, call recordings) is partitioned per tenant (separate storage prefixes/buckets), with access rules mirroring RLS.
 - Cross-tenant HURKL admin access (for support/billing) goes through a separate, explicitly audited admin path — never through the same query paths tenants use.
+
+### Territory and trade exclusivity: a narrow, explicit exception
+
+`PRODUCT.md`'s configurable trade-and-territory exclusivity (a protected market per tenant, based on both territory and competing trade/service category) requires checking a new or expanding tenant's requested protected market against other tenants' existing ones. That is, by definition, a cross-tenant read — the one deliberate, narrowly-scoped exception to the tenant-isolation rule above, not a precedent for any other feature.
+
+This exception must stay narrow in implementation: a minimal territory-and-trade registry (trade/service category, territory definition, status, duration — no customer data, no financials, no conversation content, no anything else) exposed only to a dedicated onboarding/expansion workflow, never to ordinary tenant-facing queries or RLS-bound application code paths. Extending this exception to expose any other cross-tenant data requires a conscious, reviewed architecture decision, not an assumption that "territory already does this so this can too."
 
 ## 5. AI model routing (cost control)
 
@@ -151,6 +196,8 @@ These are binding engineering requirements, not aspirations:
 ## 6. Voice & phone pipeline
 
 Per the founder-approved cost policy (§2), this pipeline is built and exercised with real providers only after text-based Mason (ROADMAP.md Phase 6) is validated — voice testing is the first point at which Twilio, Deepgram, and ElevenLabs usage incurs meaningful real cost, so it does not start until there's confidence the underlying Conversation Engine and Approval Engine already work correctly over text.
+
+**Hosting note (confirmed in §2a's compatibility verification, founder-affirmed):** Netlify hosts the main Next.js application only — it must never be treated as, or asked to be, the persistent real-time telephony server. Twilio Media Streams (or any equivalent audio transport) needs a long-lived WebSocket connection held open for the duration of each call; Netlify's function offerings are all request/response or time-bounded and structurally cannot provide that. The Voice Gateway must run as its own separate, always-on service (e.g., a small Node/Fastify process on Fly.io, Render, or Railway), kept **provider-independent** the same way every other integration is — it does not hardcode Twilio specifically, and it communicates with the rest of the platform only through authenticated APIs and events, never direct database access or shared in-process state. This was already modeled as a distinct service in §3's service map; this is confirmation it's a hard requirement, not just a clean-architecture choice. No action needed until Phase 8.
 
 1. Customer calls the business's existing number, forwarded (or ported) to the Telephony Provider.
 2. Telephony Provider streams the call to the Voice Gateway.
@@ -202,3 +249,4 @@ External side effects (sending an SMS, creating a calendar event, charging a car
 | Official build location | `hurkl-platform` GitHub repo; Lovable HVAC project and A-1 Netlify site are unrelated and out of scope | Founder approval, this session |
 | Initial architecture (§2) | Approved as listed, pending §2a compatibility verification before implementation | Founder approval, this session |
 | Cost policy | $100–250/mo is a ceiling, not a target; free tiers preferred; no paid infra without explicit approval; text before paid voice testing | Founder approval, this session |
+| M1.0 compatibility verification | Next.js+Netlify, Netlify+Supabase, Trigger.dev+Netlify/Next.js, and Inngest+Netlify/Next.js all confirmed compatible against current docs (Aug 2026). Trigger.dev recommended for background jobs — pending founder confirmation. Voice Gateway confirmed to require a separate always-on WebSocket service (Netlify can't host persistent WebSockets); amends §6, not a Phase 1 blocker | Verified this session, §2a |
