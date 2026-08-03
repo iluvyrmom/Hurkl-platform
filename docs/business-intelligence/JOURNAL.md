@@ -113,4 +113,15 @@ Promoted to `PRINCIPLES.md` as **012** (Professional Relationships Are Recommend
 
 No proprietary detail (relationship-scoring formulas, real company names, research methods) was introduced — everything captured here is principle, category, playbook structure, or explicit legal/architectural boundary, consistent with the privacy boundary already established for this public repository.
 
+### 2026-08-03 — Knowledge Capture Session 006 (continued): top-level cross-references and permanent guardrails
+
+The founder's final instruction from the Session 006 message (delayed by the earlier truncation) asked for concise, non-flooding cross-references in the five top-level documents only, plus a specific list of nine permanent guardrails in `CLAUDE.md`. No new business-intelligence file or principle was added this round — this is wiring, not new capture:
+
+- `PRODUCT.md`'s Boundaries section gained one sentence extending the existing "knowledge, confidence, completion..." fabrication bullet to also cover preserving authoritative sources (`EVIDENCE_BASED_OPERATIONS.md`) and re-verifying time-sensitive claims (`CONTINUOUS_INTELLIGENCE.md`) — `VERIFIED_INTELLIGENCE.md` was already referenced there.
+- `SECURITY.md` gained: a note in §1 (Tenant isolation) explicitly stating the future Trusted Trade Network is not covered by the existing audited cross-tenant path and needs its own security review; a new Tier 2 example (forming an actual alliance/referral commitment, as opposed to recommending the conversation); and a new §13 open item tracking the Trusted Trade Network's cross-tenant design as unresolved.
+- `CLAUDE.md` gained a new "Nine permanent guardrails" section, indexing (not duplicating) the nine rules the founder specified: approved decisions documented, uncertain claims labeled, time-sensitive claims verified, authoritative sources preserved, no completion claims without evidence, no discriminatory logic, no unlawful competitor coordination, no legal/tax/safety fabrication, and no real external action without the correct autonomy tier — each pointing to the relevant `docs/business-intelligence/` file or existing `CLAUDE.md`/`SECURITY.md` section rather than restating the detail.
+- `ARCHITECTURE.md` and `ROADMAP.md` already carried adequate cross-references for every capability discussed in Sessions 002–006 (added incrementally as each was captured) — reviewed and confirmed sufficient, no further edits needed.
+
+No new `PRINCIPLES.md` entry and no new `lib/domain/*.ts` file this round.
+
 <!-- Next entry: ### YYYY-MM-DD — ... -->

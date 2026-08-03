@@ -83,5 +83,19 @@ Mason's behavior is governed by three tiers — Automatic, Approval Required, Ne
 
 ## Two permanent rules for growth/opportunity capabilities
 
-- **Never generalize the territory-and-trade-exclusivity cross-tenant exception.** `ARCHITECTURE.md` §4 documents one narrow, deliberate exception to tenant isolation for checking protected-market conflicts. It exposes trade/territory/status fields only, through a dedicated workflow. Do not use it as precedent to add any other cross-tenant read — that requires its own conscious, reviewed decision.
+- **Never generalize the territory-and-trade-exclusivity cross-tenant exception.** `ARCHITECTURE.md` §4 documents one narrow, deliberate exception to tenant isolation for checking protected-market conflicts. It exposes trade/territory/status fields only, through a dedicated workflow. Do not use it as precedent to add any other cross-tenant read — that requires its own conscious, reviewed decision. This includes the future HURKL Trusted Trade Network (see `docs/business-intelligence/TRUSTED_TRADE_NETWORK.md`), which is explicitly not covered by this exception.
 - **Verify a channel's platform rules and applicable law before implementing any automated outreach.** Never assume a social or digital platform permits automated outreach just because `PRODUCT.md` lists it as a potential channel — confirm the specific platform's current terms and any applicable law first, as a precondition to writing that integration, not an afterthought.
+
+## Nine permanent guardrails for verified, lawful, and properly-scoped operation
+
+Recorded from Knowledge Capture Sessions 003–006 (`docs/business-intelligence/`). Every future session, and every Mason capability built in this repository, must honor all nine — this section is a concise index, not the detail; follow each pointer for the full reasoning.
+
+1. **Approved decisions are documented.** See "Capture every approved decision" above.
+2. **Uncertain claims are labeled as such** — a verified fact, a plain-language explanation, an inference, a recommendation, and an unresolved ambiguity are never presented as if they were the same thing. See `docs/business-intelligence/VERIFIED_INTELLIGENCE.md`.
+3. **Time-sensitive claims are verified, not assumed to still hold.** Laws, codes, standards, and market conditions change; a fact recorded once does not stay true forever. See `docs/business-intelligence/CONTINUOUS_INTELLIGENCE.md`.
+4. **Authoritative sources are preserved alongside any important claim**, not just the conclusion. See `docs/business-intelligence/EVIDENCE_BASED_OPERATIONS.md`.
+5. **No completion claim without evidence** — see "Do not claim untested work is complete" above, applied identically to any runtime claim Mason makes about a customer's compliance, tax, or legal status.
+6. **No discriminatory logic** — race, ethnicity, nationality, sex, religion, or any other protected characteristic must never factor into a recommendation, evaluation, or relationship/alliance suggestion. See `docs/business-intelligence/STRATEGIC_ALLIANCES.md` and `PRINCIPLES.md` 012.
+7. **No unlawful competitor coordination** — no price fixing, bid rigging, market allocation beyond HURKL's own customer licensing/exclusivity model, coordinated suppression of competition, confidential-bid-price sharing, or retaliatory blacklisting. See `docs/business-intelligence/TRUSTED_TRADE_NETWORK.md`.
+8. **No legal, tax, or safety fabrication** — Mason identifies issues that require professional review and presents current official rules; it never invents a legal interpretation, tax strategy, or safety determination. See `docs/business-intelligence/FINANCIAL_HEALTH.md` and `OPERATIONS_COMPLIANCE.md`.
+9. **No real external action without the correct autonomy and approval tier.** See "Respect the autonomy model" above and `SECURITY.md` §4 — this applies to every capability in this list, not only the ones already built.
