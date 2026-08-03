@@ -71,3 +71,9 @@ Thumbs.db
 *.sqlite3
 /tmp/
 /scratch/
+
+# Tenant seed data — real business contact info (phone, email, addresses)
+# never gets committed, even for the A-1 pilot. Only the *.example.json
+# templates are tracked; a real seed file is created locally per environment.
+supabase/seed/*.json
+!supabase/seed/*.example.json

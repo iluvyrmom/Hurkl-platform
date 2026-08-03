@@ -12,20 +12,26 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "vitest run",
+    "test:integration": "vitest run --config vitest.integration.config.mts",
+    "db:test-reset": "NODE_NO_WARNINGS=1 node --env-file-if-exists=.env.local scripts/reset-test-db.ts",
     "audit:report": "node scripts/check-dependency-audit.mjs"
   },
   "dependencies": {
+    "@supabase/ssr": "^0.12.4",
+    "@supabase/supabase-js": "^2.112.0",
     "next": "16.2.12",
     "react": "19.2.4",
     "react-dom": "19.2.4"
   },
   "devDependencies": {
     "@types/node": "^20",
+    "@types/pg": "^8.20.3",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.2.12",
     "eslint-config-prettier": "^10.1.8",
+    "pg": "^8.22.0",
     "prettier": "^3.9.6",
     "typescript": "^5",
     "vitest": "^4.1.10"

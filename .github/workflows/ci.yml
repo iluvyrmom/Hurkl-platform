@@ -9,7 +9,10 @@ on:
 # No real credentials here, ever. NEXT_PUBLIC_APP_ENV=test is a fixed,
 # non-secret placeholder — see docs/development.md and lib/env.ts. This
 # workflow never connects to Supabase, Trigger.dev, or any other external
-# provider, and never uses A-1 Best Moving's credentials.
+# provider, and never uses A-1 Best Moving's credentials. The "postgres"
+# service below is a disposable, ephemeral CI-local database used only to
+# prove RLS tenant isolation (lib/db/tenant-isolation.integration.test.ts)
+# — it is not Supabase and holds no real or persistent data.
 env:
   NEXT_PUBLIC_APP_ENV: test
 
@@ -17,6 +20,20 @@ jobs:
   verify:
     name: Verify
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: hurkl_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -44,6 +61,11 @@ jobs:
 
       - name: Unit tests
         run: npm test
+
+      - name: Tenant isolation integration tests (real Postgres RLS)
+        run: npm run test:integration
+        env:
+          TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/hurkl_test
 
       - name: Production build
         run: npm run build
