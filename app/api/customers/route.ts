@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { recordAuditLogEntry } from "../../../lib/audit/log";
-import { type RoleContext, assertPermission } from "../../../lib/auth/roles";
+import { authErrorResponse } from "../../../lib/auth/http-errors";
+import { assertPermission } from "../../../lib/auth/roles";
+import { requireAuthedProfile } from "../../../lib/auth/session";
 import { createSupabaseServerClient } from "../../../lib/supabase/server";
 
 /**
@@ -12,58 +14,18 @@ import { createSupabaseServerClient } from "../../../lib/supabase/server";
  *
  * Requires NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
  * to be configured (.env.local) and a real signed-in user with a
- * public.profiles row — until then this fails fast with a clear error,
- * the same pattern lib/supabase/server.ts already uses.
+ * public.profiles row (see app/api/companies/route.ts for how that row
+ * gets created) — until then this fails fast with a clear error.
  */
-
-interface AuthedProfile {
-  companyId: string;
-  role: RoleContext["role"];
-}
-
-async function requireAuthedProfile(): Promise<{
-  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>;
-  profile: AuthedProfile;
-}> {
-  const supabase = await createSupabaseServerClient();
-
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser();
-
-  if (authError || !user) {
-    throw new UnauthorizedError();
-  }
-
-  // RLS on public.profiles already scopes this to the caller's own row
-  // (see supabase/migrations/00000000000001_tenant_foundation.sql) —
-  // this select can never return another user's profile.
-  const { data: profile, error: profileError } = await supabase
-    .from("profiles")
-    .select("company_id, role")
-    .eq("id", user.id)
-    .single();
-
-  if (profileError || !profile || !profile.company_id) {
-    throw new UnauthorizedError();
-  }
-
-  return {
-    supabase,
-    profile: { companyId: profile.company_id, role: profile.role },
-  };
-}
-
-class UnauthorizedError extends Error {}
 
 export async function GET() {
   try {
-    const { supabase } = await requireAuthedProfile();
+    const supabase = await createSupabaseServerClient();
+    await requireAuthedProfile(supabase);
 
     // No .eq("company_id", ...) needed or wanted here — RLS already
     // guarantees this only ever returns the caller's own company's
-    // rows (see the tenant-isolation integration tests).
+    // rows (see lib/db/tenant-isolation.integration.test.ts).
     const { data, error } = await supabase
       .from("customers")
       .select("id, name, phone, email, created_at")
@@ -75,9 +37,8 @@ export async function GET() {
 
     return NextResponse.json({ customers: data });
   } catch (error) {
-    if (error instanceof UnauthorizedError) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const response = authErrorResponse(error);
+    if (response) return response;
     throw error;
   }
 }
@@ -90,7 +51,8 @@ interface CreateCustomerBody {
 
 export async function POST(request: Request) {
   try {
-    const { supabase, profile } = await requireAuthedProfile();
+    const supabase = await createSupabaseServerClient();
+    const { profile } = await requireAuthedProfile(supabase);
     assertPermission(profile, "edit_customer_data");
 
     const body = (await request.json()) as CreateCustomerBody;
@@ -128,17 +90,8 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ customer: data }, { status: 201 });
   } catch (error) {
-    if (error instanceof UnauthorizedError) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-    if (
-      error &&
-      typeof error === "object" &&
-      "name" in error &&
-      error.name === "PermissionDeniedError"
-    ) {
-      return NextResponse.json({ error: (error as Error).message }, { status: 403 });
-    }
+    const response = authErrorResponse(error);
+    if (response) return response;
     throw error;
   }
 }

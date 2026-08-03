@@ -35,9 +35,55 @@ That's the only variable Phase 1 actually requires — see "What's required righ
 | `npm run typecheck` | TypeScript, no output emitted (`tsc --noEmit`) |
 | `npm run format` | Prettier, writes fixes (code only — `.md` docs are intentionally excluded, see `.prettierignore`) |
 | `npm run format:check` | Prettier, check-only (used in CI) |
-| `npm run test` | Vitest, runs once (`vitest run`) |
+| `npm run test` | Vitest, runs once (`vitest run`) — unit tests only, no database needed |
+| `npm run test:integration` | Real RLS/tenant-isolation and company-onboarding tests against a real local Postgres — see "Database" below |
+| `npm run db:test-reset` | Manually reset the local integration-test database to a clean schema (useful for poking around with `psql`) |
 
 Run `npm run build && npm run lint && npm run typecheck && npm run test` before considering any change done — this mirrors what CI will check once M1.3 stands it up.
+
+## Database: migrations, local testing, and connecting the real Supabase project
+
+### Local integration tests (no Supabase account needed)
+
+`lib/db/*.integration.test.ts` proves Row-Level Security tenant isolation and the atomic company-onboarding function against a **real, local, disposable Postgres** — not Supabase, not mocked. Requires PostgreSQL 16 reachable locally (or via `TEST_DATABASE_URL`):
+
+```bash
+# one-time / whenever it's stopped
+sudo service postgresql start
+sudo -u postgres createdb hurkl_test          # first time only
+sudo -u postgres psql -c "ALTER USER postgres PASSWORD 'postgres';"   # first time only
+
+npm run test:integration
+```
+
+These tests reset and reapply the whole schema on every run (`lib/db/test-support/apply-schema.ts`), so `hurkl_test` is always disposable — never point `TEST_DATABASE_URL` at anything holding real data.
+
+### Applying migrations to the real Supabase project
+
+`supabase/migrations/` contains exactly what a real Supabase project needs — nothing in it is local-test-specific. (The local-only `auth` schema stand-in lives separately, in `lib/db/test-support/`, and is never applied to a real project — a real Supabase project already provides `auth.users`/`auth.uid()` and the `authenticated` role natively.)
+
+To apply them, once you have the project's credentials:
+
+1. Get connection details from the Supabase dashboard: Project Settings → API (URL/keys the app uses) and Project Settings → Database (direct connection string the CLI uses).
+2. Link once: `npx supabase link --project-ref <project-ref>`.
+3. Push: `npx supabase db push`.
+
+Or without the CLI: open the dashboard's SQL Editor and run the files in `supabase/migrations/` **in filename order** (`00000000000001_...`, then `00000000000002_...`, then `00000000000003_...`) — later files reference tables/roles the earlier ones create.
+
+**As of this writing, this has not been run against the real `Hurkl-production` project** — see the relevant PR description for exactly what's blocking that.
+
+### Manual end-to-end verification (once the real project is migrated)
+
+Real Supabase Auth (sign-up/sign-in) can't be exercised automatically in a sandboxed environment without either Docker or a connected real project — neither is available where this was built. Once `.env.local` has real values and the migrations above have been applied, verify by hand:
+
+1. Visit `/sign-up`, create an account with a real email/password.
+2. Confirm the email if Supabase Auth's email-confirmation setting is on (check the dashboard's Auth logs if nothing arrives in dev).
+3. Sign in at `/sign-in` — should land on `/onboarding` (no company yet).
+4. Fill in the company form and submit — should redirect to `/dashboard`.
+5. In the dashboard's Table Editor, confirm: a `companies` row exists; the `profiles` row for your user has that `company_id` and `role = 'owner'`; an `audit_log` row exists with `action = 'company_created_owner_assigned'`.
+6. On `/dashboard`, add a customer — confirm it appears, and a `customer_created` audit_log row exists.
+7. Sign out, create a **second** account and a **second** company. Confirm that account's `/dashboard` shows zero customers — not the first company's. This is RLS enforced over a real HTTP request, not just the local integration tests.
+8. Re-submit the company-creation form for an account that already has one (e.g. via the browser back button) — expect a clear `409`, not a second company.
 
 ## What's required right now (Phase 1)
 

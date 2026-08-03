@@ -9,6 +9,7 @@ const migrationsDir = path.join(here, "..", "..", "..", "supabase", "migrations"
 const MIGRATION_FILES = [
   "00000000000001_tenant_foundation.sql",
   "00000000000002_customers_and_audit_log.sql",
+  "00000000000003_company_onboarding.sql",
 ];
 
 /**
