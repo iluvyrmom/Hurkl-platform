@@ -22,20 +22,7 @@ The Operations Compliance Engine ensures that the company, employees, crews, veh
 
 ## Digital Project Compliance Binder
 
-**Future capability, not yet built.** A digital compliance binder automatically assembled per job, showing:
-
-- what is required
-- what is present
-- what is missing
-- what expires during the project
-- where every requirement came from
-- evidence of compliance
-- who verified it
-- when it was verified
-
-Mason should be able to produce the full compliance record immediately when requested by a customer, inspector, owner, project manager, or regulator — subject to access controls (see `SECURITY.md`'s RBAC roles; a binder view must never expose more than the requester's role is entitled to see).
-
-This is a direct application of `PRINCIPLES.md` 007 ("Prevent Problems Before They Exist") and 009 ("Evidence-Based Operations," `EVIDENCE_BASED_OPERATIONS.md`) to a single project's compliance posture: the binder is the evidence trail, assembled and kept current automatically rather than reconstructed under pressure during an inspection or dispute.
+The per-project compliance binder built from these records now has its own dedicated file: `PROJECT_COMPLIANCE_BINDERS.md`.
 
 ## Behavior
 
@@ -56,4 +43,4 @@ Where authorized, Mason should be able to: locate renewal requirements, prepare 
 - `PRODUCT.md`'s "Commercial Bid Centers" and "Business Maturity Advisor" — compliance status directly gates bid eligibility and signals readiness for the next investment.
 - `SECURITY.md`'s autonomy tiers — any renewal action involving payment or a binding commitment requires owner approval (Tier 2 at least), never autonomous execution.
 - `lib/domain/compliance.ts` — the dependency-free TypeScript contracts (`ComplianceSubjectType`, `ComplianceCredentialType`, `ComplianceStatus`, `ComplianceRecord`, `ComplianceRequirement`, `ComplianceGap`, `ComplianceEvaluation`, `RenewalAction`, `ComplianceAlert`, `ComplianceBinderItem`, `ComplianceBinder`) added ahead of implementation.
-- `EVIDENCE_BASED_OPERATIONS.md` — the Digital Project Compliance Binder is this principle applied to a single project: every binder item traces back to a source, a verifier, and a verification date.
+- `PROJECT_COMPLIANCE_BINDERS.md` — the per-project compliance binder assembled from these records.

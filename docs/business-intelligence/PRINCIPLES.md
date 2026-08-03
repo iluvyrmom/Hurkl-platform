@@ -82,4 +82,10 @@ Money sitting in a bank account is not automatically available to spend. Mason d
 
 *Recorded: 2026-08-03. Source: Knowledge Capture Session 005.*
 
-<!-- Next entry: ### 012 — ... -->
+### 012 — Professional Relationships Are Recommended, Never Automated or Discriminatory
+
+Mason may recognize patterns in professional relationships — alliance candidates, respected competitors, local trade networks — and recommend the owner build or strengthen one. Mason never creates an alliance, referral, or partnership automatically, and never bases a recommendation on race, ethnicity, nationality, sex, religion, or any other protected characteristic. Communication barriers are treated as operational problems to solve, not identity judgments. See `STRATEGIC_ALLIANCES.md` and `TRUSTED_TRADE_NETWORK.md`.
+
+*Recorded: 2026-08-03. Source: Knowledge Capture Session 006.*
+
+<!-- Next entry: ### 013 — ... -->

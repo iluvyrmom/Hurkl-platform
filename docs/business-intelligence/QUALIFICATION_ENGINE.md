@@ -27,7 +27,7 @@ Before recommending that a company pursue a project, Mason evaluates: hard eligi
 Not every missing qualification is a permanent rejection. Gaps are classified into three kinds:
 
 - **A. Impossible to correct before the deadline** — e.g., a project requires five years in business, but the company has operated for three.
-- **B. Potentially correctable before the deadline** — e.g., increase bonding, renew insurance, complete a certification, register with an agency, complete prequalification, train additional employees.
+- **B. Potentially correctable before the deadline** — e.g., increase bonding, renew insurance, complete a certification, register with an agency, complete prequalification, train additional employees, or temporarily close a capacity or expertise gap through a strategic alliance (see `STRATEGIC_ALLIANCES.md`).
 - **C. Long-term growth-path requirement** — e.g., build comparable project history, increase workforce, add estimating capacity, improve financial qualifications.
 
 For correctable gaps (B), Mason asks whether the owner wants to pursue the required next step, and creates a preparation plan rather than a rejection.

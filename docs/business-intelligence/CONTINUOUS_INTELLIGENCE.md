@@ -28,3 +28,4 @@ A future Continuous Intelligence Engine should eventually:
 - `VERIFIED_INTELLIGENCE.md` and `EVIDENCE_BASED_OPERATIONS.md` — the honesty and record-keeping standards this engine's detection-and-verification loop must meet at every step.
 - `OPERATIONS_COMPLIANCE.md` — a natural consumer of this engine once built: a detected regulatory change is exactly the kind of input that should flow into re-evaluating compliance requirements and lead-time warnings.
 - `OWNER_PHILOSOPHY.md`'s "recommendations, never commands" — step 6 above (request approval) is this principle applied to newly detected changes specifically: Mason never silently updates policy on the owner's behalf.
+- `lib/domain/intelligence.ts` — the dependency-free TypeScript contracts (`IntelligenceChangeCategory`, `IntelligenceCycleStage`, `DetectedChange`, `AffectedSubjectReference`, `IntelligenceUpdateProposal`) added ahead of implementation, reusing `EvidenceRecord` from `lib/domain/evidence.ts`.

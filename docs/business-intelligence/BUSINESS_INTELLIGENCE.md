@@ -26,11 +26,15 @@ This is the idea the rest of this knowledge base exists to serve — recorded in
 | `QUALIFICATION_ENGINE.md` | How Mason handles opportunities the company isn't yet qualified to pursue. |
 | `CONTRACTOR_GROWTH.md` | The overall growth-support model tying the three engines together. |
 | `DEFERRD_FULFILLMENT.md` | HURKL's first-party physical communication and fulfillment service. |
+| `DIRECT_MAIL_PLAYBOOKS.md` | The fallback lead-generation and persistent-physical-advertising playbooks built on DEFERRD. |
 | `OPERATIONS_COMPLIANCE.md` | Tracking employee/company/equipment/project qualifications and preventing lapses before they cause harm. |
+| `PROJECT_COMPLIANCE_BINDERS.md` | The future per-project compliance record assembled from the Operations Compliance Engine's records. |
 | `VERIFIED_INTELLIGENCE.md` | Mason never fabricates knowledge or certainty; the source hierarchy it must follow instead. |
 | `EVIDENCE_BASED_OPERATIONS.md` | How verified findings get preserved as durable, structured evidence records. |
 | `CONTINUOUS_INTELLIGENCE.md` | The future engine that detects, verifies, and proposes updates as trades and regulations change. |
 | `FINANCIAL_HEALTH.md` | Distinguishing spendable cash from obligated cash, tax readiness, and coordinating around (not replacing) an established accounting platform. |
+| `STRATEGIC_ALLIANCES.md` | Strategic growth alliances, respect-worthy competitors, and local relationship networks — recommended, never automated or discriminatory. |
+| `TRUSTED_TRADE_NETWORK.md` | A future, not-yet-designed cross-tenant trade-hierarchy referral capability, with explicit antitrust and cross-tenant-isolation boundaries. |
 | `PRINCIPLES.md` | The numbered, permanent list of business principles distilled from founder conversations. |
 | `JOURNAL.md` | Where new session insights are recorded before being promoted into permanent principles. |
 
