@@ -25,6 +25,11 @@ This is the idea the rest of this knowledge base exists to serve — recorded in
 | `CAPACITY_ENGINE.md` | How Mason paces growth pursuit against the owner's chosen size and vision. |
 | `QUALIFICATION_ENGINE.md` | How Mason handles opportunities the company isn't yet qualified to pursue. |
 | `CONTRACTOR_GROWTH.md` | The overall growth-support model tying the three engines together. |
+| `DEFERRD_FULFILLMENT.md` | HURKL's first-party physical communication and fulfillment service. |
+| `OPERATIONS_COMPLIANCE.md` | Tracking employee/company/equipment/project qualifications and preventing lapses before they cause harm. |
+| `VERIFIED_INTELLIGENCE.md` | Mason never fabricates knowledge or certainty; the source hierarchy it must follow instead. |
+| `EVIDENCE_BASED_OPERATIONS.md` | How verified findings get preserved as durable, structured evidence records. |
+| `CONTINUOUS_INTELLIGENCE.md` | The future engine that detects, verifies, and proposes updates as trades and regulations change. |
 | `PRINCIPLES.md` | The numbered, permanent list of business principles distilled from founder conversations. |
 | `JOURNAL.md` | Where new session insights are recorded before being promoted into permanent principles. |
 
