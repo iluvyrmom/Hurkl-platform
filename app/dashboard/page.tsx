@@ -3,6 +3,12 @@ import { createSupabaseServerClient } from "../../lib/supabase/server";
 import { CustomersPanel } from "./customers-panel";
 import { SignOutButton } from "./sign-out-button";
 
+// This page depends on per-request auth state (cookies) and must never be
+// statically prerendered. Without this, `createSupabaseServerClient()`'s
+// env-check throw fires before `cookies()` signals dynamic rendering, so
+// `next build` attempts (and fails) to statically prerender it.
+export const dynamic = "force-dynamic";
+
 export default async function DashboardPage() {
   const supabase = await createSupabaseServerClient();
 
