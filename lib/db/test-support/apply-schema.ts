@@ -14,9 +14,16 @@ const MIGRATION_FILES = [
 
 /**
  * Resets a local test database to a clean slate and applies the local
- * auth stub, the real migrations (unmodified — the same files a real
- * Supabase project would run), and the local-only `authenticated` role
- * setup. Test-only: never used against a real Supabase project.
+ * auth stub, the `authenticated` role, the real migrations (unmodified
+ * — the same files a real Supabase project would run), and finally
+ * that role's table/function privileges. Test-only: never used against
+ * a real Supabase project.
+ *
+ * Order matters: the role must exist BEFORE the migrations run (one of
+ * them grants EXECUTE on a function to it), but its blanket table/
+ * function privileges can only be granted AFTER the migrations create
+ * those tables/functions — see local-role-create.sql and
+ * local-role-grants.sql's comments.
  */
 export async function applyTestSchema(client: Client): Promise<void> {
   await client.query("drop schema if exists public cascade;");
@@ -26,11 +33,14 @@ export async function applyTestSchema(client: Client): Promise<void> {
   const authStub = readFileSync(path.join(here, "auth-stub.sql"), "utf8");
   await client.query(authStub);
 
+  const roleCreate = readFileSync(path.join(here, "local-role-create.sql"), "utf8");
+  await client.query(roleCreate);
+
   for (const file of MIGRATION_FILES) {
     const sql = readFileSync(path.join(migrationsDir, file), "utf8");
     await client.query(sql);
   }
 
-  const roles = readFileSync(path.join(here, "local-roles.sql"), "utf8");
-  await client.query(roles);
+  const roleGrants = readFileSync(path.join(here, "local-role-grants.sql"), "utf8");
+  await client.query(roleGrants);
 }
