@@ -35,7 +35,7 @@ This roadmap is phase-based, not date-based — phases are sequenced by dependen
 
 ## Phase 6 — Text-based Mason
 - The first real AI Office Manager surface: web/SMS text conversation, using the AI Router (tiered model routing) and the Approval Engine, before voice complexity is introduced.
-- Built around Mason's Executive Architecture from the start (`ARCHITECTURE.md` §1c, `docs/business-intelligence/HAL_SPECIALIST_WORKFORCE.md`): task execution is delegated through HAL specialists and the Assurance Layer, not handled as one monolithic AI call — architecture and contracts only until this phase actually authorizes building real specialist agents.
+- Built around Mason's Executive Architecture from the start (`ARCHITECTURE.md` §1c, `docs/business-intelligence/HAL_SPECIALIST_WORKFORCE.md`): task execution is delegated through HAL specialists and the Assurance Layer, not handled as one monolithic AI call — architecture and contracts only until this phase actually authorizes building real specialist agents. **Founder priority when that begins: the Critical Review Specialist first** — the mandatory gate that reviews every specialist report before Mason sees it.
 - Lead qualification, message-taking, and appointment booking via text, governed by the three autonomy tiers.
 - Cost guardrails from `ARCHITECTURE.md` §2a ship alongside the feature, not after: usage tracking, configurable spending limits, pre-limit alerts, and hard caps on retries/loops/AI requests per conversation.
 - Exit criteria: a text conversation can qualify a lead, book an appointment within configured rules, and correctly escalate an out-of-threshold request to the owner — with an audit log entry for each autonomous action and a visible per-tenant usage/cost record.

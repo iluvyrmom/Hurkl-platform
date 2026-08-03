@@ -51,22 +51,22 @@ Every specialist reports to Mason. Never directly to the owner.
 
 ```mermaid
 flowchart TD
-    S[Specialist] --> EV[Evidence Verification Specialist]
-    EV --> CR[Critical Review Specialist]
-    CR --> R[Risk Specialist]
+    S[Specialist] --> CR[Critical Review Specialist — mandatory gate]
+    CR --> EV[Evidence Verification Specialist]
+    EV --> R[Risk Specialist]
     R --> M[Mason — the Executive]
     M --> O[Owner — the CEO]
 ```
 
-This is a permanent structure: not every specialist report needs every Assurance Layer stage, but no specialist report reaches the owner directly, and no specialist report reaches Mason without at least the Assurance Layer stages its findings warrant.
+This is a permanent structure: not every specialist report needs every Assurance Layer stage, but no specialist report reaches the owner directly, and no specialist report reaches Mason without at least the Critical Review stage.
 
 ## Quality Assurance Layer
 
 Not every specialist report should reach Mason immediately. Important findings pass through an Assurance Layer first:
 
-**Evidence Verification Specialist** — Mission: verify that claims are supported by documented evidence. Responsibilities: verify sources, verify dates, verify jurisdictions, verify references, identify missing evidence.
+**Critical Review Specialist — the mandatory, universal gate.** Founder-approved priority: **"his job is to look over everything before Mason gets it."** Unlike the other Assurance Layer stages, Critical Review is not conditional — every specialist report passes through it, no exceptions. **When real specialist implementation begins, this is the first specialist to build** — nothing reaches Mason unreviewed. Mission: attempt to disprove or challenge proposed recommendations. Responsibilities: identify assumptions, identify blind spots, identify contradictory evidence, identify alternative interpretations.
 
-**Critical Review Specialist** — Mission: attempt to disprove or challenge proposed recommendations. Responsibilities: identify assumptions, identify blind spots, identify contradictory evidence, identify alternative interpretations.
+**Evidence Verification Specialist** — Mission: verify that claims are supported by documented evidence. Responsibilities: verify sources, verify dates, verify jurisdictions, verify references, identify missing evidence.
 
 **Risk Specialist** — Mission: evaluate potential consequences. Responsibilities: financial risk, operational risk, legal uncertainty, safety impact, reputational impact.
 

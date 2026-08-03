@@ -88,6 +88,12 @@ export type SpecialistConfidenceLevel = "high" | "medium" | "low";
 /**
  * A specialist's output, before Assurance Layer review. Never
  * delivered to the owner directly — see ReportingHierarchyStage.
+ *
+ * Every report passes through the "critical_review" AssuranceSpecialistRole
+ * unconditionally — that stage is the mandatory, universal gate that
+ * looks over everything before Mason ever sees it. requiresAdditionalAssuranceStages
+ * governs only whether the *other* stages (evidence_verification, risk,
+ * conflict_resolution, audit) are warranted for this particular report.
  */
 export interface SpecialistReport {
   tenantId: string;
@@ -95,7 +101,7 @@ export interface SpecialistReport {
   findings: string;
   confidenceLevel: SpecialistConfidenceLevel;
   evidenceReferences: readonly string[];
-  requiresAssuranceReview: boolean;
+  requiresAdditionalAssuranceStages: boolean;
   escalations: readonly EscalationTrigger[];
 }
 
@@ -107,8 +113,9 @@ export interface AssuranceReviewResult {
 }
 
 /**
- * The permanent reporting hierarchy: a specialist report flows through
- * zero or more assurance stages, then to Mason, then — only if Mason's
+ * The permanent reporting hierarchy: a specialist report always flows
+ * through the mandatory Critical Review stage (plus whichever other
+ * assurance stages it warrants), then to Mason, then — only if Mason's
  * decision checklist requires it — to the owner. See
  * HAL_SPECIALIST_WORKFORCE.md's reporting-structure diagram.
  */

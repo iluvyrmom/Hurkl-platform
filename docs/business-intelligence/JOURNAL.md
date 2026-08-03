@@ -195,4 +195,14 @@ This partially resolves the "Company Memory" ambiguity flagged in Session 009: *
 
 No new numbered principle — this is a registry addition within the HAL pattern Session 009 already established, not new philosophy.
 
+### 2026-08-03 — Knowledge Capture Session 009 (continued): Critical Review Specialist made the mandatory, universal gate
+
+Founder stated a build priority: "a critique sub agent... his job is to look over everything before Mason gets it." Matched this to the already-documented **Critical Review Specialist** in the Quality Assurance Layer (Session 009) rather than creating a duplicate specialist — flagged this interpretation explicitly rather than assuming it silently, since the founder used "critique" rather than the existing specialist's name.
+
+Strengthened the reporting hierarchy accordingly: Critical Review is no longer one of several situational Assurance Layer stages — it is now the **mandatory, universal gate every specialist report passes through before Mason**, with the other stages (Evidence Verification, Risk, Conflict Resolution, Audit) remaining situational/as-warranted on top of it. Also recorded as the founder's explicit build priority: when real specialist implementation begins, the Critical Review Specialist is built first.
+
+Updated: `ARCHITECTURE.md` §1c's reporting-hierarchy paragraph; `HAL_SPECIALIST_WORKFORCE.md`'s Quality Assurance Layer section and Mermaid diagram (Critical Review moved to immediately after the specialist, ahead of the other stages); `lib/domain/hal.ts` (renamed `SpecialistReport.requiresAssuranceReview` to `requiresAdditionalAssuranceStages`, since Critical Review itself is no longer conditional — confirmed no other code referenced the old field name before renaming); `ROADMAP.md`'s Phase 6 note.
+
+No new numbered principle — this refines the reporting-hierarchy structure Session 009 already established, not new philosophy.
+
 <!-- Next entry: ### YYYY-MM-DD — ... -->
