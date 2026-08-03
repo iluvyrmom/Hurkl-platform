@@ -35,9 +35,15 @@ See `lib/domain/hal.ts`'s `SpecialistDefinition` for the dependency-free TypeScr
 
 A deterministic starting set — each specialist performs one narrowly defined responsibility, and this list grows over time rather than any specialist's scope growing:
 
-Permit Specialist · Property Specialist · Developer Intelligence Specialist · Bid Center Specialist · Lead Center Specialist · OSHA Specialist · Licensing Specialist · Equipment Specialist · Fleet Specialist · Maintenance Specialist · Receivables Specialist · Tax Readiness Specialist · Payroll Specialist · Accounting Specialist · Relationship Specialist · Marketing Specialist · DEFERRD Specialist · Research Specialist · Building Code Specialist · Financial Exposure Specialist · Strategic Intelligence Specialist
+Permit Specialist · Property Specialist · Developer Intelligence Specialist · Bid Center Specialist · Lead Center Specialist · OSHA Specialist · Licensing Specialist · Equipment Specialist · Fleet Specialist · Maintenance Specialist · Receivables Specialist · Tax Readiness Specialist · Payroll Specialist · Accounting Specialist · Relationship Specialist · Marketing Specialist · DEFERRD Specialist · Research Specialist · Building Code Specialist · Financial Exposure Specialist · Strategic Intelligence Specialist · **Memory Specialist**
 
 Many of these correspond to engines already documented elsewhere in this knowledge base — for example, the Licensing/OSHA/Equipment/Maintenance specialists express `OPERATIONS_COMPLIANCE.md`'s categories, the Tax Readiness/Receivables/Accounting/Payroll specialists express `FINANCIAL_HEALTH.md`, the Relationship Specialist expresses `RELATIONSHIP_VALUE.md` and `STRATEGIC_ALLIANCES.md`, and the DEFERRD Specialist expresses `DEFERRD_FULFILLMENT.md`. **Those engines are not superseded — they are reframed as HAL specialists reporting to Mason, rather than capabilities Mason performs directly.**
+
+### Memory Specialist — a single-responsibility example
+
+**The Memory Specialist has exactly one job: memory.** Founder-approved addition — a specialized specialist whose sole mission is maintaining and serving Company Memory, so no other specialist and no Mason ever has to re-derive an already-known fact. This is the clearest illustration of HAL's "one responsibility, one mission, one specialty" rule in the registry.
+
+This resolves part of the "Company Memory" ambiguity flagged in Session 009 (see `PRODUCT.md`'s editorial note): **Company Memory is the Memory Specialist's domain** — the persistent, tenant-specific memory store the Memory Specialist maintains and every other specialist queries rather than re-researching. Its precise relationship to the cross-cutting `BUSINESS_KNOWLEDGE_GRAPH.md` (whether Company Memory is a tenant-scoped view over that graph, a separate store the graph draws on, or something else) is still not specified — not guessed at here, and worth a founder decision when the two are actually implemented.
 
 ## Reporting structure
 

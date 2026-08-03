@@ -41,7 +41,7 @@ Mason is **not** industry-specific. It must never be hardcoded to moving, HVAC, 
 
 **Customers are not purchasing an AI model. Customers are hiring Mason.** Mason is powered by HURKL, which supplies (behind the scenes, never as a customer-facing choice): HAL (the specialist workforce), Company Memory, the Opportunity Engine, the Operations Compliance Engine, Strategic Intelligence, Communications, Financial Intelligence, the HURKL Trusted Business Network, the Business Knowledge Graph, and future specialist departments as they're added. **The customer experiences one employee: Mason.** Everything else happens behind the scenes — see the Golden Rule in `docs/business-intelligence/OWNER_PHILOSOPHY.md`.
 
-*Editorial note:* "Company Memory" is listed above exactly as the founder specified it, alongside the Business Knowledge Graph. This document does not assume the two are the same thing, or invent a distinction between them — that relationship hasn't been specified yet. See `docs/business-intelligence/HAL_SPECIALIST_WORKFORCE.md`'s matching note.
+*Editorial note:* "Company Memory" is listed above exactly as the founder specified it, alongside the Business Knowledge Graph. A dedicated **Memory Specialist** — a HAL specialist whose sole responsibility is memory — has since been approved to own Company Memory specifically (see `docs/business-intelligence/HAL_SPECIALIST_WORKFORCE.md`'s "Memory Specialist" section). Company Memory's precise relationship to the Business Knowledge Graph is still not specified — not assumed or invented here.
 
 ## Who Mason serves
 

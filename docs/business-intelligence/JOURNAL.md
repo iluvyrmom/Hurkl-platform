@@ -187,4 +187,12 @@ Promoted to `PRINCIPLES.md` as **024** (Mason Is the Executive, Not the Speciali
 
 No proprietary detail (specialist prompts, internal routing logic, real specialist decision criteria) was introduced — everything captured here is organizational architecture, category, and principle, consistent with the privacy boundary already established for this public repository. No runtime feature was implemented; no branch was merged.
 
+### 2026-08-03 — Knowledge Capture Session 009 (continued): Memory Specialist added to HAL
+
+Founder approved a new HAL specialist: the **Memory Specialist**, whose sole responsibility is memory — "that will be his only job." Added `memory_specialist` to `lib/domain/hal.ts`'s `SpecialistType` registry and documented it in `HAL_SPECIALIST_WORKFORCE.md` as the clearest illustration yet of HAL's one-responsibility rule.
+
+This partially resolves the "Company Memory" ambiguity flagged in Session 009: **Company Memory is now understood to be the Memory Specialist's domain** — the persistent, tenant-specific memory store every other specialist queries rather than re-researching. Its exact relationship to the cross-cutting Business Knowledge Graph remains unspecified and was not guessed at — updated the editorial notes in `PRODUCT.md` and `HAL_SPECIALIST_WORKFORCE.md` to reflect exactly this much resolution, no more.
+
+No new numbered principle — this is a registry addition within the HAL pattern Session 009 already established, not new philosophy.
+
 <!-- Next entry: ### YYYY-MM-DD — ... -->
