@@ -11,6 +11,8 @@
  * proprietary risk-scoring or renewal-sourcing logic behind it.
  */
 
+import type { EvidenceSource } from "./evidence";
+
 export type ComplianceSubjectType = "employee" | "company" | "equipment" | "vehicle" | "project";
 
 export type ComplianceCredentialType =
@@ -56,6 +58,13 @@ export type ComplianceCredentialType =
   | "preventive_maintenance"
   | "equipment_permit"
   | "site_specific_equipment_approval"
+  // Project-specific binder records
+  | "permit"
+  | "safety_plan"
+  | "daily_log"
+  | "toolbox_talk"
+  | "incident_record"
+  | "project_orientation"
   // Tenant-configurable
   | "other_tenant_configured_credential";
 
@@ -140,4 +149,37 @@ export interface ComplianceAlert {
   record: ComplianceRecord;
   leadTimeDays: number;
   businessImpact?: string;
+}
+
+export type ComplianceBinderItemStatus =
+  | "required_and_present"
+  | "required_and_missing"
+  | "present_but_expiring_during_project"
+  | "not_applicable";
+
+/**
+ * One line of the Digital Project Compliance Binder — see
+ * OPERATIONS_COMPLIANCE.md's "Digital Project Compliance Binder" section.
+ * Reuses EvidenceSource so every binder item traces back to where its
+ * requirement or record came from, not just whether it's satisfied.
+ */
+export interface ComplianceBinderItem {
+  requirement: ComplianceRequirement;
+  status: ComplianceBinderItemStatus;
+  record?: ComplianceRecord;
+  source?: EvidenceSource;
+  verifiedBy?: string;
+  verifiedAt?: string;
+}
+
+/**
+ * The automatically-assembled, per-project compliance record, producible
+ * on demand for a customer, inspector, owner, project manager, or
+ * regulator, subject to access controls.
+ */
+export interface ComplianceBinder {
+  tenantId: string;
+  projectId: string;
+  items: ComplianceBinderItem[];
+  generatedAt: string;
 }

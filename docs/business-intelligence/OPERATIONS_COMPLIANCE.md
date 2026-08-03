@@ -16,7 +16,26 @@ The Operations Compliance Engine ensures that the company, employees, crews, veh
 
 **Equipment and vehicle compliance** may include: forklift inspections, crane inspections, lift inspections, DOT inspections, truck registrations, trailer registrations, fire-extinguisher inspections, preventive-maintenance requirements, equipment permits, and site-specific equipment approvals.
 
-**Project requirements** may include: minimum years in business, bonding thresholds, insurance thresholds, required licenses, required certifications, comparable project history, safety metrics, certified payroll requirements, prevailing-wage requirements, workforce qualifications, required subcontractor participation, required prequalification, geographic eligibility, and customer-specific onboarding.
+**Project requirements** (pre-award qualification, whether the company can bid or accept the work at all) may include: minimum years in business, bonding thresholds, insurance thresholds, required licenses, required certifications, comparable project history, safety metrics, certified payroll requirements, prevailing-wage requirements, workforce qualifications, required subcontractor participation, required prequalification, geographic eligibility, and customer-specific onboarding.
+
+**Project-specific compliance records** (ongoing documentation generated during the project, assembled into the Digital Project Compliance Binder below) may include: permits, the project safety plan, employee qualifications assigned to the project, equipment records assigned to the project, insurance certificates on file, bonds on file, daily logs, toolbox talks, incident records, project-specific orientations, and customer-specific requirements.
+
+## Digital Project Compliance Binder
+
+**Future capability, not yet built.** A digital compliance binder automatically assembled per job, showing:
+
+- what is required
+- what is present
+- what is missing
+- what expires during the project
+- where every requirement came from
+- evidence of compliance
+- who verified it
+- when it was verified
+
+Mason should be able to produce the full compliance record immediately when requested by a customer, inspector, owner, project manager, or regulator — subject to access controls (see `SECURITY.md`'s RBAC roles; a binder view must never expose more than the requester's role is entitled to see).
+
+This is a direct application of `PRINCIPLES.md` 007 ("Prevent Problems Before They Exist") and 009 ("Evidence-Based Operations," `EVIDENCE_BASED_OPERATIONS.md`) to a single project's compliance posture: the binder is the evidence trail, assembled and kept current automatically rather than reconstructed under pressure during an inspection or dispute.
 
 ## Behavior
 
@@ -36,4 +55,5 @@ Where authorized, Mason should be able to: locate renewal requirements, prepare 
 - `QUALIFICATION_ENGINE.md` — how compliance gaps feed into the decision of whether and how to pursue an opportunity (see that file's connection to this one).
 - `PRODUCT.md`'s "Commercial Bid Centers" and "Business Maturity Advisor" — compliance status directly gates bid eligibility and signals readiness for the next investment.
 - `SECURITY.md`'s autonomy tiers — any renewal action involving payment or a binding commitment requires owner approval (Tier 2 at least), never autonomous execution.
-- `lib/domain/compliance.ts` — the dependency-free TypeScript contracts (`ComplianceSubjectType`, `ComplianceCredentialType`, `ComplianceStatus`, `ComplianceRecord`, `ComplianceRequirement`, `ComplianceGap`, `ComplianceEvaluation`, `RenewalAction`, `ComplianceAlert`) added ahead of implementation.
+- `lib/domain/compliance.ts` — the dependency-free TypeScript contracts (`ComplianceSubjectType`, `ComplianceCredentialType`, `ComplianceStatus`, `ComplianceRecord`, `ComplianceRequirement`, `ComplianceGap`, `ComplianceEvaluation`, `RenewalAction`, `ComplianceAlert`, `ComplianceBinderItem`, `ComplianceBinder`) added ahead of implementation.
+- `EVIDENCE_BASED_OPERATIONS.md` — the Digital Project Compliance Binder is this principle applied to a single project: every binder item traces back to a source, a verifier, and a verification date.

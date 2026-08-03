@@ -35,7 +35,13 @@ Customers should not normally see or choose a mailing vendor. When a HURKL custo
 - Welcome packages
 - Holiday appreciation
 
-**Marketing:** *(incomplete — the founder message specifying this category cut off mid-list; not documented here yet, pending the rest of that instruction. Do not infer or invent this list.)*
+**Marketing:**
+- Postcards
+- Neighborhood campaigns
+- Property-sale campaigns
+- Vacant-land outreach
+- Estimate follow-up
+- Commercial introduction packages
 
 **The customer chooses:** the outcome, the approved budget, the eligible audience, the playbook, and the level of autonomy.
 
