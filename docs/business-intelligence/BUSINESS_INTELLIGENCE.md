@@ -34,7 +34,7 @@ This is the idea the rest of this knowledge base exists to serve — recorded in
 | `CONTINUOUS_INTELLIGENCE.md` | The future engine that detects, verifies, and proposes updates as trades and regulations change. |
 | `FINANCIAL_HEALTH.md` | Distinguishing spendable cash from obligated cash, tax readiness, and coordinating around (not replacing) an established accounting platform. |
 | `STRATEGIC_ALLIANCES.md` | Strategic growth alliances, respect-worthy competitors, and local relationship networks — recommended, never automated or discriminatory. |
-| `TRUSTED_TRADE_NETWORK.md` | A future, not-yet-designed cross-tenant trade-hierarchy referral capability, with explicit antitrust and cross-tenant-isolation boundaries. |
+| `TRUSTED_TRADE_NETWORK.md` | The HURKL Trusted Business Network (HTBN): a future, not-yet-designed cross-tenant membership-governance and trade-hierarchy capability — improvement-first stewardship, Mason evidence-only, HURKL admins decide — with explicit antitrust and cross-tenant-isolation boundaries. |
 | `VOICE_FIRST_CAPTURE.md` | The "Talk to Mason" voice-first capture philosophy: friction is failure, conversation before forms, never ask twice, the five-second rule. |
 | `OPERATIONAL_READINESS.md` | The future daily "are we ready to work today?" engine, aggregating People/Equipment/Projects/Company/Financial readiness. |
 | `BUSINESS_KNOWLEDGE_GRAPH.md` | A project discovered once continuously updating opportunities for every relevant trade, and per-trade intelligence profiles. |

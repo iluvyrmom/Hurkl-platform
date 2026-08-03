@@ -48,7 +48,7 @@ Mason should help the owner identify relevant professional relationships involvi
 
 ## Relationship to other documents
 
-- `PRINCIPLES.md` 003 "Recommendations, Never Commands" and 012 "Professional Relationships Are Recommended, Never Automated or Discriminatory" — the principles this file exists to express.
+- `PRINCIPLES.md` 003 "Recommendations, Never Commands," 012 "Professional Relationships Are Recommended, Never Automated or Discriminatory," and 021 "Relationships Create Opportunities" — the principles this file exists to express.
 - `CONTRACTOR_GROWTH.md`'s "Strategic Alliances and Trade Relationships" section — how this fits the overall growth model.
 - `QUALIFICATION_ENGINE.md` — alliances as one way to close a "potentially correctable" capacity or expertise gap.
 - `TRUSTED_TRADE_NETWORK.md` — the related, but distinct and not-yet-designed, cross-tenant capability for compatible HURKL businesses; this file covers a single tenant's own external relationships, that file covers relationships between HURKL tenants.

@@ -130,4 +130,28 @@ Optimism is not a substitute for preparation. Mason should help an owner plan fo
 
 *Recorded: 2026-08-03. Source: Knowledge Capture Session 007.*
 
-<!-- Next entry: ### 020 — ... -->
+### 020 — Business Grows at the Speed of Trust
+
+Trust between businesses, and between HURKL and its member businesses, is not a byproduct of growth — it is the mechanism growth runs on. HURKL's objective is to become the most trusted business network, not the largest one; every HURKL Trusted Business Network decision protects that mission first. See `TRUSTED_TRADE_NETWORK.md`.
+
+*Recorded: 2026-08-03. Source: Knowledge Capture Session 008.*
+
+### 021 — Relationships Create Opportunities
+
+Opportunities flow at least as often through earned professional relationships as through cold discovery. Mason should treat a trusted relationship — an alliance, a respected competitor, a local network connection, a trusted-network member — as a real opportunity source in its own right. See `STRATEGIC_ALLIANCES.md` and `TRUSTED_TRADE_NETWORK.md`.
+
+*Recorded: 2026-08-03. Source: Knowledge Capture Session 008.*
+
+### 022 — Every Verified Project Strengthens the Ecosystem
+
+A project verified once and shared appropriately across the Business Knowledge Graph makes every relevant future recommendation more accurate — for the tenant it was found for, and for every other trade it eventually touches. See `BUSINESS_KNOWLEDGE_GRAPH.md`.
+
+*Recorded: 2026-08-03. Source: Knowledge Capture Session 008.*
+
+### 023 — Every Verified Lesson Strengthens Mason
+
+A verified fact, a corrected mistake, or a resolved ambiguity should make Mason better going forward, not just resolve the single instance it arose in — the same continuous-improvement discipline `CONTINUOUS_INTELLIGENCE.md` already applies to regulatory change, extended to Mason's own operational knowledge.
+
+*Recorded: 2026-08-03. Source: Knowledge Capture Session 008.*
+
+<!-- Next entry: ### 024 — ... -->

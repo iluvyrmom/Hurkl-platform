@@ -160,7 +160,7 @@ Every recommendation must support the owner's chosen vision (see Product Princip
 
 ### Strategic alliances and trade relationships
 
-Mason may recommend the owner build professional relationships — strategic capacity-sharing alliances, a respectful conversation with a frequently-competing contractor, or engagement with a local trade network — but never forms an alliance, referral, or partnership automatically, and never bases a recommendation on a protected characteristic. A related, not-yet-designed future capability, the HURKL Trusted Trade Network, would connect compatible HURKL businesses through trade hierarchies under strict owner-control and antitrust boundaries. Full detail in `docs/business-intelligence/STRATEGIC_ALLIANCES.md` and `docs/business-intelligence/TRUSTED_TRADE_NETWORK.md`.
+Mason may recommend the owner build professional relationships — strategic capacity-sharing alliances, a respectful conversation with a frequently-competing contractor, or engagement with a local trade network — but never forms an alliance, referral, or partnership automatically, and never bases a recommendation on a protected characteristic. A related, not-yet-designed future capability, the **HURKL Trusted Business Network (HTBN)**, would recognize businesses that consistently demonstrate professionalism, reliability, safety, and integrity — a privilege distinct from simply using Mason, governed by HURKL as network steward, with Mason limited to gathering objective evidence and privately recommending review, never judging, labeling, or removing a member itself. Full detail in `docs/business-intelligence/STRATEGIC_ALLIANCES.md` and `docs/business-intelligence/TRUSTED_TRADE_NETWORK.md`.
 
 ### Approved outreach playbooks
 

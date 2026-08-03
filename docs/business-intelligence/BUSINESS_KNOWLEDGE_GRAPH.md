@@ -8,6 +8,14 @@ Status: permanent knowledge base entry, principle/category level only. See `BUSI
 
 An expansion of `OPPORTUNITY_ENGINE.md`: **every project exists once.** A commercial development, a permit, a property sale — each is a single real-world fact that many trades might care about. Today, each trade effectively re-discovers the same underlying project independently. The Business Knowledge Graph is the concept of treating a discovered project as a shared intelligence object, continuously updated, rather than re-researched from scratch by every relevant trade.
 
+## Final architectural decision: HURKL is a Business Ecosystem Platform, not a CRM
+
+`ARCHITECTURE.md` §1b records the founder-approved architectural decision this file's concept grew into: **HURKL is fundamentally a Business Ecosystem Platform, not a traditional CRM.** A CRM tracks one company's contacts and deals in isolation. HURKL's Mason is built around a single, shared Business Knowledge Graph underlying every engine, spanning: businesses, projects, opportunities, trades, employees, equipment, certifications, compliance, customers, relationships, financial health, and operational readiness.
+
+**No engine should duplicate research already performed elsewhere.** `OPPORTUNITY_ENGINE.md`, `OPERATIONS_COMPLIANCE.md` (including Equipment Lifecycle), `FINANCIAL_HEALTH.md`, `OPERATIONAL_READINESS.md`, `RELATIONSHIP_VALUE.md`, `STRATEGIC_ALLIANCES.md`, and `TRUSTED_TRADE_NETWORK.md` (the HURKL Trusted Business Network) are each a different lens onto this same underlying graph, within a single tenant's own data — not separate silos each holding their own duplicate copy of the same facts.
+
+This is a within-tenant schema/architecture decision, not a cross-tenant one. Any point where the graph would need to cross tenant boundaries — e.g., a project's cross-trade relevance, or an HTBN membership signal — remains the same narrow, deliberately-unresolved exception already flagged below and in `TRUSTED_TRADE_NETWORK.md`.
+
 ## Project Lifecycle Intelligence
 
 A project discovered once should continuously update the opportunities it represents for every relevant trade — excavation, concrete, framing, roofing, electrical, and so on — rather than requiring duplicate research per trade. The project itself has a lifecycle (discovered, permitted, under construction, trades sequencing, completed), and Mason's opportunity awareness for a given tenant should track where in that lifecycle a relevant project currently sits.
@@ -33,6 +41,7 @@ Each supported trade should eventually define its own profile within the graph:
 ## Relationship to other documents
 
 - `OPPORTUNITY_ENGINE.md` — this file is a direct expansion of that engine's opportunity categories.
-- `TRUSTED_TRADE_NETWORK.md` — the trade hierarchy concept this file's Trade Intelligence Profiles build on, and the cross-tenant boundary this capability must respect if it ever touches data across tenants.
-- `PRINCIPLES.md` 018 "Research Once, Use Many Times" — the principle this file exists to express.
+- `TRUSTED_TRADE_NETWORK.md` — the trade hierarchy concept this file's Trade Intelligence Profiles build on, the HURKL Trusted Business Network as one lens onto this same graph, and the cross-tenant boundary this capability must respect if it ever touches data across tenants.
+- `ARCHITECTURE.md` §1b — the foundational "Business Ecosystem Platform, not a CRM" architectural decision this file elaborates.
+- `PRINCIPLES.md` 018 "Research Once, Use Many Times" and 022 "Every Verified Project Strengthens the Ecosystem" — the principles this file exists to express.
 - `PRODUCT.md`'s "Proprietary methods" — the actual matching/scoring/research logic behind project and trade intelligence stays out of this public repository.
