@@ -64,7 +64,9 @@ This is a permanent structure: not every specialist report needs every Assurance
 
 Not every specialist report should reach Mason immediately. Important findings pass through an Assurance Layer first:
 
-**Critical Review Specialist — the mandatory, universal gate.** Founder-approved priority: **"his job is to look over everything before Mason gets it."** Unlike the other Assurance Layer stages, Critical Review is not conditional — every specialist report passes through it, no exceptions. **When real specialist implementation begins, this is the first specialist to build** — nothing reaches Mason unreviewed. Mission: attempt to disprove or challenge proposed recommendations. Responsibilities: identify assumptions, identify blind spots, identify contradictory evidence, identify alternative interpretations.
+**Critical Review Specialist — the mandatory, universal gate.** Founder-approved priority: **"his job is to look over everything before Mason gets it"** and **"make sure that it's all actually [fact-]based" — Mason must never pass the owner an inaccurate or unfounded suggestion.** Unlike the other Assurance Layer stages, Critical Review is not conditional — every specialist report passes through it, no exceptions. **When real specialist implementation begins, this is the first specialist to build** — nothing reaches Mason unreviewed.
+
+Mission: analyze every specialist report and confirm it is actually fact-based before anything reaches Mason — the concrete enforcement point for `PRINCIPLES.md` 008 ("Verified Intelligence") and 009 ("Evidence-Based Operations") at the specialist-report stage, not just after Mason has already synthesized a recommendation. Responsibilities: confirm claims are fact-based rather than assumed, identify assumptions, identify blind spots, identify contradictory evidence, identify alternative interpretations, and block any report that isn't actually grounded from reaching Mason at all.
 
 **Evidence Verification Specialist** — Mission: verify that claims are supported by documented evidence. Responsibilities: verify sources, verify dates, verify jurisdictions, verify references, identify missing evidence.
 

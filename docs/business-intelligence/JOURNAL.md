@@ -205,4 +205,12 @@ Updated: `ARCHITECTURE.md` §1c's reporting-hierarchy paragraph; `HAL_SPECIALIST
 
 No new numbered principle — this refines the reporting-hierarchy structure Session 009 already established, not new philosophy.
 
+### 2026-08-03 — Knowledge Capture Session 009 (continued): Critical Review Specialist's mission clarified as fact-based gatekeeping
+
+Founder clarified the Critical Review Specialist's purpose in a message that appears to have come through a garbled transcription (likely voice dictation) — interpreted in good faith as: analyze every specialist report and confirm it's actually fact-based, so Mason never passes the owner an inaccurate or unfounded suggestion. Flagged explicitly to the founder rather than silently assumed, since the exact wording wasn't fully legible.
+
+Updated `HAL_SPECIALIST_WORKFORCE.md`'s Critical Review Specialist entry: its mission is now stated as confirming every report is fact-based before it reaches Mason, tied directly to Principles 008 (Verified Intelligence) and 009 (Evidence-Based Operations) applied at the specialist-report stage — not just the previous "challenge assumptions/blind spots" framing alone (which is retained as part of, not replaced by, the fact-based-confirmation mission). Added a matching doc-comment to `lib/domain/hal.ts`'s `AssuranceSpecialistRole`.
+
+No new numbered principle — this is Principles 008/009 applied at a more specific point in the reporting hierarchy, not new philosophy.
+
 <!-- Next entry: ### YYYY-MM-DD — ... -->

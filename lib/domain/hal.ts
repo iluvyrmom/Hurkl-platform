@@ -50,6 +50,13 @@ export type SpecialistType =
  * The Quality Assurance Layer a specialist report passes through
  * before it reaches Mason — never the owner directly, and never Mason
  * directly either, for findings material enough to warrant review.
+ *
+ * "critical_review" is the mandatory, universal stage: every report
+ * passes through it, confirming the report is actually fact-based
+ * before Mason ever sees it — the enforcement point for
+ * VerificationStatus/VerifiedFinding discipline (see evidence.ts) at
+ * the specialist-report stage, not just after Mason has already
+ * synthesized a recommendation. The other roles are situational.
  */
 export type AssuranceSpecialistRole =
   "evidence_verification" | "critical_review" | "risk" | "conflict_resolution" | "audit";
