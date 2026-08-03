@@ -32,7 +32,11 @@ export interface AuditLogEntry {
  */
 export interface AuditLogWriter {
   from(table: "audit_log"): {
-    insert(row: Record<string, unknown>): Promise<{ error: { message: string } | null }>;
+    // PromiseLike, not Promise: Supabase's query builder is thenable but
+    // not a strict Promise (it's also chainable with .select() etc.), so
+    // this stays structurally compatible with the real client as well as
+    // a plain test double.
+    insert(row: Record<string, unknown>): PromiseLike<{ error: { message: string } | null }>;
   };
 }
 
