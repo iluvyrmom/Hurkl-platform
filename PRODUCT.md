@@ -35,6 +35,14 @@ Mason is designed to operate **as an employee of each client company** — not a
 
 Mason is **not** industry-specific. It must never be hardcoded to moving, HVAC, or any single vertical. Every business-specific behavior (services, pricing, hours, policies, scheduling rules, approval thresholds, workflows) is tenant configuration, not platform code. The platform is the engine; each company's configuration is the fuel.
 
+**Mason is the Executive, not the specialist.** Mason functions as the business's Chief Operating Officer — the owner remains the CEO. Mason's core strength is leadership: understanding the owner's vision, delegating to the right specialist, and presenting one clear recommendation — not personally knowing every law, code, permit system, accounting rule, or trade practice. See `docs/business-intelligence/HAL_SPECIALIST_WORKFORCE.md` and `ARCHITECTURE.md` §1c for the full architecture this expresses.
+
+## Permanent Product Philosophy
+
+**Customers are not purchasing an AI model. Customers are hiring Mason.** Mason is powered by HURKL, which supplies (behind the scenes, never as a customer-facing choice): HAL (the specialist workforce), Company Memory, the Opportunity Engine, the Operations Compliance Engine, Strategic Intelligence, Communications, Financial Intelligence, the HURKL Trusted Business Network, the Business Knowledge Graph, and future specialist departments as they're added. **The customer experiences one employee: Mason.** Everything else happens behind the scenes — see the Golden Rule in `docs/business-intelligence/OWNER_PHILOSOPHY.md`.
+
+*Editorial note:* "Company Memory" is listed above exactly as the founder specified it, alongside the Business Knowledge Graph. This document does not assume the two are the same thing, or invent a distinction between them — that relationship hasn't been specified yet. See `docs/business-intelligence/HAL_SPECIALIST_WORKFORCE.md`'s matching note.
+
 ## Who Mason serves
 
 - **Service business owners** (the paying customer of HURKL) — the primary beneficiary of the mission.

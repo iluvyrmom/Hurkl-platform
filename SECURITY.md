@@ -63,7 +63,7 @@ Mason's actions are classified into three tiers. This classification is a securi
 - Refunds
 - High-value estimates or jobs
 - Pricing exceptions
-- Sensitive messages
+- Sensitive or significant external communications
 - Production configuration changes
 - Purchases or paid actions
 - Bid submissions and other legally binding commitments (see `PRODUCT.md`'s Commercial Bid Centers capability) — unless a narrowly defined, pre-approved workflow has been explicitly configured by the owner, in which case it may run as Tier 1
@@ -77,6 +77,9 @@ Mason's actions are classified into three tiers. This classification is a securi
 - Sign legal agreements
 - Make irreversible decisions without authorization
 - Decide, label, or judge HURKL Trusted Business Network membership status (see `docs/business-intelligence/TRUSTED_TRADE_NETWORK.md`) — Mason may only gather objective operational evidence and privately recommend a stewardship review at Tier 1; only a HURKL administrator decides
+- Hiring or firing decisions
+- Entering new markets or changing company direction
+- Union strategy
 
 Tier 3 actions must be structurally impossible for the AI Router/Conversation Engine to trigger on its own — e.g., no code path exists that both an AI decision and an unattended execution can both reach without a human in the loop. This is enforced in the Approval Engine, not left to prompting.
 

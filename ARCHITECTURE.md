@@ -29,6 +29,26 @@ HURKL is fundamentally a **Business Ecosystem Platform**, not a traditional CRM.
 
 This is a within-tenant schema decision, not a cross-tenant one. It does not authorize any new cross-tenant read — see §4 below and `CLAUDE.md`'s permanent rules. Any point where the graph would need to cross tenant boundaries (e.g., an HTBN membership signal visible to other tenants) remains the same narrow, deliberately-unresolved exception already flagged for the HURKL Trusted Business Network. See `docs/business-intelligence/BUSINESS_KNOWLEDGE_GRAPH.md` and `TRUSTED_TRADE_NETWORK.md`.
 
+## 1c. Mason's Executive Architecture: HAL (founder-approved, Knowledge Capture Session 009)
+
+**This supersedes previous assumptions that Mason should directly perform every task.** Mason is not a specialist and is not modeled as one monolithic AI prompt holding every domain's knowledge. Mason is the Executive — the owner's COO — who delegates to **HAL (HURKL Agent Library)**, a registry of narrow specialists, each sharing one common contract: one responsibility, one mission, one specialty, limited permissions, structured inputs/outputs, required evidence, escalation rules, execution limits, and audit history.
+
+**Reporting hierarchy (permanent):** a specialist report passes through zero or more Quality Assurance Layer stages (Evidence Verification, Critical Review, Risk, Conflict Resolution, Audit) before reaching Mason; only Mason decides whether it can be handled within approved authority or must go to the owner. No specialist ever reports to the owner directly, and the owner never interacts with a specialist directly — the owner has exactly one employee: Mason.
+
+```mermaid
+flowchart LR
+    C[Conversation Engine] --> M[Mason — Executive layer]
+    M -->|delegates| H[HAL specialist registry]
+    H --> A[Assurance Layer]
+    A --> M
+    M -->|owner decision required| O[Owner Portal / Approval Engine]
+    M -->|within approved authority| Out[Action executed]
+```
+
+This reframes, but does not replace, every growth/opportunity engine already documented in `PRODUCT.md` and `docs/business-intelligence/` (Opportunity Engine, Operations Compliance Engine, Financial Health Engine, Strategic Alliances, DEFERRD, and others): each is now understood as one or more HAL specialists reporting through Mason, not a capability Mason performs directly. The existing autonomy tiers (§4, `SECURITY.md`) are unchanged — HAL gives them an organizational structure to operate through, it does not introduce a fourth tier.
+
+**This is architecture and contracts only.** Nothing here authorizes a real specialist agent, execution engine, or autonomous production behavior — see `lib/domain/hal.ts` for the dependency-free TypeScript contracts (types only) and `docs/business-intelligence/HAL_SPECIALIST_WORKFORCE.md` for the full organizational model, initial specialist registry, and Quality Assurance Layer detail.
+
 ## 2. Recommended stack (founder-approved)
 
 | Layer | Recommendation | Why | Alternatives considered |
@@ -163,7 +183,7 @@ These are binding engineering requirements, not aspirations:
 
 ### Core services
 
-- **Conversation Engine** — channel-agnostic orchestrator. Every inbound message (call transcript turn, SMS, web chat, email) becomes a normalized "conversation event." The engine holds conversation state, decides intent, calls the AI Router, and decides whether an action needs the Approval Engine before executing.
+- **Conversation Engine** — channel-agnostic orchestrator. Every inbound message (call transcript turn, SMS, web chat, email) becomes a normalized "conversation event." The engine holds conversation state, decides intent, calls the AI Router, and decides whether an action needs the Approval Engine before executing. Per §1c, task execution is delegated through Mason to the appropriate HAL specialist rather than handled as one monolithic AI call — the Conversation Engine still orchestrates the channel and conversation state, but specialist reasoning happens in HAL, reviewed by the Assurance Layer, before Mason decides or escalates to the Approval Engine.
 - **AI Router** — implements the cost-controlled model routing. Classifies each task by difficulty/risk, picks the cheapest capable model tier, and only escalates to a higher-capability model for genuinely hard reasoning (complex estimates, unusual objections, ambiguous intent). Logs every routing decision and its cost for the Usage & Cost Metering service.
 - **CRM / Customer Service** — the single source of truth for a customer, keyed per tenant, with history merged across phone/web/SMS/email. This is what makes "shared customer history across channels" real instead of aspirational.
 - **Approval Engine** — implements the three autonomy tiers (see SECURITY.md and PRODUCT.md). Routine actions execute; approval-required actions create a pending request the owner sees in the Owner Portal (and can be notified about via SMS/push/email); never-autonomous actions are hard-blocked in code, not just policy.

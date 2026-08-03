@@ -21,6 +21,7 @@ This is the idea the rest of this knowledge base exists to serve — recorded in
 | File | Purpose |
 |---|---|
 | `OWNER_PHILOSOPHY.md` | The non-negotiable relationship between the owner and Mason — foundational; everything else operates within it. |
+| `HAL_SPECIALIST_WORKFORCE.md` | Mason's Executive Architecture: Mason is the COO, not the specialist; HAL is the specialist workforce he delegates to, through a permanent reporting hierarchy. |
 | `OPPORTUNITY_ENGINE.md` | The categories of opportunity signals Mason draws on. |
 | `CAPACITY_ENGINE.md` | How Mason paces growth pursuit against the owner's chosen size and vision. |
 | `QUALIFICATION_ENGINE.md` | How Mason handles opportunities the company isn't yet qualified to pursue. |

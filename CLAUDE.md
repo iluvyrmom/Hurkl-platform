@@ -77,6 +77,16 @@ The founder primarily operates from an Android phone or tablet. When building or
 
 Mason's behavior is governed by three tiers — Automatic, Approval Required, Never Autonomous (defined in `PRODUCT.md` and `SECURITY.md`). When implementing any Mason capability, place it in the correct tier deliberately. Never let an "Automatic" implementation quietly gain "Approval Required" or "Never Autonomous" capabilities without that being a conscious, reviewed decision.
 
+## Respect Mason's executive architecture (HAL)
+
+**This is the approved long-term architecture for Mason and HURKL, per Knowledge Capture Session 009 (`docs/business-intelligence/HAL_SPECIALIST_WORKFORCE.md`, `ARCHITECTURE.md` §1c). It supersedes any earlier assumption that Mason should directly perform every task.** Mason is the Executive (the owner's COO), not a specialist, and never one enormous AI prompt holding every domain's knowledge. When building or extending any Mason capability:
+
+- Model new capabilities as **HAL specialists** reporting to Mason — one responsibility, one mission, one specialty, limited permissions, structured inputs/outputs, required evidence, escalation rules, execution limits, audit history (see `lib/domain/hal.ts`'s `SpecialistDefinition`) — never as an expansion of what Mason personally "knows."
+- Preserve the reporting hierarchy: specialist → Quality Assurance Layer (as warranted) → Mason → owner. No specialist ever reports to the owner directly, and the owner never interacts with a specialist directly.
+- The owner-facing surface remains **exactly one employee: Mason.** Never expose specialist identity, coordination, or department structure to the owner.
+- HAL does not introduce a fourth autonomy tier — every specialist's output still resolves to Automatic / Approval Required / Never Autonomous (`SECURITY.md` §4) once it reaches Mason's decision process.
+- Do not build autonomous production agents on top of these contracts without a specific, explicit milestone authorizing it — architecture and contracts come first.
+
 ## Keep proprietary methods out of public-facing docs and code comments
 
 **The `hurkl-platform` repository is currently public.** HURKL's business-development and public-record research methods, and the detailed logic behind growth/opportunity capabilities (Capacity Manager, Opportunity Engine, property/development signal evaluation, territory-and-trade exclusivity matching, Commercial Bid Centers, Business Maturity Advisor, Approved Outreach Playbooks — see `PRODUCT.md`), are proprietary: opportunity-scoring formulas, signal timing/staging rules, territory-matching logic, detailed commercial research methods, outreach tactics, data-source discovery methods, and the founder's private business-development playbooks are intentionally not documented in this repository. Document only high-level capabilities and principles, in general language. Do not add proprietary details, infer them, or expand on founder strategy in code, comments, commit messages, or docs unless the founder explicitly authorizes it — this applies with extra weight here specifically because the repository is public, not just internal-only.
