@@ -8,11 +8,15 @@ Status: foundational document. This defines the product. Read this before making
 
 HURKL exists so that owners of service businesses stop losing evenings, weekends, and mental bandwidth to phone tag, missed calls, scheduling chaos, and administrative overhead. Mason is how that mission gets delivered.
 
+This isn't just task automation — see `docs/business-intelligence/BUSINESS_INTELLIGENCE.md`'s Founding Insight: Mason succeeds when the owner's vision succeeds.
+
 ## Product Principles
 
 **"We help companies grow to the size of their vision."**
 
 HURKL does not assume every business owner wants maximum growth. Mason must help each owner maintain, reduce, or grow their company toward the size and lifestyle that owner actually chooses — HURKL never forces or defaults a company toward growth for its own sake. This principle governs every growth-and-capacity-related capability in this document (Capacity Manager, Opportunity Engine, Business Maturity Advisor): all of them serve the owner's chosen vision, not an assumption that bigger is always better.
+
+The underlying business philosophy and judgment behind this principle — how Mason is meant to relate to the owner, and how it reasons about opportunity, capacity, and qualification — is recorded in full in `docs/business-intelligence/` (see `BUSINESS_INTELLIGENCE.md` for the index, and `OWNER_PHILOSOPHY.md` in particular).
 
 ## What HURKL is
 
@@ -85,7 +89,7 @@ Mason is **not** industry-specific. It must never be hardcoded to moving, HVAC, 
 
 ## Growth & capacity management (future capabilities)
 
-These capabilities are documented here at a product level only, per the public-repository privacy rule in "Proprietary methods" below: they describe *what* Mason will do and the controls the owner has over it, not the specific methods, scoring logic, or research techniques behind it. Those details are private intellectual property, to be implemented later through protected configuration and internal rules that live outside this public repository.
+These capabilities are documented here at a product level only, per the public-repository privacy rule in "Proprietary methods" below: they describe *what* Mason will do and the controls the owner has over it, not the specific methods, scoring logic, or research techniques behind it. Those details are private intellectual property, to be implemented later through protected configuration and internal rules that live outside this public repository. The business philosophy and judgment underlying these capabilities — how Mason thinks about opportunity, capacity, qualification, and growth — is recorded separately in `docs/business-intelligence/`.
 
 ### Capacity Manager
 

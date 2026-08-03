@@ -38,6 +38,29 @@ Once a test suite exists, run it before declaring work complete. If you add new 
 
 Summaries should be concrete: what files changed, why, and what was verified. Reference `file:line` where useful. Avoid vague summaries like "improved the system."
 
+## Capture every approved decision — never let it live only in chat
+
+The founder's conversations with Claude Code are part of the product record, not a side channel. Whenever a new business rule, product principle, workflow, or architectural decision is agreed upon in a session:
+
+1. Record it in the appropriate project document **before ending the work session** — not "next time."
+2. If no appropriate document exists yet, create one, rather than skipping the capture.
+3. Cross-reference related documents: if a decision touches two docs, add a pointer in both so they can't silently drift out of sync.
+4. Summarize what was added — and where — in that session's final report.
+5. Never let an approved decision exist only in chat history. If it's real enough to act on, it's real enough to write down.
+
+Where a given decision belongs:
+- Product principles, capabilities, and business rules → `PRODUCT.md`.
+- Technical/architecture decisions (stack, service boundaries, provider choices) → `ARCHITECTURE.md`.
+- Security, autonomy-tier, or tenant-isolation decisions → `SECURITY.md`.
+- Phase sequencing and milestone status → `ROADMAP.md` (or `PHASE_1_PLAN.md` while Phase 1 is active).
+- Local/CI/operational workflow decisions → `docs/development.md`.
+- **Business rules, product philosophy, or operational/business-judgment insight about how Mason should make growth decisions** (owner relationship, opportunity/capacity/qualification judgment) → `docs/business-intelligence/` — start in `JOURNAL.md`, promote durable ones to `PRINCIPLES.md`. See `BUSINESS_INTELLIGENCE.md` for which specific file. Same privacy rule as everywhere else in this public repo applies: principles and philosophy only, never the proprietary scoring/research logic behind them.
+- Standing operating rules for future sessions (like this one) → this file, `CLAUDE.md`.
+
+This applies without exception: no approved business rule, product philosophy, or operational insight may exist only in chat history. If it's real enough to act on, it's real enough to write down before the session ends.
+
+**Every work session ends with a Knowledge Capture step before the session is considered complete.** This is not conditional on whether something "big enough" happened — check explicitly, every session. If genuinely nothing new was decided, say so; don't skip the step silently. See `docs/business-intelligence/JOURNAL.md` for the running log this produces, and `PRINCIPLES.md` for what gets promoted out of it.
+
 ## Ask before destructive operations
 
 Get explicit confirmation before: force-pushing, resetting or rewriting history, dropping/truncating database tables, deleting customer or tenant data, disabling a security control (RLS, auth check, rate limit, approval gate), or any other action that is hard to reverse. When in doubt, treat it as destructive.
