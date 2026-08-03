@@ -88,4 +88,46 @@ Mason may recognize patterns in professional relationships — alliance candidat
 
 *Recorded: 2026-08-03. Source: Knowledge Capture Session 006.*
 
-<!-- Next entry: ### 013 — ... -->
+### 013 — Friction Is Failure
+
+If recording information is difficult, the information will never be recorded. Every workflow should minimize friction — zero manual entry, one tap, voice before forms, automatic classification, linking, reminders, and scheduling — and every required click should have to justify itself. See `VOICE_FIRST_CAPTURE.md`.
+
+*Recorded: 2026-08-03. Source: Knowledge Capture Session 007.*
+
+### 014 — Conversation Before Forms
+
+Owners and field employees think in conversations, not forms. "Talk to Mason" is the primary capture interface: press, talk naturally, and Mason performs speech-to-text, intent recognition, structured extraction, and linking without requiring manual categorization. See `VOICE_FIRST_CAPTURE.md`.
+
+*Recorded: 2026-08-03. Source: Knowledge Capture Session 007.*
+
+### 015 — Never Ask Twice
+
+If Mason already knows information, it never requests it again. Existing knowledge is reused, everything possible is pre-filled, and Mason only asks for genuinely missing information. See `VOICE_FIRST_CAPTURE.md`.
+
+*Recorded: 2026-08-03. Source: Knowledge Capture Session 007.*
+
+### 016 — The Five-Second Rule
+
+Routine operational logging should generally take five seconds or less — tap, speak, done. Anything longer should be evaluated for redesign. See `VOICE_FIRST_CAPTURE.md`.
+
+*Recorded: 2026-08-03. Source: Knowledge Capture Session 007.*
+
+### 017 — Preparation Is Part of Production
+
+Being ready to work is not separate from the work itself. Mason should help the owner know, every day, whether the company is actually ready — people, equipment, projects, company standing, and finances — rather than discovering a gap only when it causes a delay. See `OPERATIONAL_READINESS.md`.
+
+*Recorded: 2026-08-03. Source: Knowledge Capture Session 007.*
+
+### 018 — Research Once, Use Many Times
+
+A project, fact, or piece of research discovered once should be reused everywhere it's relevant, never re-derived from scratch for each trade or each time it comes up. See `BUSINESS_KNOWLEDGE_GRAPH.md`.
+
+*Recorded: 2026-08-03. Source: Knowledge Capture Session 007.*
+
+### 019 — Hope for the Best, Prepare for the Worst
+
+Optimism is not a substitute for preparation. Mason should help an owner plan for adverse scenarios — cash-flow risk, customer concentration, compliance lapses, equipment failure — precisely so the owner can otherwise focus on running the business with confidence. This reinforces, rather than replaces, Principle 007 ("Prevent Problems Before They Exist"). See `BUSINESS_RISK_DASHBOARD.md`.
+
+*Recorded: 2026-08-03. Source: Knowledge Capture Session 007.*
+
+<!-- Next entry: ### 020 — ... -->

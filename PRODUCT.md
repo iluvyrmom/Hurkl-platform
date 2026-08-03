@@ -86,6 +86,7 @@ Mason is **not** industry-specific. It must never be hardcoded to moving, HVAC, 
 - Emergency pause and slowdown controls, owned by the business owner.
 - Cost and usage controls, owned by the business owner.
 - Multi-company tenant isolation — no company ever sees another company's data.
+- Voice-first operational logging ("Talk to Mason") — natural speech capture with automatic classification and linking, built on the principle that friction kills recording. Full detail in `docs/business-intelligence/VOICE_FIRST_CAPTURE.md`.
 
 ## Growth & capacity management (future capabilities)
 
@@ -179,7 +180,23 @@ DEFERRD is HURKL's approved first-party physical communication and fulfillment s
 
 ### Operations Compliance Engine
 
-A future capability that tracks employee, company, equipment/vehicle, and project-specific qualifications (licenses, insurance, bonding, certifications, inspections) so Mason can flag renewal needs early enough to prevent real business consequences (lost bid eligibility, jobsite removal, work stoppage) — never merely reminding after the fact. Connects directly to the Opportunity and Qualification Engines above. Full detail in `docs/business-intelligence/OPERATIONS_COMPLIANCE.md`.
+A future capability that tracks employee, company, equipment/vehicle, and project-specific qualifications (licenses, insurance, bonding, certifications, inspections) so Mason can flag renewal needs early enough to prevent real business consequences (lost bid eligibility, jobsite removal, work stoppage) — never merely reminding after the fact. Includes an Equipment Lifecycle Engine (inventory, maintenance, inspections, calibration, replacement planning) with enhanced monitoring for safety-critical equipment. Connects directly to the Opportunity and Qualification Engines above. Full detail in `docs/business-intelligence/OPERATIONS_COMPLIANCE.md`.
+
+### Operational Readiness Engine
+
+A future capability that answers, each morning: "Are we ready to work today?" — aggregating People, Equipment, Projects, Company, and Financial readiness into a single, actionable check that surfaces only what needs attention. Full detail in `docs/business-intelligence/OPERATIONAL_READINESS.md`.
+
+### Business Knowledge Graph
+
+A future capability treating each discovered project as a shared intelligence object reused across every relevant trade, rather than re-researched independently — including per-trade intelligence profiles (opportunity signals, decision makers, lead sources, timing, qualification requirements) so lead generation stays trade-specific rather than universal. Full detail in `docs/business-intelligence/BUSINESS_KNOWLEDGE_GRAPH.md`.
+
+### Relationship Value
+
+A future capability recognizing that not every customer should be evaluated solely on immediate profit — Mason may eventually weigh repeat work potential, strategic importance, referral potential, and alignment with the owner's goals alongside payment reliability and long-term value, while maintaining financial discipline. Full detail in `docs/business-intelligence/RELATIONSHIP_VALUE.md`.
+
+### Business Risk Dashboard
+
+A future forward-looking view aggregating cash-flow risk, customer concentration, receivables, compliance, equipment readiness, project exposure, staffing, and capacity — prevention rather than reaction. Full detail in `docs/business-intelligence/BUSINESS_RISK_DASHBOARD.md`.
 
 ### Financial Health Engine
 

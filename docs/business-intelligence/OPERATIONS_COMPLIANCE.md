@@ -24,6 +24,12 @@ The Operations Compliance Engine ensures that the company, employees, crews, veh
 
 The per-project compliance binder built from these records now has its own dedicated file: `PROJECT_COMPLIANCE_BINDERS.md`.
 
+## Equipment Lifecycle Engine
+
+Beyond the compliance credentials in "Equipment and vehicle compliance" above, the engine should eventually track each piece of equipment as a full asset over its lifecycle: inventory, manufacturer, serial number, maintenance history, inspections, certifications, calibration, operating hours, mileage, repairs, replacement planning, warranty, assigned crew, and assigned project.
+
+**Safety-critical equipment receives enhanced monitoring** — for example: scaffolding, lifts, forklifts, cranes, hoists, compressors, concrete pumps, rigging, and fall protection. Mason should generate reminders before inspections or maintenance become overdue, the same early-detection discipline as the rest of this engine (Principle 007).
+
 ## Behavior
 
 The engine distinguishes between eight statuses: currently valid, expiring soon, renewal in progress, expired, missing, not applicable, unverified, and waiver or exception pending.
@@ -42,5 +48,6 @@ Where authorized, Mason should be able to: locate renewal requirements, prepare 
 - `QUALIFICATION_ENGINE.md` — how compliance gaps feed into the decision of whether and how to pursue an opportunity (see that file's connection to this one).
 - `PRODUCT.md`'s "Commercial Bid Centers" and "Business Maturity Advisor" — compliance status directly gates bid eligibility and signals readiness for the next investment.
 - `SECURITY.md`'s autonomy tiers — any renewal action involving payment or a binding commitment requires owner approval (Tier 2 at least), never autonomous execution.
-- `lib/domain/compliance.ts` — the dependency-free TypeScript contracts (`ComplianceSubjectType`, `ComplianceCredentialType`, `ComplianceStatus`, `ComplianceRecord`, `ComplianceRequirement`, `ComplianceGap`, `ComplianceEvaluation`, `RenewalAction`, `ComplianceAlert`, `ComplianceBinderItem`, `ComplianceBinder`) added ahead of implementation.
+- `lib/domain/compliance.ts` — the dependency-free TypeScript contracts (`ComplianceSubjectType`, `ComplianceCredentialType`, `ComplianceStatus`, `ComplianceRecord`, `ComplianceRequirement`, `ComplianceGap`, `ComplianceEvaluation`, `RenewalAction`, `ComplianceAlert`, `ComplianceBinderItem`, `ComplianceBinder`, `SafetyCriticalEquipmentCategory`, `EquipmentAsset`, `EquipmentLifecycleEvent`) added ahead of implementation.
 - `PROJECT_COMPLIANCE_BINDERS.md` — the per-project compliance binder assembled from these records.
+- `OPERATIONAL_READINESS.md` — the Equipment Lifecycle Engine is one of the five inputs to the daily readiness question.

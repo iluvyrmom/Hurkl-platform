@@ -44,6 +44,10 @@ Large commercial contractors should maintain memberships with regional bid cente
 
 An opportunity identified here is not automatically recommended — see `QUALIFICATION_ENGINE.md`'s "Connection to the Operations Compliance Engine and Opportunity Engine" for how eligibility, current qualifications, and compliance status (`OPERATIONS_COMPLIANCE.md`) gate whether and how Mason acts on it.
 
+## Business Knowledge Graph
+
+A project discovered once should continuously update opportunities for every relevant trade rather than requiring duplicate research. See `BUSINESS_KNOWLEDGE_GRAPH.md` for the full concept (Project Lifecycle Intelligence and Trade Intelligence Profiles).
+
 ## Alliance and trade-network referrals
 
 Beyond the categories above, opportunities may also arrive as referrals from a tenant's own professional relationships (see `STRATEGIC_ALLIANCES.md`) or, in the future, from compatible HURKL businesses in a trade hierarchy (see `TRUSTED_TRADE_NETWORK.md`, a not-yet-designed capability with its own strict owner-control and antitrust boundaries). These referrals are evaluated the same way as any other opportunity — through capacity, qualification, and compliance — never treated as a forced or automatic commitment.

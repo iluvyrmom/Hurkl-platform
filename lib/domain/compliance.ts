@@ -183,3 +183,44 @@ export interface ComplianceBinder {
   items: ComplianceBinderItem[];
   generatedAt: string;
 }
+
+export type SafetyCriticalEquipmentCategory =
+  | "scaffolding"
+  | "lift"
+  | "forklift"
+  | "crane"
+  | "hoist"
+  | "compressor"
+  | "concrete_pump"
+  | "rigging"
+  | "fall_protection";
+
+export type EquipmentLifecycleEventType = "maintenance" | "repair" | "inspection" | "calibration";
+
+export interface EquipmentLifecycleEvent {
+  type: EquipmentLifecycleEventType;
+  occurredAt: string;
+  notes?: string;
+  evidenceReference?: string;
+}
+
+/**
+ * A single piece of equipment tracked over its full lifecycle — see
+ * OPERATIONS_COMPLIANCE.md's "Equipment Lifecycle Engine" section.
+ * Distinct from ComplianceRecord: this is the asset itself, not a
+ * single credential/inspection requirement against it.
+ */
+export interface EquipmentAsset {
+  tenantId: string;
+  equipmentId: string;
+  manufacturer: string;
+  serialNumber: string;
+  safetyCriticalCategory?: SafetyCriticalEquipmentCategory;
+  operatingHours?: number;
+  mileage?: number;
+  warrantyExpiresAt?: string;
+  assignedCrewId?: string;
+  assignedProjectId?: string;
+  lifecycleEvents: EquipmentLifecycleEvent[];
+  replacementPlanningNotes?: string;
+}
