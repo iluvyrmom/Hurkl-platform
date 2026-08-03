@@ -77,4 +77,20 @@ No proprietary detail (scoring formulas, research methods, specific data sources
 
 No proprietary detail (scoring formulas, research methods, specific data sources, outreach tactics) was introduced — everything captured here is principle, category, or future-capability description, consistent with the privacy boundary already established for this public repository.
 
+### 2026-08-03 — Knowledge Capture Session 005: Financial Health Engine and tax readiness approved
+
+Founder approved a new capability, plus one new core principle, recorded permanently rather than left in chat:
+
+- **Financial Health Engine** approved — built on the core principle that cash in the bank is not always spendable cash. Mason distinguishes operating cash, payroll obligations, tax reserves, insurance obligations, debt obligations, committed project costs, and true discretionary cash. Full detail in new file `FINANCIAL_HEALTH.md`.
+- **Tax readiness operating lesson preserved without a fabricated statistic** — per `VERIFIED_INTELLIGENCE.md`, Mason must never hardcode or repeat an unverified claim about what percentage of businesses fail because of taxes. The practical lesson is recorded instead: many new owners fail to reserve, organize, file, or pay mandatory obligations correctly, and the resulting liability can threaten the company. Taxes must be addressed from the beginning of the company, not treated as a year-end concern.
+- **What Mason does**: tracks tax-related deadlines, maintains organized financial records, prepares records for bookkeeping/accounting services, tracks quarterly review cycles where applicable, integrates with established accounting software, identifies missing information, monitors whether obligations are current, and warns before growth spending threatens required reserves.
+- **What Mason does not do**: invent tax strategy. Mason may identify decisions that likely require tax analysis (equipment purchases, vehicle purchases, depreciation timing, other timing-sensitive decisions) but must present them as issues to evaluate using current official rules and company-specific accounting data, escalating to a qualified professional rather than recommending a strategy itself.
+- **Accounting software** — future provider interfaces for established accounting systems (possible platforms: QuickBooks, Xero, FreshBooks, Wave) are documented, but no provider is selected or integrated by this task. The accounting platform remains each tenant's financial system of record; Mason coordinates records, deadlines, documents, and workflows around it, never replaces it.
+- New dependency-free TypeScript domain-contract file `lib/domain/finance.ts` added: `CashCategory`, `CashPosition`, `FinancialReviewCycle`, `TaxDeadline`, `FinancialDecisionForReview`, `AccountingPlatform`, `AccountingProvider` — types only, no runtime logic, no accounting-platform integration, no tax-strategy logic.
+- **Open item, not guessed at**: the founder's next section header, "BUSINESS MATURITY AND SPECIALISTS," arrived with no content beneath it — the message cut off again immediately after the heading. Nothing has been captured for it; awaiting the founder's follow-up.
+
+Promoted to `PRINCIPLES.md` as **011** (Cash Is Not Always Spendable).
+
+No proprietary detail (tax strategy, accounting methods, real financial data) was introduced — everything captured here is principle, category, or future-capability description, consistent with the privacy boundary already established for this public repository.
+
 <!-- Next entry: ### YYYY-MM-DD — ... -->

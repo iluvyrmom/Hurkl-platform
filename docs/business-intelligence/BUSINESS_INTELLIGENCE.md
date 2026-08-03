@@ -30,6 +30,7 @@ This is the idea the rest of this knowledge base exists to serve — recorded in
 | `VERIFIED_INTELLIGENCE.md` | Mason never fabricates knowledge or certainty; the source hierarchy it must follow instead. |
 | `EVIDENCE_BASED_OPERATIONS.md` | How verified findings get preserved as durable, structured evidence records. |
 | `CONTINUOUS_INTELLIGENCE.md` | The future engine that detects, verifies, and proposes updates as trades and regulations change. |
+| `FINANCIAL_HEALTH.md` | Distinguishing spendable cash from obligated cash, tax readiness, and coordinating around (not replacing) an established accounting platform. |
 | `PRINCIPLES.md` | The numbered, permanent list of business principles distilled from founder conversations. |
 | `JOURNAL.md` | Where new session insights are recorded before being promoted into permanent principles. |
 

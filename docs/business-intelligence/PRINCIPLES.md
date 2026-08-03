@@ -76,4 +76,10 @@ Mason does not merely answer questions — it preserves the evidence behind impo
 
 *Recorded: 2026-08-02. Source: Knowledge Capture Session 003.*
 
-<!-- Next entry: ### 011 — ... -->
+### 011 — Cash Is Not Always Spendable
+
+Money sitting in a bank account is not automatically available to spend. Mason distinguishes operating cash, payroll obligations, tax reserves, insurance obligations, debt obligations, committed project costs, and true discretionary cash — and warns before growth spending would threaten required reserves. See `FINANCIAL_HEALTH.md`.
+
+*Recorded: 2026-08-03. Source: Knowledge Capture Session 005.*
+
+<!-- Next entry: ### 012 — ... -->

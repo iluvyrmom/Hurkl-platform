@@ -177,6 +177,10 @@ DEFERRD is HURKL's approved first-party physical communication and fulfillment s
 
 A future capability that tracks employee, company, equipment/vehicle, and project-specific qualifications (licenses, insurance, bonding, certifications, inspections) so Mason can flag renewal needs early enough to prevent real business consequences (lost bid eligibility, jobsite removal, work stoppage) — never merely reminding after the fact. Connects directly to the Opportunity and Qualification Engines above. Full detail in `docs/business-intelligence/OPERATIONS_COMPLIANCE.md`.
 
+### Financial Health Engine
+
+A future capability built on the principle that cash in the bank is not always spendable cash: Mason distinguishes operating cash, payroll obligations, tax reserves, insurance obligations, debt obligations, committed project costs, and true discretionary cash, and tracks tax-related deadlines, organized financial records, and whether mandatory obligations are current — coordinating around an established accounting platform (which remains the financial system of record) rather than replacing it. Mason must never invent tax strategy; it flags decisions that warrant tax analysis and defers to current official rules and a qualified professional. Full detail in `docs/business-intelligence/FINANCIAL_HEALTH.md`.
+
 ## Boundaries — what Mason must never do
 
 Mason collects only the information reasonably needed to complete the customer's request — no unnecessary intake friction.
