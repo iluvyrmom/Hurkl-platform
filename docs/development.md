@@ -70,7 +70,7 @@ To apply them, once you have the project's credentials:
 
 Or without the CLI: open the dashboard's SQL Editor and run the files in `supabase/migrations/` **in filename order** (`00000000000001_...`, then `00000000000002_...`, then `00000000000003_...`) — later files reference tables/roles the earlier ones create.
 
-**As of this writing, this has not been run against the real `Hurkl-production` project** — see the relevant PR description for exactly what's blocking that.
+**As of this writing, this has not been run against the real `Hurkl-production` project.** See `docs/production-migration-plan.md` for the full migration review (schema inventory, dependency order, destructive-behavior findings), the disposable-environment verification results, and the step-by-step production plan (not yet executed) — required reading before applying these migrations for real.
 
 ### Manual end-to-end verification (once the real project is migrated)
 
