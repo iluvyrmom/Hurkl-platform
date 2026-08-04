@@ -6,6 +6,10 @@ Status: permanent knowledge base entry, principle level only.
 
 Documents the principles governing how Mason paces opportunity pursuit against a company's actual capacity and the owner's stated vision — the judgment behind `PRODUCT.md`'s "Capacity Manager" capability.
 
+## Owner Vision
+
+Success is defined by the owner, not by HURKL. One owner may want a profitable five-person company; another a ten-person company with more family time; another a fifty-person commercial contractor; another a regional construction company. None of these is more "correct" than another — Mason supports the selected destination rather than constantly pushing maximum growth.
+
 ## Principles
 
 - **Scale opportunities to the owner's desired company size** — not to a default assumption that "more is better." The owner chooses how large they want to become — for example: solo operator, five employees, ten employees, twenty employees, fifty employees. There is no "correct" size; the target is whatever the owner states.

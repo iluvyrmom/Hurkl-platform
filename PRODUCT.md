@@ -16,7 +16,7 @@ This isn't just task automation — see `docs/business-intelligence/BUSINESS_INT
 
 HURKL does not assume every business owner wants maximum growth. Mason must help each owner maintain, reduce, or grow their company toward the size and lifestyle that owner actually chooses — HURKL never forces or defaults a company toward growth for its own sake. This principle governs every growth-and-capacity-related capability in this document (Capacity Manager, Opportunity Engine, Business Maturity Advisor): all of them serve the owner's chosen vision, not an assumption that bigger is always better.
 
-The underlying business philosophy and judgment behind this principle — how Mason is meant to relate to the owner, and how it reasons about opportunity, capacity, and qualification — is recorded in full in `docs/business-intelligence/` (see `BUSINESS_INTELLIGENCE.md` for the index, and `OWNER_PHILOSOPHY.md` in particular).
+The underlying business philosophy and judgment behind this principle — how Mason is meant to relate to the owner, and how it reasons about opportunity, capacity, and qualification — is recorded in full in `docs/business-intelligence/` (see `BUSINESS_INTELLIGENCE.md` for the index, and `OWNER_PHILOSOPHY.md` in particular). That knowledge base also holds the full numbered set of core principles (`PRINCIPLES.md`), including Remove Mental Load, Intelligent Delegation, Hide Operational Complexity, and Prevent Problems Before They Exist.
 
 ## What HURKL is
 
@@ -34,6 +34,14 @@ Mason is designed to operate **as an employee of each client company** — not a
 - Customers should experience Mason the way they'd experience a competent, always-available member of staff.
 
 Mason is **not** industry-specific. It must never be hardcoded to moving, HVAC, or any single vertical. Every business-specific behavior (services, pricing, hours, policies, scheduling rules, approval thresholds, workflows) is tenant configuration, not platform code. The platform is the engine; each company's configuration is the fuel.
+
+**Mason is the Executive, not the specialist.** Mason functions as the business's Chief Operating Officer — the owner remains the CEO. Mason's core strength is leadership: understanding the owner's vision, delegating to the right specialist, and presenting one clear recommendation — not personally knowing every law, code, permit system, accounting rule, or trade practice. See `docs/business-intelligence/HAL_SPECIALIST_WORKFORCE.md` and `ARCHITECTURE.md` §1c for the full architecture this expresses.
+
+## Permanent Product Philosophy
+
+**Customers are not purchasing an AI model. Customers are hiring Mason.** Mason is powered by HURKL, which supplies (behind the scenes, never as a customer-facing choice): HAL (the specialist workforce), Company Memory, the Opportunity Engine, the Operations Compliance Engine, Strategic Intelligence, Communications, Financial Intelligence, the HURKL Trusted Business Network, the Business Knowledge Graph, and future specialist departments as they're added. **The customer experiences one employee: Mason.** Everything else happens behind the scenes — see the Golden Rule in `docs/business-intelligence/OWNER_PHILOSOPHY.md`.
+
+*Editorial note:* "Company Memory" is listed above exactly as the founder specified it, alongside the Business Knowledge Graph. A dedicated **Memory Specialist** — a HAL specialist whose sole responsibility is memory — has since been approved to own Company Memory specifically (see `docs/business-intelligence/HAL_SPECIALIST_WORKFORCE.md`'s "Memory Specialist" section). Company Memory's precise relationship to the Business Knowledge Graph is still not specified — not assumed or invented here.
 
 ## Who Mason serves
 
@@ -86,6 +94,7 @@ Mason is **not** industry-specific. It must never be hardcoded to moving, HVAC, 
 - Emergency pause and slowdown controls, owned by the business owner.
 - Cost and usage controls, owned by the business owner.
 - Multi-company tenant isolation — no company ever sees another company's data.
+- Voice-first operational logging ("Talk to Mason") — natural speech capture with automatic classification and linking, built on the principle that friction kills recording. Full detail in `docs/business-intelligence/VOICE_FIRST_CAPTURE.md`.
 
 ## Growth & capacity management (future capabilities)
 
@@ -153,9 +162,13 @@ Monitoring may be automatic (Tier 1 — see SECURITY.md's autonomy tiers). **Act
 
 ### Business Maturity Advisor
 
-Mason should recognize when a company has outgrown its current tools or processes and recommend the next appropriate investment — for example: a commercial bid-center membership, dedicated estimating software, additional crews or employees, a dispatcher or estimator, expanded service territory, new equipment, more advanced accounting or CRM systems, or additional offices/operating capacity.
+Mason should recognize when a company has outgrown its current tools or processes and recommend the next appropriate investment — for example: a commercial bid-center membership, dedicated estimating software, additional crews or employees, a dispatcher or estimator, expanded service territory, new equipment, more advanced accounting or CRM systems, additional offices/operating capacity, or an outside specialist (bookkeeper, CPA, payroll provider, attorney, insurance or bonding agent, safety consultant, HR professional, controller, estimator, office manager). Mason does not try to replace every specialist — it prepares, coordinates, follows up, and preserves records around them. Full detail in `docs/business-intelligence/CONTRACTOR_GROWTH.md`'s "Business Maturity and Specialists" section.
 
 Every recommendation must support the owner's chosen vision (see Product Principles above) — never growth for its own sake.
+
+### Strategic alliances and trade relationships
+
+Mason may recommend the owner build professional relationships — strategic capacity-sharing alliances, a respectful conversation with a frequently-competing contractor, or engagement with a local trade network — but never forms an alliance, referral, or partnership automatically, and never bases a recommendation on a protected characteristic. A related, not-yet-designed future capability, the **HURKL Trusted Business Network (HTBN)**, would recognize businesses that consistently demonstrate professionalism, reliability, safety, and integrity — a privilege distinct from simply using Mason, governed by HURKL as network steward, with Mason limited to gathering objective evidence and privately recommending review, never judging, labeling, or removing a member itself. Full detail in `docs/business-intelligence/STRATEGIC_ALLIANCES.md` and `docs/business-intelligence/TRUSTED_TRADE_NETWORK.md`.
 
 ### Approved outreach playbooks
 
@@ -169,6 +182,34 @@ Mason may automatically perform low-risk outreach only when **all** of the follo
 
 Mason should prefer the lowest-cost effective approved channel. Potential channels may include approved email, permitted social or digital outreach, and physical mail. Mason must never assume that a given social or digital platform permits automated outreach — that platform's specific rules, and any applicable law, must be verified before any such channel is implemented, not assumed from this document.
 
+### DEFERRD — first-party fulfillment
+
+DEFERRD is HURKL's approved first-party physical communication and fulfillment service — the channel that fulfills the "physical mail" playbook above. The customer chooses an outcome (e.g. "send the new-homeowner campaign"), never a mailing vendor; there is no customer-facing provider selector. Full detail — customer experience, event triggers, and the internal-only provider abstraction — is in `docs/business-intelligence/DEFERRD_FULFILLMENT.md`.
+
+### Operations Compliance Engine
+
+A future capability that tracks employee, company, equipment/vehicle, and project-specific qualifications (licenses, insurance, bonding, certifications, inspections) so Mason can flag renewal needs early enough to prevent real business consequences (lost bid eligibility, jobsite removal, work stoppage) — never merely reminding after the fact. Includes an Equipment Lifecycle Engine (inventory, maintenance, inspections, calibration, replacement planning) with enhanced monitoring for safety-critical equipment. Connects directly to the Opportunity and Qualification Engines above. Full detail in `docs/business-intelligence/OPERATIONS_COMPLIANCE.md`.
+
+### Operational Readiness Engine
+
+A future capability that answers, each morning: "Are we ready to work today?" — aggregating People, Equipment, Projects, Company, and Financial readiness into a single, actionable check that surfaces only what needs attention. Full detail in `docs/business-intelligence/OPERATIONAL_READINESS.md`.
+
+### Business Knowledge Graph
+
+A future capability treating each discovered project as a shared intelligence object reused across every relevant trade, rather than re-researched independently — including per-trade intelligence profiles (opportunity signals, decision makers, lead sources, timing, qualification requirements) so lead generation stays trade-specific rather than universal. Full detail in `docs/business-intelligence/BUSINESS_KNOWLEDGE_GRAPH.md`.
+
+### Relationship Value
+
+A future capability recognizing that not every customer should be evaluated solely on immediate profit — Mason may eventually weigh repeat work potential, strategic importance, referral potential, and alignment with the owner's goals alongside payment reliability and long-term value, while maintaining financial discipline. Full detail in `docs/business-intelligence/RELATIONSHIP_VALUE.md`.
+
+### Business Risk Dashboard
+
+A future forward-looking view aggregating cash-flow risk, customer concentration, receivables, compliance, equipment readiness, project exposure, staffing, and capacity — prevention rather than reaction. Full detail in `docs/business-intelligence/BUSINESS_RISK_DASHBOARD.md`.
+
+### Financial Health Engine
+
+A future capability built on the principle that cash in the bank is not always spendable cash: Mason distinguishes operating cash, payroll obligations, tax reserves, insurance obligations, debt obligations, committed project costs, and true discretionary cash, and tracks tax-related deadlines, organized financial records, and whether mandatory obligations are current — coordinating around an established accounting platform (which remains the financial system of record) rather than replacing it. Mason must never invent tax strategy; it flags decisions that warrant tax analysis and defers to current official rules and a qualified professional. Full detail in `docs/business-intelligence/FINANCIAL_HEALTH.md`.
+
 ## Boundaries — what Mason must never do
 
 Mason collects only the information reasonably needed to complete the customer's request — no unnecessary intake friction.
@@ -181,6 +222,9 @@ Mason must never fabricate:
 - Payment status
 - Job status
 - Customer information
+- Knowledge, confidence, completion, compliance, eligibility, or source authority — if Mason doesn't know something, it says so and researches the verified answer rather than guessing (see `docs/business-intelligence/VERIFIED_INTELLIGENCE.md`), preserves the authoritative source behind any important claim rather than just the conclusion (see `docs/business-intelligence/EVIDENCE_BASED_OPERATIONS.md`), and treats time-sensitive claims (laws, codes, standards, market conditions) as needing re-verification rather than assuming a fact recorded once stays true forever (see `docs/business-intelligence/CONTINUOUS_INTELLIGENCE.md`)
+
+Mason must never base a relationship, alliance, referral, or outreach recommendation on race, ethnicity, nationality, sex, religion, or any other protected characteristic — communication barriers are operational problems to solve, never identity judgments (see `docs/business-intelligence/STRATEGIC_ALLIANCES.md`). Mason must never facilitate price fixing, bid rigging, market allocation beyond HURKL's own customer licensing/exclusivity model, coordinated suppression of competition, sharing confidential bid prices between competitors, or retaliatory blacklisting (see `docs/business-intelligence/TRUSTED_TRADE_NETWORK.md`).
 
 Mason must escalate to the owner (or configured approver) whenever a decision would exceed that company's configured authority threshold. See SECURITY.md and ARCHITECTURE.md for the three-tier autonomy model (Automatic / Approval Required / Never Autonomous) that enforces this in practice.
 
@@ -215,6 +259,6 @@ A-1 validates the platform end-to-end. Success with A-1 should never come at the
 
 **This repository (`hurkl-platform`) is currently public.** Only high-level product capabilities and principles are documented here — never the detailed logic behind them.
 
-HURKL's business-development and public-record research methods (how HURKL finds and qualifies prospective client businesses) are proprietary. The same applies to the growth-and-capacity capabilities above (Capacity Manager, Opportunity Engine, property/development signal evaluation, territory-and-trade exclusivity matching, Commercial Bid Centers, Business Maturity Advisor, Approved Outreach Playbooks): this document describes what they do and the controls the owner has over them, never the underlying opportunity-scoring formulas, signal timing/staging rules, territory-matching logic, detailed commercial research methods, outreach tactics, data-source discovery methods, or the founder's private business-development playbooks.
+HURKL's business-development and public-record research methods (how HURKL finds and qualifies prospective client businesses) are proprietary. The same applies to the growth-and-capacity capabilities above (Capacity Manager, Opportunity Engine, property/development signal evaluation, territory-and-trade exclusivity matching, Commercial Bid Centers, Business Maturity Advisor, Approved Outreach Playbooks, DEFERRD, Operations Compliance Engine): this document describes what they do and the controls the owner has over them, never the underlying opportunity-scoring formulas, signal timing/staging rules, territory-matching logic, detailed commercial research methods, outreach tactics, data-source discovery methods, compliance risk-scoring logic, renewal-sourcing methods, or the founder's private business-development playbooks.
 
 This documentation intentionally does not describe those methods, formulas, or tactics. They are private intellectual property, to be implemented later through protected configuration and internal rules that are not committed to this public repository. Keep this area abstract in all public-facing documentation and code — comments included — unless the founder explicitly authorizes disclosure.

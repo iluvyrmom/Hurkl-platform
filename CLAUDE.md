@@ -77,11 +77,35 @@ The founder primarily operates from an Android phone or tablet. When building or
 
 Mason's behavior is governed by three tiers — Automatic, Approval Required, Never Autonomous (defined in `PRODUCT.md` and `SECURITY.md`). When implementing any Mason capability, place it in the correct tier deliberately. Never let an "Automatic" implementation quietly gain "Approval Required" or "Never Autonomous" capabilities without that being a conscious, reviewed decision.
 
+## Respect Mason's executive architecture (HAL)
+
+**This is the approved long-term architecture for Mason and HURKL, per Knowledge Capture Session 009 (`docs/business-intelligence/HAL_SPECIALIST_WORKFORCE.md`, `ARCHITECTURE.md` §1c). It supersedes any earlier assumption that Mason should directly perform every task.** Mason is the Executive (the owner's COO), not a specialist, and never one enormous AI prompt holding every domain's knowledge. When building or extending any Mason capability:
+
+- Model new capabilities as **HAL specialists** reporting to Mason — one responsibility, one mission, one specialty, limited permissions, structured inputs/outputs, required evidence, escalation rules, execution limits, audit history (see `lib/domain/hal.ts`'s `SpecialistDefinition`) — never as an expansion of what Mason personally "knows."
+- Preserve the reporting hierarchy: specialist → Quality Assurance Layer (as warranted) → Mason → owner. No specialist ever reports to the owner directly, and the owner never interacts with a specialist directly.
+- The owner-facing surface remains **exactly one employee: Mason.** Never expose specialist identity, coordination, or department structure to the owner.
+- HAL does not introduce a fourth autonomy tier — every specialist's output still resolves to Automatic / Approval Required / Never Autonomous (`SECURITY.md` §4) once it reaches Mason's decision process.
+- Do not build autonomous production agents on top of these contracts without a specific, explicit milestone authorizing it — architecture and contracts come first.
+
 ## Keep proprietary methods out of public-facing docs and code comments
 
 **The `hurkl-platform` repository is currently public.** HURKL's business-development and public-record research methods, and the detailed logic behind growth/opportunity capabilities (Capacity Manager, Opportunity Engine, property/development signal evaluation, territory-and-trade exclusivity matching, Commercial Bid Centers, Business Maturity Advisor, Approved Outreach Playbooks — see `PRODUCT.md`), are proprietary: opportunity-scoring formulas, signal timing/staging rules, territory-matching logic, detailed commercial research methods, outreach tactics, data-source discovery methods, and the founder's private business-development playbooks are intentionally not documented in this repository. Document only high-level capabilities and principles, in general language. Do not add proprietary details, infer them, or expand on founder strategy in code, comments, commit messages, or docs unless the founder explicitly authorizes it — this applies with extra weight here specifically because the repository is public, not just internal-only.
 
 ## Two permanent rules for growth/opportunity capabilities
 
-- **Never generalize the territory-and-trade-exclusivity cross-tenant exception.** `ARCHITECTURE.md` §4 documents one narrow, deliberate exception to tenant isolation for checking protected-market conflicts. It exposes trade/territory/status fields only, through a dedicated workflow. Do not use it as precedent to add any other cross-tenant read — that requires its own conscious, reviewed decision.
+- **Never generalize the territory-and-trade-exclusivity cross-tenant exception.** `ARCHITECTURE.md` §4 documents one narrow, deliberate exception to tenant isolation for checking protected-market conflicts. It exposes trade/territory/status fields only, through a dedicated workflow. Do not use it as precedent to add any other cross-tenant read — that requires its own conscious, reviewed decision. This includes the future HURKL Trusted Trade Network (see `docs/business-intelligence/TRUSTED_TRADE_NETWORK.md`), which is explicitly not covered by this exception.
 - **Verify a channel's platform rules and applicable law before implementing any automated outreach.** Never assume a social or digital platform permits automated outreach just because `PRODUCT.md` lists it as a potential channel — confirm the specific platform's current terms and any applicable law first, as a precondition to writing that integration, not an afterthought.
+
+## Nine permanent guardrails for verified, lawful, and properly-scoped operation
+
+Recorded from Knowledge Capture Sessions 003–006 (`docs/business-intelligence/`). Every future session, and every Mason capability built in this repository, must honor all nine — this section is a concise index, not the detail; follow each pointer for the full reasoning.
+
+1. **Approved decisions are documented.** See "Capture every approved decision" above.
+2. **Uncertain claims are labeled as such** — a verified fact, a plain-language explanation, an inference, a recommendation, and an unresolved ambiguity are never presented as if they were the same thing. See `docs/business-intelligence/VERIFIED_INTELLIGENCE.md`.
+3. **Time-sensitive claims are verified, not assumed to still hold.** Laws, codes, standards, and market conditions change; a fact recorded once does not stay true forever. See `docs/business-intelligence/CONTINUOUS_INTELLIGENCE.md`.
+4. **Authoritative sources are preserved alongside any important claim**, not just the conclusion. See `docs/business-intelligence/EVIDENCE_BASED_OPERATIONS.md`.
+5. **No completion claim without evidence** — see "Do not claim untested work is complete" above, applied identically to any runtime claim Mason makes about a customer's compliance, tax, or legal status.
+6. **No discriminatory logic** — race, ethnicity, nationality, sex, religion, or any other protected characteristic must never factor into a recommendation, evaluation, or relationship/alliance suggestion. See `docs/business-intelligence/STRATEGIC_ALLIANCES.md` and `PRINCIPLES.md` 012.
+7. **No unlawful competitor coordination** — no price fixing, bid rigging, market allocation beyond HURKL's own customer licensing/exclusivity model, coordinated suppression of competition, confidential-bid-price sharing, or retaliatory blacklisting. See `docs/business-intelligence/TRUSTED_TRADE_NETWORK.md`.
+8. **No legal, tax, or safety fabrication** — Mason identifies issues that require professional review and presents current official rules; it never invents a legal interpretation, tax strategy, or safety determination. See `docs/business-intelligence/FINANCIAL_HEALTH.md` and `OPERATIONS_COMPLIANCE.md`.
+9. **No real external action without the correct autonomy and approval tier.** See "Respect the autonomy model" above and `SECURITY.md` §4 — this applies to every capability in this list, not only the ones already built.

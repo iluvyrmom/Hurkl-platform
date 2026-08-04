@@ -21,10 +21,26 @@ This is the idea the rest of this knowledge base exists to serve — recorded in
 | File | Purpose |
 |---|---|
 | `OWNER_PHILOSOPHY.md` | The non-negotiable relationship between the owner and Mason — foundational; everything else operates within it. |
+| `HAL_SPECIALIST_WORKFORCE.md` | Mason's Executive Architecture: Mason is the COO, not the specialist; HAL is the specialist workforce he delegates to, through a permanent reporting hierarchy. |
 | `OPPORTUNITY_ENGINE.md` | The categories of opportunity signals Mason draws on. |
 | `CAPACITY_ENGINE.md` | How Mason paces growth pursuit against the owner's chosen size and vision. |
 | `QUALIFICATION_ENGINE.md` | How Mason handles opportunities the company isn't yet qualified to pursue. |
 | `CONTRACTOR_GROWTH.md` | The overall growth-support model tying the three engines together. |
+| `DEFERRD_FULFILLMENT.md` | HURKL's first-party physical communication and fulfillment service. |
+| `DIRECT_MAIL_PLAYBOOKS.md` | The fallback lead-generation and persistent-physical-advertising playbooks built on DEFERRD. |
+| `OPERATIONS_COMPLIANCE.md` | Tracking employee/company/equipment/project qualifications and preventing lapses before they cause harm. |
+| `PROJECT_COMPLIANCE_BINDERS.md` | The future per-project compliance record assembled from the Operations Compliance Engine's records. |
+| `VERIFIED_INTELLIGENCE.md` | Mason never fabricates knowledge or certainty; the source hierarchy it must follow instead. |
+| `EVIDENCE_BASED_OPERATIONS.md` | How verified findings get preserved as durable, structured evidence records. |
+| `CONTINUOUS_INTELLIGENCE.md` | The future engine that detects, verifies, and proposes updates as trades and regulations change. |
+| `FINANCIAL_HEALTH.md` | Distinguishing spendable cash from obligated cash, tax readiness, and coordinating around (not replacing) an established accounting platform. |
+| `STRATEGIC_ALLIANCES.md` | Strategic growth alliances, respect-worthy competitors, and local relationship networks — recommended, never automated or discriminatory. |
+| `TRUSTED_TRADE_NETWORK.md` | The HURKL Trusted Business Network (HTBN): a future, not-yet-designed cross-tenant membership-governance and trade-hierarchy capability — improvement-first stewardship, Mason evidence-only, HURKL admins decide — with explicit antitrust and cross-tenant-isolation boundaries. |
+| `VOICE_FIRST_CAPTURE.md` | The "Talk to Mason" voice-first capture philosophy: friction is failure, conversation before forms, never ask twice, the five-second rule. |
+| `OPERATIONAL_READINESS.md` | The future daily "are we ready to work today?" engine, aggregating People/Equipment/Projects/Company/Financial readiness. |
+| `BUSINESS_KNOWLEDGE_GRAPH.md` | A project discovered once continuously updating opportunities for every relevant trade, and per-trade intelligence profiles. |
+| `RELATIONSHIP_VALUE.md` | Evaluating a customer relationship beyond immediate profit — repeat work, strategic importance, referral potential — while maintaining financial discipline. |
+| `BUSINESS_RISK_DASHBOARD.md` | A future forward-looking risk view aggregating financial, compliance, equipment, and capacity signals — prevention rather than reaction. |
 | `PRINCIPLES.md` | The numbered, permanent list of business principles distilled from founder conversations. |
 | `JOURNAL.md` | Where new session insights are recorded before being promoted into permanent principles. |
 

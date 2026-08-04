@@ -9,6 +9,7 @@ This document defines the security and privacy posture required before Mason han
 - Storage (documents, photos, call recordings) is partitioned per tenant with access rules mirroring RLS.
 - No query path, report, or admin tool may join across tenants except a dedicated, explicitly audited HURKL-admin path used for platform support/billing — never the same code path tenants' own requests use.
 - Tenant isolation must be covered by automated tests before any tenant's real data goes live (e.g., "user from Company A cannot read/write Company B's rows even via a crafted request").
+- A future capability, the HURKL Trusted Business Network / HTBN (see `docs/business-intelligence/TRUSTED_TRADE_NETWORK.md`), would require its own new cross-tenant data-sharing design — arguably a larger one than originally scoped, since network membership and trust signals are, by nature, things other member businesses may eventually need some visibility into. It is **not** covered by the audited HURKL-admin path above and must not be built by extending it — a distinct, conscious security decision, made only when that capability is actually scheduled (see `CLAUDE.md`'s permanent rules on this exact point).
 
 ## 2. Authentication
 
@@ -62,10 +63,11 @@ Mason's actions are classified into three tiers. This classification is a securi
 - Refunds
 - High-value estimates or jobs
 - Pricing exceptions
-- Sensitive messages
+- Sensitive or significant external communications
 - Production configuration changes
 - Purchases or paid actions
 - Bid submissions and other legally binding commitments (see `PRODUCT.md`'s Commercial Bid Centers capability) — unless a narrowly defined, pre-approved workflow has been explicitly configured by the owner, in which case it may run as Tier 1
+- Forming an actual strategic alliance, referral, or trade-network commitment (see `docs/business-intelligence/STRATEGIC_ALLIANCES.md` and `TRUSTED_TRADE_NETWORK.md`) — Mason may recommend the conversation at Tier 1, but never creates the commitment itself
 
 **Tier 3 — Never autonomous** (hard-blocked in code, not policy-only):
 - Transfer money
@@ -74,6 +76,10 @@ Mason's actions are classified into three tiers. This classification is a securi
 - Delete critical business records
 - Sign legal agreements
 - Make irreversible decisions without authorization
+- Decide, label, or judge HURKL Trusted Business Network membership status (see `docs/business-intelligence/TRUSTED_TRADE_NETWORK.md`) — Mason may only gather objective operational evidence and privately recommend a stewardship review at Tier 1; only a HURKL administrator decides
+- Hiring or firing decisions
+- Entering new markets or changing company direction
+- Union strategy
 
 Tier 3 actions must be structurally impossible for the AI Router/Conversation Engine to trigger on its own — e.g., no code path exists that both an AI decision and an unattended execution can both reach without a human in the loop. This is enforced in the Approval Engine, not left to prompting.
 
@@ -141,6 +147,7 @@ Because Mason maintains shared customer history across phone, website, text, and
 
 - Formal incident response process once beyond pilot scale (informal/founder-notification process is acceptable for the pilot per §11).
 - Any tenant-specific retention override required by that tenant's legal/regulatory environment, evaluated at onboarding time (defaults are set — see §10).
+- Cross-tenant data-sharing design for the future HURKL Trusted Business Network / HTBN (see §1 and `docs/business-intelligence/TRUSTED_TRADE_NETWORK.md`) — not yet designed, not yet approved, and explicitly not derivable from the existing tenant-isolation exception. Includes: what membership/trust signals, if any, become visible to other member businesses, and through what audited mechanism.
 
 ## 14. Resolved decisions log
 
