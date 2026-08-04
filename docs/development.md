@@ -90,6 +90,35 @@ Real Supabase Auth (sign-up/sign-in) can't be exercised automatically in a sandb
 8. Sign out, create a **second** account and a **second** company. Confirm that account's `/dashboard` shows zero customers — not the first company's. This is RLS enforced over a real HTTP request, not just the local integration tests.
 9. Re-submit the company-creation form for an account that already has one (e.g. via the browser back button) — expect a clear `409`, not a second company.
 
+## Telegram — Mason's first communication channel
+
+See `docs/communications-architecture.md` for the full design. This is the founder's own internal/dev channel (the existing "Mason Herkle" bot) — not customer-facing. Requires the real Supabase project connected first (above).
+
+### One-time setup
+
+1. Get the bot token from the "Mason Herkle" bot via [@BotFather](https://t.me/BotFather) and set `TELEGRAM_BOT_TOKEN` in `.env.local` — never paste it into a chat session.
+2. Apply migration `00000000000004_communications.sql` to the real project (same process as the other migrations — see "Applying migrations" above).
+3. Grant yourself `hurkl_admin`, one time, via the Supabase dashboard's SQL Editor (deliberately not an app code path — see `docs/communications-architecture.md`):
+   ```sql
+   update public.profiles set role = 'hurkl_admin', company_id = null where id = '<your auth.users id>';
+   ```
+4. Find your own Telegram numeric user id (e.g. message [@userinfobot](https://t.me/userinfobot)), then link it:
+   ```bash
+   npm run telegram:link-owner -- <your-profile-id> <your-telegram-user-id> [your-telegram-username]
+   ```
+
+### Running it live
+
+There's no public deployment yet, so Telegram's real webhook can't be registered — use the long-polling dev bridge instead:
+
+```bash
+npm run telegram:dev-bridge
+```
+
+Leave it running, then message the "Mason Herkle" bot for real. Confirm: a reply arrives (from `MockAIModelProvider` — see the communications-architecture doc for why Mason's real reasoning isn't wired up yet), and rows exist in `conversations`, `messages` (both directions), and `audit_log` for the conversation.
+
+Once a real deployment exists, `app/api/telegram/webhook/route.ts` is the production path — register it with Telegram's `setWebhook` (with `TELEGRAM_WEBHOOK_SECRET` set) instead of running the dev bridge.
+
 ## What's required right now (Phase 1)
 
 The app validates its environment at startup via `instrumentation.ts`, which calls `lib/env.ts`'s `getServerEnv()` once when the server process starts (Next.js's official `register()` hook — stable since Next.js 15, no config flag needed). As of Phase 1, exactly one variable is required:

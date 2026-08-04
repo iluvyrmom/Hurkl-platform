@@ -63,6 +63,19 @@ export interface ServerEnv {
 
   // Phase 9 — email provider (Resend).
   RESEND_API_KEY?: string;
+
+  // Telegram — Mason's first communication channel (internal/dev use;
+  // see docs/communications-architecture.md). TELEGRAM_BOT_TOKEN
+  // authenticates this app to Telegram's Bot API (real Bot API calls
+  // only happen once it's set — lib/communications/telegram-adapter.ts
+  // throws a clear error otherwise, the same "mock until configured"
+  // pattern as every other provider). TELEGRAM_WEBHOOK_SECRET is
+  // checked against Telegram's `X-Telegram-Bot-Api-Secret-Token`
+  // header once a webhook is actually registered (Phase 8-adjacent —
+  // requires a public deployment, which doesn't exist yet); optional
+  // until then.
+  TELEGRAM_BOT_TOKEN?: string;
+  TELEGRAM_WEBHOOK_SECRET?: string;
 }
 
 export interface ClientEnv {
@@ -106,6 +119,8 @@ export function getServerEnv(): ServerEnv {
     TRIGGER_SECRET_KEY: process.env.TRIGGER_SECRET_KEY,
     SENTRY_DSN: process.env.SENTRY_DSN,
     RESEND_API_KEY: process.env.RESEND_API_KEY,
+    TELEGRAM_BOT_TOKEN: process.env.TELEGRAM_BOT_TOKEN,
+    TELEGRAM_WEBHOOK_SECRET: process.env.TELEGRAM_WEBHOOK_SECRET,
   };
 }
 

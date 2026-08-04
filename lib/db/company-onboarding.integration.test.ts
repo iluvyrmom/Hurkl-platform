@@ -145,6 +145,7 @@ describe("create_company_and_assign_owner", () => {
   it("prevents duplicate owner/company creation from two concurrent submissions by the same user", async () => {
     const userResult = await client.query("insert into auth.users default values returning id");
     const userId = userResult.rows[0].id as string;
+    const before = await countCompanies();
 
     // A second, independent connection simulates a genuinely concurrent
     // request (e.g. a double-clicked submit button), rather than two
@@ -183,6 +184,9 @@ describe("create_company_and_assign_owner", () => {
     // rejected, and no orphaned company is left behind by the loser.
     expect(succeeded).toHaveLength(1);
     expect(failed).toHaveLength(1);
-    expect(await countCompanies()).toBe(1);
+    // Exactly one new company from the race, on top of whatever existed
+    // before it (the seeded "HURKL (Internal)" company, since
+    // supabase/migrations/00000000000004_communications.sql).
+    expect(await countCompanies()).toBe(before + 1);
   });
 });
