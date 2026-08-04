@@ -2,6 +2,8 @@
 
 Status: **plan only — migrations have NOT been applied to `Hurkl-production`.** This document is the review and verification record required before that happens. See `docs/development.md`'s "Database" section for the general local/CLI mechanics; this document is specific to the real project.
 
+**Update:** findings F1, F2, and F4 from the original review (below) have since been fixed directly in `supabase/migrations/00000000000001_tenant_foundation.sql` and `00000000000002_customers_and_audit_log.sql`, since neither had been applied anywhere real yet. File hashes in this document were recomputed after the fix — see the "Findings summary" and updated hashes below.
+
 Real project: `Hurkl-production` (ref `atwaixmsvzehheotdymf`, org `Hurkl`, region `ca-central-1`, Postgres 17, org plan **free**). Connection confirmed working via the Supabase MCP connector on 2026-08-03; `list_tables`/`list_migrations` both returned empty — the project is live and reachable but has no schema applied yet.
 
 ## 1. Migration review
@@ -25,12 +27,12 @@ Three migrations exist, in required order (each depends on the one before it —
 
 | Object | Type | Notes |
 |---|---|---|
-| `public.customers` | table | `id uuid pk`, `company_id uuid not null references companies(id) on delete cascade`, `name`, `phone`, `email`, `created_at` |
+| `public.customers` | table | `id uuid pk`, `company_id uuid not null references companies(id) on delete cascade`, `name`, `phone`, `email`, `deleted_at timestamptz` (soft-delete marker, added by the F1 fix), `created_at` |
 | `customers_company_id_idx` | index | btree on `customers(company_id)` |
-| `public.audit_log` | table | `id uuid pk`, `company_id uuid not null references companies(id) on delete cascade`, `actor_user_id uuid references auth.users(id)` (no `on delete` clause — see finding F2), `action text not null`, `autonomy_tier text not null` CHECK (one of the three tier values), `policy_reference`, `subject_type`, `subject_id`, `metadata jsonb not null default '{}'`, `created_at` |
+| `public.audit_log` | table | `id uuid pk`, `company_id uuid not null references companies(id) on delete cascade`, `actor_user_id uuid references auth.users(id) on delete set null` (F2 fix — was `no action`), `action text not null`, `autonomy_tier text not null` CHECK (one of the three tier values), `policy_reference`, `subject_type`, `subject_id`, `metadata jsonb not null default '{}'`, `created_at` |
 | `audit_log_company_id_idx` | index | btree on `audit_log(company_id)` |
 | RLS | — | enabled on both tables |
-| Policies | — | `customers`: full select/insert/update/**delete** scoped to `current_company_id()` (see finding F1). `audit_log`: select + insert only — **no update/delete policy exists at all**, which is what makes it structurally append-only (RLS default-denies any command with no matching policy). |
+| Policies | — | `customers`: select/insert/update scoped to `current_company_id()`; **no DELETE policy at all** (F1 fix — was a real hard-delete policy). Deleting a customer now means the app sets `deleted_at` via the existing UPDATE policy; permanent removal is not reachable through RLS at all. `audit_log`: select + insert only — **no update/delete policy exists at all**, which is what makes it structurally append-only (RLS default-denies any command with no matching policy). |
 
 ### `00000000000003_company_onboarding.sql`
 
@@ -49,9 +51,9 @@ Three migrations exist, in required order (each depends on the one before it —
 
 ### Destructive / irreversible behavior
 
-- **F1 — hard deletes, no soft-delete column.** `customers` has a real `DELETE` RLS policy and no `deleted_at`/soft-delete mechanism anywhere in the schema. `SECURITY.md` §10 requires "soft-delete first (recoverable window) before any hard/irreversible delete." As written, deleting a customer row is immediate and permanent. **This is a gap against the approved security posture**, not a bug — the schema simply hasn't reached that requirement yet. Needs a decision (add `deleted_at` + filter it out of the default RLS select policy, or restrict the delete policy) before real customer data is stored, not necessarily before this migration set is applied to an otherwise-empty project.
-- **`ON DELETE CASCADE`** on `profiles.company_id`, `customers.company_id`, and `audit_log.company_id`: deleting a `companies` row cascades to delete every profile, customer, and audit entry for that tenant, with no confirmation step at the database layer. Intentional (tenant offboarding needs *some* mechanism), but worth knowing this is a hard, cascading, irreversible delete with nothing above the database layer gating it yet — the "companies" table also has no delete RLS policy for ordinary roles at all, so this can currently only happen via a service-role/superuser connection, not through the app.
-- **F2 — `audit_log.actor_user_id` has no `ON DELETE` clause.** Default is `NO ACTION`. Deleting an `auth.users` row that has any audit_log entries will fail with a foreign-key violation (even though the matching `profiles` row would cascade-delete fine) — i.e., a user with audit history currently **cannot** be deleted from `auth.users` at all, full stop, until that's handled. Worth a conscious decision before this matters for real (e.g. GDPR/right-to-be-forgotten deletion requests) — not a blocker for applying the schema itself.
+- **F1 — FIXED.** `customers` now has a `deleted_at timestamptz` column and no DELETE RLS policy at all — hard deletion of a customer row is no longer reachable through RLS by any tenant role; "deleting" a customer means the app issues an `UPDATE ... SET deleted_at = now()` through the existing UPDATE policy. Matches `SECURITY.md` §10's "soft-delete first" requirement. Proven in `lib/db/tenant-isolation.integration.test.ts`: a same-company hard `DELETE` now affects zero rows, and a soft-delete `UPDATE` succeeds.
+- **`ON DELETE CASCADE`** on `profiles.company_id`, `customers.company_id`, and `audit_log.company_id`: deleting a `companies` row cascades to delete every profile, customer, and audit entry for that tenant, with no confirmation step at the database layer. Intentional (tenant offboarding needs *some* mechanism), but worth knowing this is a hard, cascading, irreversible delete with nothing above the database layer gating it yet — the "companies" table also has no delete RLS policy for ordinary roles at all, so this can currently only happen via a service-role/superuser connection, not through the app. Not changed by the F1/F2 fixes; still worth a conscious decision later (e.g. blocking cascade if a company has any non-deleted customers).
+- **F2 — FIXED.** `audit_log.actor_user_id` now has `ON DELETE SET NULL` instead of the implicit `NO ACTION`. Deleting an `auth.users` row that has audit_log entries now succeeds — the audit_log rows survive with `actor_user_id` nulled out, rather than the deletion failing outright. Proven in `lib/db/tenant-isolation.integration.test.ts`: a user with audit history is deleted (as the superuser/service-role-equivalent connection), and the surviving audit_log row's `actor_user_id` is confirmed null.
 
 ### RLS coverage
 
@@ -64,27 +66,29 @@ Confirmed by policy definition and by the local integration-test suite (§2 belo
 ### Service-role assumptions
 
 - The migrations themselves make **no** service-role assumptions and grant nothing to `service_role` explicitly — `service_role` bypasses RLS entirely by Postgres/Supabase convention, which is standard and not something these migrations need to configure.
-- **F4 (doc drift, not a functional issue):** migration 1's header comment says company creation "goes through the dedicated, audited HURKL-admin path (service role), never a tenant's own request." Migration 3 actually implements company creation as a `SECURITY DEFINER` function granted to `authenticated` — i.e., ordinary signed-in users call it directly during onboarding, not through a service-role path. The function is still safe (atomic, validated, audited), but the comment in migration 1 is now stale and should be corrected to avoid misleading a future reader. Low priority, doc-only.
+- **F4 — FIXED.** Migration 1's header comment previously said company creation "goes through the dedicated, audited HURKL-admin path (service role), never a tenant's own request" — inaccurate, since migration 3 implements it as a `SECURITY DEFINER` function granted to `authenticated`. The comment now correctly points at `create_company_and_assign_owner` in migration 3. No functional change; the function itself was always safe.
 - **Table-level grants to `anon`/`authenticated`** are not present anywhere in the three migrations (only the one function `EXECUTE` grant in migration 3). This relies entirely on Supabase's project-level default ACLs. **Verified directly against `Hurkl-production` via `pg_default_acl`**: the project already has default privileges granting `anon` and `authenticated` full table-level CRUD on future objects created in `public` by `postgres`/`supabase_admin` (the roles migrations run as), matching what `lib/db/test-support/local-role-grants.sql` manually approximates for local testing. This closes what would otherwise be an open assumption — the local test environment's role/grant model is a faithful match for production defaults, not a guess.
 
 ### Alignment with the approved Mason/HAL architecture
 
 - Matches `ARCHITECTURE.md` §4 (single Postgres, `company_id` on every tenant-scoped table, RLS as the enforcement layer, no cross-tenant query path outside a dedicated admin path) and `SECURITY.md` §1/§3/§6 (RLS-enforced isolation, RBAC roles matching `PRODUCT.md`'s role list, append-only audit log).
 - Scope matches the founder's explicit boundary for this slice: no Mason runtime tables (conversations, calls, estimates, invoices, HAL execution state) exist in this migration set, which is correct — those weren't in scope.
-- The one open gap against the approved posture is F1 (no soft-delete) — everything else reviewed here is either already aligned or a minor, low-risk doc/FK-behavior note (F2, F4).
+- The one open gap against the approved posture (F1, no soft-delete) has been fixed — see above. Everything else reviewed here is either already aligned or a minor, low-risk doc/FK-behavior note (F2, F4 — also fixed).
 - A pre-existing, Supabase-platform-managed object was found in `Hurkl-production` that predates and is unrelated to these migrations: `public.rls_auto_enable()`, an event trigger function Supabase installs by default that auto-enables RLS on any newly created `public` table. Supabase's own security advisor flags it (WARN-level, `anon`/`authenticated` can technically invoke it as a bare RPC call, though calling it outside its event-trigger context does nothing harmful — it just iterates zero rows). Not something our migrations create or need to touch; flagged here only so it isn't mistaken for something introduced by this work.
 
 ## 2. Verification against a disposable environment
 
 **Environment used: local, disposable PostgreSQL 16** (not a Supabase-hosted branch). The org's Supabase plan is **free**, and Supabase's database-branching feature is a paid capability — per the founder-approved cost policy ("no paid infrastructure without explicit approval"), a branch was not created. The local Postgres instance applies the exact same migration files (`supabase/migrations/*.sql`, byte-for-byte, no modifications) plus a local-only `auth` schema stand-in and role grants that were just cross-checked against `Hurkl-production`'s real default ACLs and found to match (see F4 discussion above) — so this environment is a faithful proxy for the real project's RLS/grant behavior, not merely "some Postgres."
 
-File hashes at time of this review (for the production migration plan in §4 below):
+File hashes as of the F1/F2/F4 fix (current — for the production migration plan in §4 below):
 
 ```
-4d176381607de3b67a1711a6b70c0c268743432b0e5f73652b5259fa5cd15cad  00000000000001_tenant_foundation.sql
-d1fbd5166e247e9be0a00125471fbdff30ef664944f637eba280305e2660a0b7  00000000000002_customers_and_audit_log.sql
+2c9455422bee3eeff5f18f19b5b58bb6cd3ec2b44eb1afed2b3663d00e175519  00000000000001_tenant_foundation.sql
+2267edad663aff9914b675dd453ec18afb94fc79e4f66f7769c7539be8d0d0a8  00000000000002_customers_and_audit_log.sql
 20d4882feb79af6476d056fa35814306587e116a3b19fc0449b611e8836c873a  00000000000003_company_onboarding.sql
 ```
+
+(Migration 3's hash is unchanged — the fixes only touched migrations 1 and 2. The original pre-fix hashes were `4d176381607de3b67a1711a6b70c0c268743432b0e5f73652b5259fa5cd15cad` for migration 1 and `d1fbd5166e247e9be0a00125471fbdff30ef664944f637eba280305e2660a0b7` for migration 2 — recorded here only for continuity with earlier discussion of this document, not because that version is still relevant to apply.)
 
 ### Results (all run this session, 2026-08-03)
 
@@ -101,16 +105,25 @@ d1fbd5166e247e9be0a00125471fbdff30ef664944f637eba280305e2660a0b7  00000000000002
 
 Company-onboarding-specific coverage (`lib/db/company-onboarding.integration.test.ts`, all passing): atomic create+claim+audit in one call; rejects unauthenticated calls; rejects empty company name with **zero orphaned rows** left behind; rejects a second company for a user who already has one, with **zero orphaned rows**; and a genuine two-independent-connection concurrency race (not sequential calls) where exactly one of two simultaneous submissions wins and the loser leaves no orphaned company.
 
+### F1/F2 fix verification (re-run after the migration edits above)
+
+| Check | Result |
+|---|---|
+| Hard `DELETE` on a customer's own company's row is blocked | **Pass** — new test: affects zero rows (no DELETE policy exists at all now). |
+| Soft-deleting a customer (`UPDATE ... SET deleted_at = now()`) works | **Pass** — new test: succeeds via the existing UPDATE policy, `deleted_at` is set. |
+| Deleting a user with `audit_log` history no longer fails | **Pass** — new test: deletes a user referenced by an `audit_log.actor_user_id`, confirms the delete succeeds and the surviving audit_log row's `actor_user_id` is `null`. |
+| Full suite still green after the fix | **Pass** — 16 tenant-isolation + company-onboarding integration tests (was 13; +3 new), 68 unit tests, build, typecheck, lint, format, audit:report all pass against the edited migrations. |
+
 ## 3. Findings summary
 
-| ID | Severity | Finding | Recommendation |
+| ID | Severity | Finding | Status |
 |---|---|---|---|
-| F1 | Medium | No soft-delete on `customers`; RLS permits hard `DELETE` directly | Add `deleted_at` + adjust policies before real customer data exists (not required to apply this migration set to an empty project) |
-| F2 | Low | `audit_log.actor_user_id` has no `ON DELETE` behavior — blocks deleting a user with audit history | Decide `ON DELETE SET NULL` vs. an explicit deletion workflow before this matters for real (e.g. account-deletion requests) |
-| F3 | Informational | `companies` has no insert/update/delete RLS policy for any ordinary role — by design, all mutation goes through the `SECURITY DEFINER` onboarding function or a service-role connection | No action; documenting intentional behavior |
-| F4 | Low (docs only) | Migration 1's comment claims company creation goes through a service-role path; migration 3 actually grants it to `authenticated` directly | Fix the comment in a follow-up migration-adjacent doc change; no functional risk |
+| F1 | Medium | No soft-delete on `customers`; RLS permitted hard `DELETE` directly | **Fixed** — `deleted_at` column added, DELETE policy removed entirely |
+| F2 | Low | `audit_log.actor_user_id` had no `ON DELETE` behavior — blocked deleting a user with audit history | **Fixed** — `ON DELETE SET NULL` |
+| F3 | Informational | `companies` has no insert/update/delete RLS policy for any ordinary role — by design, all mutation goes through the `SECURITY DEFINER` onboarding function or a service-role connection | No action needed; documenting intentional behavior |
+| F4 | Low (docs only) | Migration 1's comment claimed company creation goes through a service-role path; migration 3 actually grants it to `authenticated` directly | **Fixed** — comment corrected to point at `create_company_and_assign_owner` |
 
-None of F1–F4 block applying this migration set to the currently-empty `Hurkl-production` project. F1 and F2 should be resolved before real customer data or real user deletions happen.
+F1, F2, and F4 are now fixed directly in the migration files (not yet applied to any real project, so editing in place rather than adding a follow-up migration was safe). F3 remains intentional, documented behavior — no action needed. Nothing here blocks applying this migration set to the currently-empty `Hurkl-production` project.
 
 ## 4. Production migration plan (not yet executed)
 
@@ -137,8 +150,11 @@ None of F1–F4 block applying this migration set to the currently-empty `Hurkl-
 select relname, relrowsecurity from pg_class
 where relname in ('companies','profiles','customers','audit_log') and relnamespace = 'public'::regnamespace;
 
--- Policy count matches expectation (2 companies, 2 profiles, 4 customers, 2 audit_log = 10)
+-- Policy count matches expectation (2 companies, 2 profiles, 3 customers, 2 audit_log = 9)
 select tablename, count(*) from pg_policies where schemaname = 'public' group by tablename;
+
+-- customers has no DELETE policy at all (F1 fix) — this must return zero rows
+select * from pg_policies where schemaname = 'public' and tablename = 'customers' and cmd = 'DELETE';
 
 -- Onboarding function exists and is EXECUTE-granted to authenticated only
 select has_function_privilege('authenticated', 'public.create_company_and_assign_owner(text,text,text,text,text,text)', 'EXECUTE');
@@ -151,7 +167,7 @@ Then run `mcp__Supabase__get_advisors` (`security`) again and confirm the only f
 
 ### Expected resulting schema
 
-Exactly the objects enumerated in §1: 4 tables (`companies`, `profiles`, `customers`, `audit_log`), 1 enum (`user_role`), 4 functions (`current_company_id`, `current_role`, `is_hurkl_admin`, `create_company_and_assign_owner`), 3 indexes, 10 RLS policies, 1 extension (`pgcrypto`), 0 triggers introduced by these migrations. No data.
+Exactly the objects enumerated in §1: 4 tables (`companies`, `profiles`, `customers`, `audit_log`), 1 enum (`user_role`), 4 functions (`current_company_id`, `current_role`, `is_hurkl_admin`, `create_company_and_assign_owner`), 3 indexes, **9** RLS policies (down from 10 in the original review — `customers` now has 3, not 4, since F1 removed its DELETE policy), 1 extension (`pgcrypto`), 0 triggers introduced by these migrations. No data.
 
 ### What happens after schema is applied (explicitly out of scope for this step)
 

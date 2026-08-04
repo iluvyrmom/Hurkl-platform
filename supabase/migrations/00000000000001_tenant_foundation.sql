@@ -80,8 +80,11 @@ alter table public.profiles enable row level security;
 
 -- Companies: a user may see only their own company. No insert/update/
 -- delete policy exists for ordinary roles — company creation goes
--- through the dedicated, audited HURKL-admin path (service role),
--- never a tenant's own request (SECURITY.md §1).
+-- through the dedicated, audited `create_company_and_assign_owner`
+-- SECURITY DEFINER function (see
+-- 00000000000003_company_onboarding.sql), granted only to
+-- `authenticated` and never callable as a bare table write, rather
+-- than a tenant's own unaudited request (SECURITY.md §1).
 create policy companies_select_own on public.companies
 for select
 using (
