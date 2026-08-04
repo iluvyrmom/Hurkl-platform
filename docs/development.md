@@ -72,18 +72,23 @@ Or without the CLI: open the dashboard's SQL Editor and run the files in `supaba
 
 **As of this writing, this has not been run against the real `Hurkl-production` project.** See `docs/production-migration-plan.md` for the full migration review (schema inventory, dependency order, destructive-behavior findings), the disposable-environment verification results, and the step-by-step production plan (not yet executed) — required reading before applying these migrations for real.
 
+### `/api/health` — Supabase connectivity check
+
+`GET /api/health` proves the app can reach the configured Supabase project, using the same RLS-respecting client (`lib/supabase/server.ts`) every real tenant-scoped route uses — not the service-role client, since this only needs to prove the app's own request path works, not bypass RLS. It queries a deliberately nonexistent table (`__health_check_no_such_table__`) — Postgres/PostgREST responding with "relation does not exist" (`42P01`/`PGRST205`) proves a live, authenticated round trip to the database without needing any real application table to exist. Responses are intentionally minimal: `{ status, database, timestamp }`, where `database` is one of `connected` / `unreachable` / `misconfigured` — never a raw provider error, stack trace, URL, or key.
+
 ### Manual end-to-end verification (once the real project is migrated)
 
 Real Supabase Auth (sign-up/sign-in) can't be exercised automatically in a sandboxed environment without either Docker or a connected real project — neither is available where this was built. Once `.env.local` has real values and the migrations above have been applied, verify by hand:
 
-1. Visit `/sign-up`, create an account with a real email/password.
-2. Confirm the email if Supabase Auth's email-confirmation setting is on (check the dashboard's Auth logs if nothing arrives in dev).
-3. Sign in at `/sign-in` — should land on `/onboarding` (no company yet).
-4. Fill in the company form and submit — should redirect to `/dashboard`.
-5. In the dashboard's Table Editor, confirm: a `companies` row exists; the `profiles` row for your user has that `company_id` and `role = 'owner'`; an `audit_log` row exists with `action = 'company_created_owner_assigned'`.
-6. On `/dashboard`, add a customer — confirm it appears, and a `customer_created` audit_log row exists.
-7. Sign out, create a **second** account and a **second** company. Confirm that account's `/dashboard` shows zero customers — not the first company's. This is RLS enforced over a real HTTP request, not just the local integration tests.
-8. Re-submit the company-creation form for an account that already has one (e.g. via the browser back button) — expect a clear `409`, not a second company.
+1. `curl <app-url>/api/health` — expect `{"status":"ok","database":"connected",...}`. If this fails, stop here; nothing past this point can work either.
+2. Visit `/sign-up`, create an account with a real email/password.
+3. Confirm the email if Supabase Auth's email-confirmation setting is on (check the dashboard's Auth logs if nothing arrives in dev).
+4. Sign in at `/sign-in` — should land on `/onboarding` (no company yet).
+5. Fill in the company form and submit — should redirect to `/dashboard`.
+6. In the dashboard's Table Editor, confirm: a `companies` row exists; the `profiles` row for your user has that `company_id` and `role = 'owner'`; an `audit_log` row exists with `action = 'company_created_owner_assigned'`.
+7. On `/dashboard`, add a customer — confirm it appears, and a `customer_created` audit_log row exists.
+8. Sign out, create a **second** account and a **second** company. Confirm that account's `/dashboard` shows zero customers — not the first company's. This is RLS enforced over a real HTTP request, not just the local integration tests.
+9. Re-submit the company-creation form for an account that already has one (e.g. via the browser back button) — expect a clear `409`, not a second company.
 
 ## What's required right now (Phase 1)
 
