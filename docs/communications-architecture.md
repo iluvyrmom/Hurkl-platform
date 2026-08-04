@@ -12,7 +12,7 @@ The founder asked for the first real, working loop between a human and Mason: Ow
 
 That separation is structural, not just a convention:
 
-- A fixed, seeded `companies` row — `id = 00000000-0000-0000-0000-000000000001`, `name = 'HURKL (Internal)'` (`supabase/migrations/00000000000004_communications.sql`) — is the company every internal conversation attaches to. It is never a real tenant.
+- A fixed, seeded `companies` row — `id = 00000000-0000-0000-0000-000000000001`, `name = 'HURKL (Internal)'` (`supabase/migrations/00000000000004_communications.sql`) — is the company every internal conversation attaches to. It is never a real tenant. As of `docs/internal-ownership-system.md`, this same company is also formally classified `account_type = 'internal_hurkl'`, which is what keeps it (and the founder's own owner account) out of the billing system entirely once one exists.
 - The founder's own HURKL identity is a `profiles` row with `role = 'hurkl_admin'` and `company_id = null` — the same role/shape every existing RLS policy already gives full cross-tenant read/write to (`current_company_id() = ... OR is_hurkl_admin()`). No new RLS mechanism, no new RBAC concept — the founder reads and writes the internal company's conversations through the exact same admin bypass that already lets `hurkl_admin` read across real tenants.
 - When a real tenant eventually gets a channel (their own Telegram, or SMS/email/etc.), their conversations carry their own real `company_id` and are automatically isolated from the internal HURKL company's conversations by the same RLS that already isolates `customers` and `audit_log` per tenant.
 

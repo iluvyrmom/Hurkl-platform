@@ -44,6 +44,10 @@ Roles map directly to `PRODUCT.md`'s user roles:
 
 Authorization checks are enforced server-side, never trusted from client input, and layered on top of (not instead of) RLS.
 
+### Internal company classification (billing authorization)
+
+Every company carries an `account_type` (`production_customer`, `internal_hurkl`, `demo`, `development`, `partner` — extendable) — an internal platform concern, never customer-facing. Changing it is a HURKL-admin-only action, enforced inside the database itself (`is_hurkl_admin()` checked inside the `set_company_account_type` function, not just at the application layer) — the same never-trust-the-client principle as everything else in this section. Whether a company is billed is decided in exactly one place, `lib/billing/authorization.ts`, which every future billing workflow must call rather than re-deriving the answer itself. Full detail: `docs/internal-ownership-system.md`.
+
 ## 4. Autonomy tiers (security-critical)
 
 Mason's actions are classified into three tiers. This classification is a security control, not just a UX detail — it determines what code paths exist at all.
@@ -155,3 +159,4 @@ Because Mason maintains shared customer history across phone, website, text, and
 |---|---|---|
 | Data retention defaults | Set per §10 table; configurable per tenant | Founder approval, this session |
 | MFA policy | Mandatory before production launch for HURKL admins, client owners/admins, and anyone with billing/data-export/security-config/broad admin permissions; recommended (not mandatory) for narrowly-scoped employees | Founder approval, this session |
+| Internal company classification | `companies.account_type` (production_customer/internal_hurkl/demo/development/partner), admin-only, database-enforced; one centralized billing-authorization layer, not scattered exceptions. `partner` billing terms left as an open question — see `docs/internal-ownership-system.md` | Founder request, this session |
