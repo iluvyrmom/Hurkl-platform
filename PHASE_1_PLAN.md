@@ -74,6 +74,8 @@ Tasks:
 
 ### M1.4 — Supabase project provisioning (free tier)
 
+**Status (updated after the security-foundation merge to `main`): superseded by more complete work, partially done.** The free-tier `Hurkl-production` project already existed (org `Hurkl`) and its connection was verified for real via the Supabase MCP connector — `list_projects`/`list_tables` confirm it's live, healthy, and currently empty. The original scope (a bare `/api/health` ping endpoint, `lib/env.ts` requiring Supabase vars) was not built as originally planned; instead, the merged security foundation (PR #7) built the fuller `lib/supabase/{client,server,admin}.ts` split plus three real migrations, reviewed and verified against a disposable local Postgres — see `docs/production-migration-plan.md`. **Not yet done:** applying those migrations to the real project, and the repo-wide secret scan — both blocked on explicit founder go-ahead (`docs/production-migration-plan.md` is the plan, not yet executed).
+
 **Goal:** a real, free-tier Supabase project exists and the app can connect to it.
 
 Tasks:
@@ -86,6 +88,8 @@ Tasks:
 - A repo-wide secret scan confirms no Supabase credential appears anywhere in the working tree or git history outside `.env`.
 
 ### M1.5 — Database schema skeleton & migration tooling
+
+**Status: exceeded, not yet applied for real.** Rather than a single throwaway healthcheck table, the merged security foundation defines the real tenant/RBAC/audit schema (`supabase/migrations/`), reviewed end-to-end and verified against local Postgres — see `docs/production-migration-plan.md` for the full review and the unexecuted production-apply plan. What remains from this milestone's original acceptance criteria is applying it to the actual hosted project, which hasn't happened yet.
 
 **Goal:** prove the migration workflow works — without building real business tables (that's Phase 2+).
 
