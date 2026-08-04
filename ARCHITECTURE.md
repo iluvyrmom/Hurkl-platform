@@ -220,6 +220,10 @@ These are binding engineering requirements, not aspirations:
 
 This exception must stay narrow in implementation: a minimal territory-and-trade registry (trade/service category, territory definition, status, duration — no customer data, no financials, no conversation content, no anything else) exposed only to a dedicated onboarding/expansion workflow, never to ordinary tenant-facing queries or RLS-bound application code paths. Extending this exception to expose any other cross-tenant data requires a conscious, reviewed architecture decision, not an assumption that "territory already does this so this can too."
 
+### Internal company classification: HURKL's own companies never bill
+
+Distinct from tenant isolation itself: every company additionally carries an `account_type` (`production_customer` / `internal_hurkl` / `demo` / `development` / `partner`, extendable) so HURKL's own company, development/test companies, and demo companies get full platform access without ever entering the (not-yet-built) billing system — never a client-supplied value, never a scattered set of billing-exception checks. One centralized decision layer (`lib/billing/authorization.ts`) is the only code allowed to answer "does this company get billed," and only a HURKL admin can change a company's classification, enforced inside the database itself. Full design, including the seeded internal HURKL company and the founder's owner account: `docs/internal-ownership-system.md`.
+
 ## 5. AI model routing (cost control)
 
 - Every AI task is classified before it's dispatched: routine (classification, drafting a standard reply, checking configured availability, summarization) vs. deep-reasoning (complex estimate, unusual objection, ambiguous multi-step request, escalation judgment call).

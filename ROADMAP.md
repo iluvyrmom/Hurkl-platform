@@ -75,6 +75,7 @@ This roadmap is phase-based, not date-based — phases are sequenced by dependen
 ## Phase 14 — Multi-company commercial release
 - Self-serve (or sales-assisted) onboarding for additional companies, billing, marketing site, support processes.
 - Exit criteria: a second real company (beyond A-1) is onboarded without platform code changes — configuration only.
+- **Status note:** the billing *exemption* side of this phase was deliberately pulled forward — every company now carries an `account_type`, and one centralized layer (`lib/billing/authorization.ts`) already exists to decide whether a company is billed — see `docs/internal-ownership-system.md`. This is not the billing system itself, which still doesn't exist (no Stripe, no subscriptions, no invoices); it's the guardrail built ahead of it, per explicit founder request, so real billing work when it happens has one correct integration point from day one rather than retrofitting exceptions in later.
 
 ---
 
