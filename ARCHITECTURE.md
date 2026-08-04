@@ -167,7 +167,8 @@ These are binding engineering requirements, not aspirations:
     │
 ┌───▼────────────────────────────────────────────────────────────┐
 │ Channel Gateways                                                 │
-│  Voice Gateway (Telephony + STT + TTS)  ·  SMS Gateway            │
+│  Telegram (internal/dev — first built)  ·  Voice Gateway          │
+│  (Telephony + STT + TTS)  ·  SMS Gateway                          │
 │  Web Voice/Text Widget  ·  Email Gateway                          │
 └────────────────────────────────────────────────────────────────┘
 
@@ -192,6 +193,8 @@ These are binding engineering requirements, not aspirations:
 - **Usage & Cost Metering** — tracks AI token spend, telephony minutes, SMS/email volume per tenant; enforces owner-configured spending limits; feeds the emergency pause/slowdown controls.
 - **Background Jobs** — durable, retryable workers for anything that shouldn't block a live conversation: call summarization, follow-up scheduling, missed-call recovery, review requests, seasonal reminders.
 - **Billing** — tenant subscription/usage billing (HURKL's own revenue engine); architecturally separate from a tenant's customer-facing payment workflows.
+
+**Communication Adapter pattern** — each Channel Gateway implements one shared, outbound-only `CommunicationAdapter` interface (`lib/communications/adapter.ts`); inbound delivery is channel-specific (webhook push, live audio stream, HTTP request/response), so each channel normalizes into one shared `InboundMessage` shape and calls one shared pipeline (`lib/communications/inbound.ts`) rather than the Conversation Engine having a different code path per channel. Telegram is the first channel built this way — the founder's own internal/dev channel, not customer-facing (see `docs/communications-architecture.md` for the full design, including how internal development conversations stay structurally separate from future tenant-facing ones).
 
 ### Future services (not yet designed in detail)
 

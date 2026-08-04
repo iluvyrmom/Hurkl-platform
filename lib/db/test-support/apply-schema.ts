@@ -10,6 +10,7 @@ const MIGRATION_FILES = [
   "00000000000001_tenant_foundation.sql",
   "00000000000002_customers_and_audit_log.sql",
   "00000000000003_company_onboarding.sql",
+  "00000000000004_communications.sql",
 ];
 
 /**

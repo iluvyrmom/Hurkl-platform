@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import { MockAIModelProvider } from "./ai-model-provider";
 import { MockEmailProvider } from "./email-provider";
 import { MockPaymentProvider } from "./payment-provider";
-import { MockTelegramProvider } from "./telegram-provider";
 
 describe("MockAIModelProvider", () => {
   it("makes no network calls and returns a deterministic response, recording the request", async () => {
@@ -15,16 +14,6 @@ describe("MockAIModelProvider", () => {
     expect(response.tier).toBe("low_cost");
     expect(response.text).toContain("What are your hours?");
     expect(provider.requests).toHaveLength(1);
-  });
-});
-
-describe("MockTelegramProvider", () => {
-  it("records sent messages and returns an incrementing mock message id", async () => {
-    const provider = new MockTelegramProvider();
-    const first = await provider.sendMessage({ chatId: "owner-chat", text: "Hello" });
-    const second = await provider.sendMessage({ chatId: "owner-chat", text: "Update" });
-    expect(provider.sentMessages).toHaveLength(2);
-    expect(first.messageId).not.toBe(second.messageId);
   });
 });
 

@@ -14,7 +14,9 @@
     "test": "vitest run",
     "test:integration": "vitest run --config vitest.integration.config.mts",
     "db:test-reset": "NODE_NO_WARNINGS=1 node --env-file-if-exists=.env.local scripts/reset-test-db.ts",
-    "audit:report": "node scripts/check-dependency-audit.mjs"
+    "audit:report": "node scripts/check-dependency-audit.mjs",
+    "telegram:dev-bridge": "NODE_NO_WARNINGS=1 node --env-file-if-exists=.env.local scripts/telegram-dev-bridge.ts",
+    "telegram:link-owner": "NODE_NO_WARNINGS=1 node --env-file-if-exists=.env.local scripts/telegram-link-owner.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.4",

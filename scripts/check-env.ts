@@ -20,6 +20,8 @@ const SECRET_SERVER_KEYS: (keyof ServerEnv)[] = [
   "TRIGGER_SECRET_KEY",
   "SENTRY_DSN",
   "RESEND_API_KEY",
+  "TELEGRAM_BOT_TOKEN",
+  "TELEGRAM_WEBHOOK_SECRET",
 ];
 
 function presence(value: string | undefined): "set" | "unset" {
