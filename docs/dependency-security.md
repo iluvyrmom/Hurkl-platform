@@ -2,9 +2,9 @@
 
 This file tracks known vulnerabilities in the dependency tree that are **not yet resolved**. It exists because `npm audit fix --force` was deliberately not run — that command's suggested fix is a destructive downgrade (see below), not an acceptable automatic remediation. These findings are open, not harmless, and must be re-checked at every recheck point listed at the bottom until they're genuinely resolved (upstream patch, confirmed non-exposure, or a safe alternative).
 
-Last audited: 2026-08-01, via `npm audit --json` against `package-lock.json` on `phase-1-foundation` after M1.1.
+Last audited: 2026-08-03, via `npm audit --json` against `package-lock.json` on `feature/security-foundation-and-mason` after adding `@supabase/supabase-js`, `@supabase/ssr`, and `pg`.
 
-## Finding 1 — postcss (3 advisories, high severity overall)
+## Finding 1 — postcss (4 advisories, high severity overall)
 
 - **Affected package:** `postcss`
 - **Installed version:** `8.4.31`
@@ -15,8 +15,9 @@ Last audited: 2026-08-01, via `npm audit --json` against `package-lock.json` on 
   | [GHSA-qx2v-qp2m-jg93](https://github.com/advisories/GHSA-qx2v-qp2m-jg93) | PostCSS has XSS via Unescaped `</style>` in its CSS Stringify Output | Moderate | 6.1 | CWE-79 | `<8.5.10` |
   | [GHSA-6g55-p6wh-862q](https://github.com/advisories/GHSA-6g55-p6wh-862q) | PostCSS: Arbitrary file read and information disclosure via attacker-controlled `sourceMappingURL` in CSS comments | High | 7.5 | CWE-22, CWE-200 | `<=8.5.11` |
   | [GHSA-r28c-9q8g-f849](https://github.com/advisories/GHSA-r28c-9q8g-f849) | PostCSS: Path Traversal in Previous Source Map Auto-Loading (`sourceMappingURL`) leads to Arbitrary `.map` File Disclosure | High | 7.5 | CWE-22 | `<=8.5.17` |
+  | [GHSA-fxqj-rqcc-2cmp](https://github.com/advisories/GHSA-fxqj-rqcc-2cmp) | PostCSS: incomplete fix of GHSA-6g55-p6wh-862q — attacker-controlled `sourceMappingURL` still reads arbitrary `.map` files when `from` is unset | High | — | — | `<=8.5.22` |
 
-  Installed `8.4.31` falls inside all three affected ranges.
+  Installed `8.4.31` falls inside all four affected ranges. GHSA-fxqj-rqcc-2cmp is a follow-up advisory for the same underlying `sourceMappingURL` issue as GHSA-6g55-p6wh-862q above (the original fix was incomplete) — same package, same exposure surface, not a new attack vector.
 
 - **Exposure classification: build-time only, low current practical exposure — but present in the production dependency tree.**
   `postcss` is listed under `next`'s runtime `dependencies` (not a devDependency), so it is physically present in `node_modules` in production installs too. However, its vulnerable code paths — CSS-to-string stringification and `sourceMappingURL`-based source-map auto-loading — run **at build time**, against **our own trusted source files** (currently just `app/globals.css`), not against attacker-controlled input processed live during request handling. This app does not accept user-submitted CSS, custom stylesheets, or CSS-adjacent content from any external party at runtime. **Practical exposure today is low, not zero** — postcss's exact internal invocation surface inside Next.js's bundler (Turbopack/webpack) has not been independently audited by us, and "low today" can change if a future feature (e.g., user-customizable themes/CSS, a CMS-driven stylesheet, or an uploaded `.map` file) is added without revisiting this entry first.
@@ -43,7 +44,7 @@ Last audited: 2026-08-01, via `npm audit --json` against `package-lock.json` on 
 - Undo the verified Netlify compatibility from M1.0 (that verification was performed against Next.js 16, not 9).
 - Very likely break the build entirely, since this repository's `app/` directory structure doesn't exist in the Next.js 9 era (pre-App-Router).
 
-Applying it would trade three dependency advisories — two of which have low current practical exposure per the classifications above — for a broken, years-obsolete framework version. That is not an acceptable trade, and CLAUDE.md's "do not claim untested work is complete" / "ask before destructive operations" principles apply directly here: a downgrade of this magnitude is a destructive operation that was not requested and would not have been safe to apply silently.
+Applying it would trade five dependency advisories (four postcss, one sharp) — all of which have low current practical exposure per the classifications above — for a broken, years-obsolete framework version. That is not an acceptable trade, and CLAUDE.md's "do not claim untested work is complete" / "ask before destructive operations" principles apply directly here: a downgrade of this magnitude is a destructive operation that was not requested and would not have been safe to apply silently.
 
 ## Required recheck points
 

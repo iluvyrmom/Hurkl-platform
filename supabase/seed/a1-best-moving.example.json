@@ -1,0 +1,16 @@
+{
+  "_comment": "Template only — placeholders, not real values. Copy to a1-best-moving.json (git-ignored, see .gitignore) and fill in real values locally/in a secret manager. Never commit the real file. See CLAUDE.md's 'Protect secrets' rule and SECURITY.md.",
+  "businessName": "A-1 Best Moving LLC",
+  "slogan": "The best move you'll make.",
+  "phone": "000-000-0000",
+  "email": "owner@example.com",
+  "operatingRules": {
+    "foremenHandleMoney": false,
+    "foremenChangePricing": false,
+    "foremenIssueDiscounts": false,
+    "invoiceCreatedBy": "mason_or_owner",
+    "invoiceAutoEmailAfterValidation": true,
+    "invoiceOwnerCanTextOneAction": true,
+    "paymentGoesDirectlyToBusiness": true
+  }
+}
