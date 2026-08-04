@@ -7,6 +7,13 @@ create table public.customers (
   name text not null,
   phone text,
   email text,
+  -- Soft-delete marker (SECURITY.md §10: soft-delete first, before any
+  -- hard/irreversible delete). Non-null means the row is in the
+  -- recoverable-deleted state. There is deliberately no DELETE policy
+  -- below — permanently removing a customer row is not something any
+  -- tenant role can do via SQL at all; "deleting" a customer means
+  -- setting this column via the existing UPDATE policy.
+  deleted_at timestamptz,
   created_at timestamptz not null default now()
 );
 
@@ -30,10 +37,6 @@ for update
 using (company_id = public.current_company_id())
 with check (company_id = public.current_company_id());
 
-create policy customers_delete_own_company on public.customers
-for delete
-using (company_id = public.current_company_id());
-
 -- Append-only audit log. Deliberately no update/delete policy exists —
 -- RLS defaults to deny for any command with no matching policy, so this
 -- table is structurally append-only for every non-service-role
@@ -42,7 +45,13 @@ using (company_id = public.current_company_id());
 create table public.audit_log (
   id uuid primary key default gen_random_uuid(),
   company_id uuid not null references public.companies (id) on delete cascade,
-  actor_user_id uuid references auth.users (id),
+  -- ON DELETE SET NULL, not NO ACTION (the default): a user must be
+  -- deletable from auth.users (e.g. a right-to-be-forgotten request)
+  -- without that failing because they once acted on something. The
+  -- audit_log row itself is never deleted or altered — only this
+  -- reference is cleared — so the audit trail (what happened, when,
+  -- on which company) survives the actor's own deletion.
+  actor_user_id uuid references auth.users (id) on delete set null,
   action text not null,
   autonomy_tier text not null check (
     autonomy_tier in ('tier_1_automatic', 'tier_2_approval_required', 'tier_3_never_autonomous')

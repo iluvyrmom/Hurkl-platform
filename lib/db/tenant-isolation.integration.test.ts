@@ -90,6 +90,23 @@ describe("tenant isolation (RLS)", () => {
     expect(result.rowCount).toBe(0);
   });
 
+  it("hard DELETE is blocked even on a customer's own company's row — no DELETE policy exists at all (soft-delete only)", async () => {
+    const result = await asUser(USER_A, (c) =>
+      c.query("delete from public.customers where id = $1", [CUSTOMER_A]),
+    );
+    expect(result.rowCount).toBe(0);
+  });
+
+  it("soft-deleting a customer (setting deleted_at) works via the existing UPDATE policy", async () => {
+    const result = await asUser(USER_A, (c) =>
+      c.query("update public.customers set deleted_at = now() where id = $1 returning deleted_at", [
+        CUSTOMER_A,
+      ]),
+    );
+    expect(result.rowCount).toBe(1);
+    expect(result.rows[0].deleted_at).not.toBeNull();
+  });
+
   it("a crafted INSERT forging another company's id is rejected by the database itself", async () => {
     await expect(
       asUser(USER_A, (c) =>
@@ -139,5 +156,30 @@ describe("tenant isolation (RLS)", () => {
       c.query("delete from public.audit_log where company_id = $1", [COMPANY_A]),
     );
     expect(del.rowCount).toBe(0);
+  });
+
+  it("deleting a user who has audit_log history succeeds and nulls out actor_user_id, rather than failing the deletion (ON DELETE SET NULL)", async () => {
+    const deletableUserResult = await client.query(
+      "insert into auth.users default values returning id",
+    );
+    const deletableUserId = deletableUserResult.rows[0].id as string;
+
+    const insertedAudit = await client.query(
+      "insert into public.audit_log (company_id, actor_user_id, action, autonomy_tier) values ($1, $2, 'test_action', 'tier_1_automatic') returning id",
+      [COMPANY_A, deletableUserId],
+    );
+    const auditId = insertedAudit.rows[0].id as string;
+
+    // This is a service-role-level operation (e.g. Supabase's admin user
+    // API) — not something any tenant role can do — so it runs as the
+    // raw superuser connection, the same one that seeds auth.users in
+    // beforeAll, rather than through asUser().
+    await client.query("delete from auth.users where id = $1", [deletableUserId]);
+
+    const survivingAudit = await client.query(
+      "select actor_user_id from public.audit_log where id = $1",
+      [auditId],
+    );
+    expect(survivingAudit.rows).toEqual([{ actor_user_id: null }]);
   });
 });
