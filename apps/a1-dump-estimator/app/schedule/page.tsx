@@ -1,5 +1,5 @@
 import { Card, EmptyState, PageHeader } from "@/components/ui";
-import { DEFAULT_BUSINESS } from "@/lib/config/business";
+import { requireCurrentBusinessId } from "@/lib/auth/business";
 import { getScheduleByDay } from "@/lib/scheduling/service";
 
 function formatDay(date: string): string {
@@ -15,11 +15,12 @@ function formatTime(iso: string): string {
 }
 
 export default async function SchedulePage() {
+  const businessId = await requireCurrentBusinessId();
   const today = new Date().toISOString().slice(0, 10);
   const twoWeeksFromNow = new Date();
   twoWeeksFromNow.setDate(twoWeeksFromNow.getDate() + 14);
   const twoWeeksOut = twoWeeksFromNow.toISOString().slice(0, 10);
-  const days = await getScheduleByDay(DEFAULT_BUSINESS.id, today, twoWeeksOut);
+  const days = await getScheduleByDay(businessId, today, twoWeeksOut);
 
   return (
     <div>

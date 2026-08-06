@@ -1,5 +1,5 @@
 import { Card, EmptyState, PageHeader, inputClassName } from "@/components/ui";
-import { DEFAULT_BUSINESS } from "@/lib/config/business";
+import { requireCurrentBusinessId } from "@/lib/auth/business";
 import { listCustomers } from "@/lib/customers/service";
 
 export default async function CustomersPage({
@@ -8,7 +8,8 @@ export default async function CustomersPage({
   searchParams: Promise<{ q?: string }>;
 }) {
   const { q } = await searchParams;
-  const customers = await listCustomers(DEFAULT_BUSINESS.id);
+  const businessId = await requireCurrentBusinessId();
+  const customers = await listCustomers(businessId);
   const filtered = q
     ? customers.filter(
         (c) =>

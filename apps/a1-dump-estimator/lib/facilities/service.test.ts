@@ -68,6 +68,9 @@ const fakeMapsProvider: MapsProvider = {
   async estimateRoute() {
     return { distanceMiles: 5, driveTimeMinutes: 10 };
   },
+  geocodeAddress() {
+    return Promise.resolve(null);
+  },
   getDirectionsUrl() {
     return "";
   },

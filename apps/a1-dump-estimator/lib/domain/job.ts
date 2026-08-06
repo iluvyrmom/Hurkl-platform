@@ -1,4 +1,5 @@
 import type { CrewSize, EstimateTier } from "./estimate";
+import type { PaymentStatus } from "./payment";
 
 export type JobStatus = "scheduled" | "in_progress" | "completed" | "cancelled";
 
@@ -33,6 +34,15 @@ export interface Job {
   facilityId: string | null;
   scheduledAt: string;
   status: JobStatus;
+  /**
+   * Denormalized cache of the job's latest payment state — see
+   * supabase/migrations/00000000000006_job_payment_status.sql. The
+   * `payments` table (lib/domain/payment.ts) is the source of truth; this
+   * field is kept in sync by lib/payments/service.ts, only ever from a
+   * webhook-confirmed or owner-recorded payment event, never optimistically
+   * from a client redirect.
+   */
+  paymentStatus: PaymentStatus;
   completion: JobCompletion | null;
   createdAt: string;
   updatedAt: string;

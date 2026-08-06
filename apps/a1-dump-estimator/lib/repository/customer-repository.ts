@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type { Customer } from "@/lib/domain/customer";
-import { getSupabaseClient } from "@/lib/db/supabase-client";
+import { isSupabaseConfigured } from "@/lib/supabase/env";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { inMemoryStore } from "./in-memory-store";
 
 export interface CreateCustomerInput {
@@ -57,8 +58,7 @@ class InMemoryCustomerRepository implements CustomerRepository {
 /** Written against supabase/migrations/00000000000002_customers_estimates.sql; not executed against a live project. */
 class SupabaseCustomerRepository implements CustomerRepository {
   async list(businessId: string): Promise<Customer[]> {
-    const client = getSupabaseClient();
-    if (!client) throw new Error("Supabase client not configured");
+    const client = await createSupabaseServerClient();
     const { data, error } = await client
       .from("customers")
       .select("*")
@@ -69,16 +69,14 @@ class SupabaseCustomerRepository implements CustomerRepository {
   }
 
   async get(id: string): Promise<Customer | null> {
-    const client = getSupabaseClient();
-    if (!client) throw new Error("Supabase client not configured");
+    const client = await createSupabaseServerClient();
     const { data, error } = await client.from("customers").select("*").eq("id", id).maybeSingle();
     if (error) throw error;
     return data ? mapRow(data) : null;
   }
 
   async findByPhone(businessId: string, phone: string): Promise<Customer | null> {
-    const client = getSupabaseClient();
-    if (!client) throw new Error("Supabase client not configured");
+    const client = await createSupabaseServerClient();
     const { data, error } = await client
       .from("customers")
       .select("*")
@@ -90,8 +88,7 @@ class SupabaseCustomerRepository implements CustomerRepository {
   }
 
   async create(input: CreateCustomerInput): Promise<Customer> {
-    const client = getSupabaseClient();
-    if (!client) throw new Error("Supabase client not configured");
+    const client = await createSupabaseServerClient();
     const { data, error } = await client
       .from("customers")
       .insert({
@@ -125,5 +122,5 @@ function mapRow(row: any): Customer {
 }
 
 export function getCustomerRepository(): CustomerRepository {
-  return getSupabaseClient() ? new SupabaseCustomerRepository() : new InMemoryCustomerRepository();
+  return isSupabaseConfigured() ? new SupabaseCustomerRepository() : new InMemoryCustomerRepository();
 }

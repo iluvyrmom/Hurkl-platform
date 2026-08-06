@@ -1,5 +1,5 @@
 import { Card, EmptyState, PageHeader } from "@/components/ui";
-import { DEFAULT_BUSINESS } from "@/lib/config/business";
+import { requireCurrentBusinessId } from "@/lib/auth/business";
 import { listJobs } from "@/lib/jobs/service";
 
 const STATUS_LABEL: Record<string, string> = {
@@ -10,7 +10,8 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 export default async function JobsPage() {
-  const jobs = await listJobs(DEFAULT_BUSINESS.id);
+  const businessId = await requireCurrentBusinessId();
+  const jobs = await listJobs(businessId);
 
   return (
     <div>

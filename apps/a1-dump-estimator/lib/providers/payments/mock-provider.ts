@@ -1,26 +1,33 @@
-import type { PaymentIntentResult, PaymentProvider } from "./types";
+import type {
+  CashPaymentResult,
+  CheckoutSessionResult,
+  CreateCheckoutParams,
+  PaymentProvider,
+  RefundResult,
+} from "./types";
 
-/** Records an intent in memory only — no money moves. Default until Stripe keys are configured. */
+/** No money moves. Default until STRIPE_SECRET_KEY is configured. */
 export class MockPaymentProvider implements PaymentProvider {
   readonly name = "mock";
 
-  async createPaymentIntent(jobId: string, amount: number): Promise<PaymentIntentResult> {
+  async createCheckoutSession(params: CreateCheckoutParams): Promise<CheckoutSessionResult> {
     return {
       provider: this.name,
-      paymentIntentId: `mock_pi_${jobId}_${Date.now()}`,
-      clientSecret: null,
-      amount,
-      status: "requires_payment",
+      sessionId: `mock_session_${params.jobId}_${Date.now()}`,
+      checkoutUrl: null,
     };
   }
 
-  async recordCashPayment(jobId: string, amount: number): Promise<PaymentIntentResult> {
+  async refund(providerPaymentIntentId: string, amount: number): Promise<RefundResult> {
     return {
       provider: this.name,
-      paymentIntentId: `mock_cash_${jobId}_${Date.now()}`,
-      clientSecret: null,
+      refundId: `mock_refund_${providerPaymentIntentId}_${Date.now()}`,
       amount,
       status: "succeeded",
     };
+  }
+
+  async recordCashPayment(_jobId: string, amount: number): Promise<CashPaymentResult> {
+    return { provider: this.name, amount };
   }
 }

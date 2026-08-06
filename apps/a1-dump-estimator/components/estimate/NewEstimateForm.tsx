@@ -7,9 +7,9 @@ import { PhotoUploader, type LocalPhoto } from "./PhotoUploader";
 import { DEBRIS_CATEGORIES, DEBRIS_CATEGORY_LABELS, LOAD_SIZE_PRESETS } from "@/lib/estimator/labels";
 import type { CrewSize, ManualItemEntry } from "@/lib/domain/estimate";
 import type { DebrisCategory } from "@/lib/domain/facility";
-import { createEstimateAction } from "@/app/new-estimate/actions";
+import { createEstimateAction, geocodeAddressAction } from "@/app/new-estimate/actions";
 
-type LocationStatus = "idle" | "locating" | "found" | "error";
+type LocationStatus = "idle" | "locating" | "found" | "error" | "geocoded" | "unavailable";
 
 export function NewEstimateForm() {
   const [customerName, setCustomerName] = useState("");
@@ -41,6 +41,22 @@ export function NewEstimateForm() {
       () => setLocationStatus("error"),
       { enableHighAccuracy: true, timeout: 10000 },
     );
+  }
+
+  function lookUpAddress() {
+    if (!address.trim()) return;
+    setLocationStatus("locating");
+    startTransition(async () => {
+      const result = await geocodeAddressAction(address.trim());
+      if (!result) {
+        // Either the mock provider (no key configured) or a genuinely
+        // unresolvable address — either way, never guess a coordinate.
+        setLocationStatus("unavailable");
+        return;
+      }
+      setCoords({ lat: result.coordinates.latitude, lng: result.coordinates.longitude });
+      setLocationStatus("geocoded");
+    });
   }
 
   function addItem() {
@@ -114,21 +130,37 @@ export function NewEstimateForm() {
             placeholder="123 Main St, Portland, OR"
           />
         </Field>
-        <button
-          type="button"
-          onClick={useMyLocation}
-          className="flex min-h-[48px] w-full items-center justify-center gap-2 rounded-lg border-2 border-brand-navy text-sm font-semibold text-brand-navy"
-        >
-          <LocationIcon className="h-5 w-5" />
-          {locationStatus === "found"
-            ? "Location captured"
-            : locationStatus === "locating"
-              ? "Finding you…"
-              : "Use My Location"}
-        </button>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={useMyLocation}
+            className="flex min-h-[48px] flex-1 items-center justify-center gap-2 rounded-lg border-2 border-brand-navy text-sm font-semibold text-brand-navy"
+          >
+            <LocationIcon className="h-5 w-5" />
+            {locationStatus === "found"
+              ? "Location captured"
+              : locationStatus === "locating"
+                ? "Finding you…"
+                : "Use My Location"}
+          </button>
+          <button
+            type="button"
+            onClick={lookUpAddress}
+            disabled={!address.trim()}
+            className="min-h-[48px] flex-1 rounded-lg border-2 border-brand-navy text-sm font-semibold text-brand-navy disabled:opacity-50"
+          >
+            {locationStatus === "geocoded" ? "Address found" : "Look Up Address"}
+          </button>
+        </div>
         {locationStatus === "error" && (
           <p className="text-sm text-brand-danger">
             Couldn&apos;t get your location — check location permissions and try again.
+          </p>
+        )}
+        {locationStatus === "unavailable" && (
+          <p className="text-sm text-brand-danger">
+            Address lookup isn&apos;t available (no Google Maps key configured, or the address
+            couldn&apos;t be resolved) — use &quot;Use My Location&quot; instead.
           </p>
         )}
       </Card>

@@ -1,18 +1,20 @@
 import { Card, PageHeader } from "@/components/ui";
 import { DEFAULT_BUSINESS } from "@/lib/config/business";
+import { requireCurrentBusinessId } from "@/lib/auth/business";
+import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { getPhotoAnalysisProvider } from "@/lib/providers/photo-analysis";
 import { getMapsProvider } from "@/lib/providers/maps";
 import { getPaymentProvider } from "@/lib/providers/payments";
 import { getOCRProvider } from "@/lib/providers/ocr";
 import { getNotificationProvider } from "@/lib/providers/notifications";
-import { getSupabaseClient } from "@/lib/db/supabase-client";
 import { getLearningAccuracySummary } from "@/lib/learning/service";
 
 export default async function SettingsPage() {
-  const accuracy = await getLearningAccuracySummary(DEFAULT_BUSINESS.id);
+  const businessId = await requireCurrentBusinessId();
+  const accuracy = await getLearningAccuracySummary(businessId);
 
   const providers = [
-    { label: "Database", name: getSupabaseClient() ? "supabase" : "in-memory (dev)" },
+    { label: "Database", name: isSupabaseConfigured() ? "supabase (auth + RLS)" : "in-memory (dev)" },
     { label: "Photo analysis", name: getPhotoAnalysisProvider().name },
     { label: "Maps / routing", name: getMapsProvider().name },
     { label: "Payments", name: getPaymentProvider().name },

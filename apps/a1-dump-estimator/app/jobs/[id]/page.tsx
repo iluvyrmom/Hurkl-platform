@@ -2,14 +2,19 @@ import { notFound } from "next/navigation";
 import { Card, PageHeader } from "@/components/ui";
 import { getJob } from "@/lib/jobs/service";
 import { getCustomer } from "@/lib/customers/service";
+import { listPaymentsForJob } from "@/lib/payments/service";
 import { CompleteJobForm } from "@/components/job/CompleteJobForm";
+import { PaymentPanel } from "@/components/job/PaymentPanel";
 
 export default async function JobDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const job = await getJob(id);
   if (!job) notFound();
 
-  const customer = await getCustomer(job.customerId);
+  const [customer, payments] = await Promise.all([
+    getCustomer(job.customerId),
+    listPaymentsForJob(job.id),
+  ]);
 
   return (
     <div>
@@ -24,6 +29,13 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
           <p className="text-2xl font-bold text-brand-orange">${job.agreedPrice}</p>
           <p className="mt-2 text-sm capitalize text-brand-slate">{job.status.replace("_", " ")}</p>
         </Card>
+
+        <PaymentPanel
+          jobId={job.id}
+          agreedPrice={job.agreedPrice}
+          paymentStatus={job.paymentStatus}
+          payments={payments}
+        />
 
         {job.completion ? (
           <Card>

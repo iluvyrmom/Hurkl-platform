@@ -1,6 +1,9 @@
 import { randomUUID } from "node:crypto";
 import type { Job, JobCompletion } from "@/lib/domain/job";
-import { getSupabaseClient } from "@/lib/db/supabase-client";
+import type { PaymentStatus } from "@/lib/domain/payment";
+import { isSupabaseConfigured } from "@/lib/supabase/env";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { inMemoryStore } from "./in-memory-store";
 
 export type CreateJobInput = Omit<Job, "id" | "createdAt" | "updatedAt" | "completion">;
@@ -11,6 +14,7 @@ export interface JobRepository {
   create(input: CreateJobInput): Promise<Job>;
   update(id: string, patch: Partial<Job>): Promise<Job>;
   complete(id: string, completion: JobCompletion): Promise<Job>;
+  updatePaymentStatus(id: string, paymentStatus: PaymentStatus): Promise<Job>;
 }
 
 class InMemoryJobRepository implements JobRepository {
@@ -51,13 +55,32 @@ class InMemoryJobRepository implements JobRepository {
     inMemoryStore.jobs.set(id, updated);
     return updated;
   }
+
+  async updatePaymentStatus(id: string, paymentStatus: PaymentStatus): Promise<Job> {
+    const existing = inMemoryStore.jobs.get(id);
+    if (!existing) throw new Error(`Job ${id} not found`);
+    const updated: Job = { ...existing, paymentStatus, updatedAt: new Date().toISOString() };
+    inMemoryStore.jobs.set(id, updated);
+    return updated;
+  }
 }
 
-/** Written against supabase/migrations/00000000000003_jobs_and_learning.sql; not executed against a live project. */
+/**
+ * Written against supabase/migrations/00000000000003_jobs_and_learning.sql
+ * and 00000000000006_job_payment_status.sql; not executed against a live
+ * project. `useAdmin: true` uses the service-role client — only the Stripe
+ * webhook handler passes this (see lib/payments/service.ts), since it has
+ * no business-member session for RLS to authorize against.
+ */
 class SupabaseJobRepository implements JobRepository {
+  constructor(private readonly useAdmin = false) {}
+
+  private async client() {
+    return this.useAdmin ? createSupabaseAdminClient() : createSupabaseServerClient();
+  }
+
   async list(businessId: string): Promise<Job[]> {
-    const client = getSupabaseClient();
-    if (!client) throw new Error("Supabase client not configured");
+    const client = await this.client();
     const { data, error } = await client
       .from("jobs")
       .select("*, job_completions(*)")
@@ -68,8 +91,7 @@ class SupabaseJobRepository implements JobRepository {
   }
 
   async get(id: string): Promise<Job | null> {
-    const client = getSupabaseClient();
-    if (!client) throw new Error("Supabase client not configured");
+    const client = await this.client();
     const { data, error } = await client
       .from("jobs")
       .select("*, job_completions(*)")
@@ -80,8 +102,7 @@ class SupabaseJobRepository implements JobRepository {
   }
 
   async create(input: CreateJobInput): Promise<Job> {
-    const client = getSupabaseClient();
-    if (!client) throw new Error("Supabase client not configured");
+    const client = await this.client();
     const { data, error } = await client
       .from("jobs")
       .insert({
@@ -94,6 +115,7 @@ class SupabaseJobRepository implements JobRepository {
         facility_id: input.facilityId,
         scheduled_at: input.scheduledAt,
         status: input.status,
+        payment_status: input.paymentStatus,
       })
       .select("*")
       .single();
@@ -101,9 +123,20 @@ class SupabaseJobRepository implements JobRepository {
     return mapRow(data);
   }
 
+  async updatePaymentStatus(id: string, paymentStatus: PaymentStatus): Promise<Job> {
+    const client = await this.client();
+    const { data, error } = await client
+      .from("jobs")
+      .update({ payment_status: paymentStatus, updated_at: new Date().toISOString() })
+      .eq("id", id)
+      .select("*, job_completions(*)")
+      .single();
+    if (error) throw error;
+    return mapRow(data);
+  }
+
   async update(id: string, patch: Partial<Job>): Promise<Job> {
-    const client = getSupabaseClient();
-    if (!client) throw new Error("Supabase client not configured");
+    const client = await this.client();
     const { data, error } = await client
       .from("jobs")
       .update({
@@ -119,8 +152,7 @@ class SupabaseJobRepository implements JobRepository {
   }
 
   async complete(id: string, completion: JobCompletion): Promise<Job> {
-    const client = getSupabaseClient();
-    if (!client) throw new Error("Supabase client not configured");
+    const client = await this.client();
     const { error: completionError } = await client.from("job_completions").upsert({
       job_id: id,
       clean_site_photo_paths: completion.cleanSitePhotoPaths,
@@ -157,12 +189,13 @@ function mapRow(row: any): Job {
     facilityId: row.facility_id,
     scheduledAt: row.scheduled_at,
     status: row.status,
+    paymentStatus: row.payment_status,
     completion: row.job_completions ?? null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
 }
 
-export function getJobRepository(): JobRepository {
-  return getSupabaseClient() ? new SupabaseJobRepository() : new InMemoryJobRepository();
+export function getJobRepository(useAdmin = false): JobRepository {
+  return isSupabaseConfigured() ? new SupabaseJobRepository(useAdmin) : new InMemoryJobRepository();
 }

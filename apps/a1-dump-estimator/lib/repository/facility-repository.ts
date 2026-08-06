@@ -4,7 +4,8 @@ import type {
   FacilitySpecialFee,
   SourceVerification,
 } from "@/lib/domain/facility";
-import { getSupabaseClient } from "@/lib/db/supabase-client";
+import { isSupabaseConfigured } from "@/lib/supabase/env";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export interface FacilityRepository {
   listFacilities(): Promise<Facility[]>;
@@ -216,24 +217,21 @@ class InMemoryFacilityRepository implements FacilityRepository {
  */
 class SupabaseFacilityRepository implements FacilityRepository {
   async listFacilities(): Promise<Facility[]> {
-    const client = getSupabaseClient();
-    if (!client) throw new Error("Supabase client not configured");
+    const client = await createSupabaseServerClient();
     const { data, error } = await client.from("facilities").select("*").eq("is_active", true);
     if (error) throw error;
     return (data ?? []).map(mapFacilityRow);
   }
 
   async listPricingRules(): Promise<FacilityPricingRule[]> {
-    const client = getSupabaseClient();
-    if (!client) throw new Error("Supabase client not configured");
+    const client = await createSupabaseServerClient();
     const { data, error } = await client.from("facility_pricing_rules").select("*");
     if (error) throw error;
     return (data ?? []).map(mapPricingRuleRow);
   }
 
   async listSpecialFees(): Promise<FacilitySpecialFee[]> {
-    const client = getSupabaseClient();
-    if (!client) throw new Error("Supabase client not configured");
+    const client = await createSupabaseServerClient();
     const { data, error } = await client.from("facility_special_fees").select("*");
     if (error) throw error;
     return (data ?? []).map(mapSpecialFeeRow);
@@ -307,5 +305,5 @@ function mapSpecialFeeRow(row: any): FacilitySpecialFee {
 }
 
 export function getFacilityRepository(): FacilityRepository {
-  return getSupabaseClient() ? new SupabaseFacilityRepository() : new InMemoryFacilityRepository();
+  return isSupabaseConfigured() ? new SupabaseFacilityRepository() : new InMemoryFacilityRepository();
 }

@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type { Estimate } from "@/lib/domain/estimate";
-import { getSupabaseClient } from "@/lib/db/supabase-client";
+import { isSupabaseConfigured } from "@/lib/supabase/env";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { inMemoryStore, nextQuoteNumber } from "./in-memory-store";
 
 export type CreateEstimateInput = Omit<Estimate, "id" | "quoteNumber" | "createdAt" | "updatedAt">;
@@ -48,8 +49,7 @@ class InMemoryEstimateRepository implements EstimateRepository {
 /** Written against supabase/migrations/00000000000002_customers_estimates.sql; not executed against a live project. */
 class SupabaseEstimateRepository implements EstimateRepository {
   async list(businessId: string): Promise<Estimate[]> {
-    const client = getSupabaseClient();
-    if (!client) throw new Error("Supabase client not configured");
+    const client = await createSupabaseServerClient();
     const { data, error } = await client
       .from("estimates")
       .select("*")
@@ -60,16 +60,14 @@ class SupabaseEstimateRepository implements EstimateRepository {
   }
 
   async get(id: string): Promise<Estimate | null> {
-    const client = getSupabaseClient();
-    if (!client) throw new Error("Supabase client not configured");
+    const client = await createSupabaseServerClient();
     const { data, error } = await client.from("estimates").select("*").eq("id", id).maybeSingle();
     if (error) throw error;
     return data ? mapRow(data) : null;
   }
 
   async create(input: CreateEstimateInput): Promise<Estimate> {
-    const client = getSupabaseClient();
-    if (!client) throw new Error("Supabase client not configured");
+    const client = await createSupabaseServerClient();
     const { data, error } = await client
       .from("estimates")
       .insert({
@@ -95,8 +93,7 @@ class SupabaseEstimateRepository implements EstimateRepository {
   }
 
   async update(id: string, patch: Partial<Estimate>): Promise<Estimate> {
-    const client = getSupabaseClient();
-    if (!client) throw new Error("Supabase client not configured");
+    const client = await createSupabaseServerClient();
     const { data, error } = await client
       .from("estimates")
       .update({
@@ -137,5 +134,5 @@ function mapRow(row: any): Estimate {
 }
 
 export function getEstimateRepository(): EstimateRepository {
-  return getSupabaseClient() ? new SupabaseEstimateRepository() : new InMemoryEstimateRepository();
+  return isSupabaseConfigured() ? new SupabaseEstimateRepository() : new InMemoryEstimateRepository();
 }

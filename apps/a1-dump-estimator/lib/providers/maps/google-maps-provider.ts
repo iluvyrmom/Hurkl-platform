@@ -1,6 +1,6 @@
 import { ProviderNotConfiguredError } from "../errors";
 import { MockMapsProvider } from "./mock-provider";
-import type { Coordinates, MapsProvider, RouteEstimate } from "./types";
+import type { Coordinates, GeocodeResult, MapsProvider, RouteEstimate } from "./types";
 
 /**
  * Google Distance Matrix-backed implementation. Requires
@@ -52,6 +52,37 @@ export class GoogleMapsProvider implements MapsProvider {
     return {
       distanceMiles: Math.round((element.distance.value / 1609.34) * 10) / 10,
       driveTimeMinutes: Math.round(element.duration.value / 60),
+    };
+  }
+
+  /**
+   * Resolves a typed address via Google's Geocoding API. Returns null (not
+   * a guessed coordinate) on a non-OK status, a zero-result response, or a
+   * request failure — the caller (New Estimate form) falls back to
+   * requiring GPS capture rather than silently using an unresolved address.
+   */
+  async geocodeAddress(address: string): Promise<GeocodeResult | null> {
+    const params = new URLSearchParams({ address, key: this.apiKey });
+
+    const response = await fetch(
+      `https://maps.googleapis.com/maps/api/geocode/json?${params.toString()}`,
+    );
+    if (!response.ok) {
+      throw new Error(`Google Geocoding request failed (${response.status})`);
+    }
+
+    const payload = await response.json();
+    const result = payload?.results?.[0];
+    if (!result || payload.status !== "OK") {
+      return null;
+    }
+
+    return {
+      coordinates: {
+        latitude: result.geometry.location.lat,
+        longitude: result.geometry.location.lng,
+      },
+      formattedAddress: result.formatted_address,
     };
   }
 

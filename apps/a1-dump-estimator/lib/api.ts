@@ -111,6 +111,7 @@ export async function bookJob(params: BookJobParams): Promise<Job> {
     facilityId: estimate.selectedFacility?.facility.id ?? null,
     scheduledAt: params.scheduledAt,
     status: "scheduled",
+    paymentStatus: "pending",
   });
 
   await estimateRepo.update(estimate.id, {

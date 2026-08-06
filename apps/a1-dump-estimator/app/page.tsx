@@ -1,15 +1,14 @@
 import { Card, EmptyState, LinkButton, PageHeader } from "@/components/ui";
 import { DEFAULT_BUSINESS } from "@/lib/config/business";
+import { requireCurrentBusinessId } from "@/lib/auth/business";
 import { listEstimates } from "@/lib/estimates/service";
 import { listJobs } from "@/lib/jobs/service";
 import { tierLabel } from "@/lib/quotes/generator";
 import { PlusIcon } from "@/components/icons";
 
 export default async function HomePage() {
-  const [estimates, jobs] = await Promise.all([
-    listEstimates(DEFAULT_BUSINESS.id),
-    listJobs(DEFAULT_BUSINESS.id),
-  ]);
+  const businessId = await requireCurrentBusinessId();
+  const [estimates, jobs] = await Promise.all([listEstimates(businessId), listJobs(businessId)]);
 
   const today = new Date().toISOString().slice(0, 10);
   const todaysJobs = jobs.filter((j) => j.scheduledAt.slice(0, 10) === today);

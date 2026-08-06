@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type { LearningRecord } from "@/lib/domain/job";
-import { getSupabaseClient } from "@/lib/db/supabase-client";
+import { isSupabaseConfigured } from "@/lib/supabase/env";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { inMemoryStore } from "./in-memory-store";
 
 export type CreateLearningRecordInput = Omit<LearningRecord, "id" | "recordedAt">;
@@ -27,8 +28,7 @@ class InMemoryLearningRepository implements LearningRepository {
 /** Written against supabase/migrations/00000000000003_jobs_and_learning.sql; not executed against a live project. */
 class SupabaseLearningRepository implements LearningRepository {
   async list(businessId: string): Promise<LearningRecord[]> {
-    const client = getSupabaseClient();
-    if (!client) throw new Error("Supabase client not configured");
+    const client = await createSupabaseServerClient();
     const { data, error } = await client
       .from("learning_records")
       .select("*")
@@ -38,8 +38,7 @@ class SupabaseLearningRepository implements LearningRepository {
   }
 
   async create(input: CreateLearningRecordInput): Promise<LearningRecord> {
-    const client = getSupabaseClient();
-    if (!client) throw new Error("Supabase client not configured");
+    const client = await createSupabaseServerClient();
     const { data, error } = await client
       .from("learning_records")
       .insert({
@@ -80,5 +79,5 @@ function mapRow(row: any): LearningRecord {
 }
 
 export function getLearningRepository(): LearningRepository {
-  return getSupabaseClient() ? new SupabaseLearningRepository() : new InMemoryLearningRepository();
+  return isSupabaseConfigured() ? new SupabaseLearningRepository() : new InMemoryLearningRepository();
 }

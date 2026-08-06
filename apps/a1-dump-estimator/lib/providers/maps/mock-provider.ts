@@ -1,4 +1,4 @@
-import type { Coordinates, MapsProvider, RouteEstimate } from "./types";
+import type { Coordinates, GeocodeResult, MapsProvider, RouteEstimate } from "./types";
 
 const EARTH_RADIUS_MILES = 3958.8;
 /** Rough local-roads average, used only as a straight-line-distance fallback. */
@@ -37,6 +37,11 @@ export class MockMapsProvider implements MapsProvider {
     const distanceMiles = Math.round(straightLineMiles * ROAD_DETOUR_FACTOR * 10) / 10;
     const driveTimeMinutes = Math.round((distanceMiles / ASSUMED_AVERAGE_SPEED_MPH) * 60);
     return { distanceMiles, driveTimeMinutes };
+  }
+
+  /** No real geocoder available — always null so the UI falls back to GPS capture rather than a guessed location. */
+  async geocodeAddress(): Promise<GeocodeResult | null> {
+    return null;
   }
 
   getDirectionsUrl(origin: Coordinates, destination: Coordinates): string {
