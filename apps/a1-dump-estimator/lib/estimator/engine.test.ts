@@ -1,8 +1,15 @@
 import { describe, expect, it } from "vitest";
 import { generateEstimate } from "./engine";
-import type { Facility, FacilityPricingRule } from "@/lib/domain/facility";
+import type { Facility, FacilityPricingRule, SourceVerification } from "@/lib/domain/facility";
 import type { EstimateInput } from "@/lib/domain/estimate";
 import type { MapsProvider } from "@/lib/providers/maps";
+
+const VERIFIED: SourceVerification = {
+  sourceUrl: "https://example.com/rates",
+  lastVerifiedDate: "2026-01-01",
+  requiresVerification: false,
+  verificationNotes: null,
+};
 
 const facility: Facility = {
   id: "f1",
@@ -22,6 +29,7 @@ const facility: Facility = {
   maxLoadWeightLbs: null,
   hours: [],
   isActive: true,
+  verification: VERIFIED,
   createdAt: "2026-01-01T00:00:00Z",
   updatedAt: "2026-01-01T00:00:00Z",
 };
@@ -37,6 +45,7 @@ const pricingRules: FacilityPricingRule[] = [
     effectiveDate: "2026-01-01",
     endDate: null,
     notes: null,
+    verification: VERIFIED,
   },
 ];
 

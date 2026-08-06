@@ -18,7 +18,7 @@ export default async function HomePage() {
 
   return (
     <div>
-      <PageHeader title={DEFAULT_BUSINESS.name} subtitle="Dump-run estimating" />
+      <PageHeader title={DEFAULT_BUSINESS.name} subtitle={DEFAULT_BUSINESS.tagline} />
 
       <div className="space-y-5 px-4 pt-5">
         <LinkButton href="/new-estimate" variant="primary" fullWidth>

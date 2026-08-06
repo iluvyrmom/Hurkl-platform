@@ -1,6 +1,18 @@
 import { describe, expect, it } from "vitest";
 import { calculateDumpFee } from "./dump-pricing";
-import type { Facility, FacilityPricingRule, FacilitySpecialFee } from "@/lib/domain/facility";
+import type {
+  Facility,
+  FacilityPricingRule,
+  FacilitySpecialFee,
+  SourceVerification,
+} from "@/lib/domain/facility";
+
+const VERIFIED: SourceVerification = {
+  sourceUrl: "https://example.com/rates",
+  lastVerifiedDate: "2026-01-01",
+  requiresVerification: false,
+  verificationNotes: null,
+};
 
 const facility: Facility = {
   id: "f1",
@@ -20,6 +32,7 @@ const facility: Facility = {
   maxLoadWeightLbs: null,
   hours: [],
   isActive: true,
+  verification: VERIFIED,
   createdAt: "2026-01-01T00:00:00Z",
   updatedAt: "2026-01-01T00:00:00Z",
 };
@@ -35,6 +48,7 @@ const rules: FacilityPricingRule[] = [
     effectiveDate: "2026-01-01",
     endDate: null,
     notes: null,
+    verification: VERIFIED,
   },
   {
     id: "r2",
@@ -46,6 +60,7 @@ const rules: FacilityPricingRule[] = [
     effectiveDate: "2020-01-01",
     endDate: "2026-01-01",
     notes: "expired rate",
+    verification: VERIFIED,
   },
 ];
 
@@ -58,6 +73,7 @@ const specialFees: FacilitySpecialFee[] = [
     effectiveDate: "2026-01-01",
     endDate: null,
     notes: null,
+    verification: VERIFIED,
   },
 ];
 
@@ -104,7 +120,7 @@ describe("calculateDumpFee", () => {
       [{ category: "general_junk", weightLbs: 0, volumeYards: 0, itemLabels: ["Car tire"] }],
       "2026-06-01",
     );
-    expect(result.specialFees).toEqual([{ itemLabel: "tire", fee: 5 }]);
+    expect(result.specialFees).toEqual([{ itemLabel: "tire", fee: 5, requiresVerification: false }]);
     expect(result.totalDumpFee).toBeCloseTo(20 + 5); // hits minimum fee for the zero-weight line + special fee
   });
 });

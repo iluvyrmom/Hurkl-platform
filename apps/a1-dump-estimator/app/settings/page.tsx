@@ -27,9 +27,14 @@ export default async function SettingsPage() {
         <Card className="space-y-1">
           <h2 className="text-base font-bold text-brand-navy">Business</h2>
           <p className="text-sm text-brand-slate">{DEFAULT_BUSINESS.name}</p>
+          <p className="text-sm text-brand-slate">{DEFAULT_BUSINESS.tagline}</p>
           <p className="text-sm text-brand-slate">{DEFAULT_BUSINESS.primaryAddress}</p>
+          <p className="text-sm text-brand-slate">
+            {DEFAULT_BUSINESS.phone} · {DEFAULT_BUSINESS.email}
+          </p>
           <p className="mt-2 text-xs text-brand-slate">
             Business profile editing is future work — Phase 1 ships one seeded business record.
+            Brand colors below are still a placeholder — see lib/config/business.ts.
           </p>
         </Card>
 

@@ -1,4 +1,9 @@
-import type { Facility, FacilityPricingRule, FacilitySpecialFee } from "@/lib/domain/facility";
+import type {
+  Facility,
+  FacilityPricingRule,
+  FacilitySpecialFee,
+  SourceVerification,
+} from "@/lib/domain/facility";
 import { getSupabaseClient } from "@/lib/db/supabase-client";
 
 export interface FacilityRepository {
@@ -8,107 +13,129 @@ export interface FacilityRepository {
 }
 
 const NOW = new Date().toISOString();
+const RESEARCH_DATE = "2026-08-06";
+
+const METRO_FEE_SCHEDULE_URL =
+  "https://www.oregonmetro.gov/what-metro-does/garbage-and-recycling-system/wpes-budget-and-solid-waste-fee-setting";
+const METRO_CENTRAL_URL =
+  "https://www.oregonmetro.gov/waste-disposal-and-prevention/need-get-rid-something/metro-central-transfer-station";
+const METRO_SOUTH_URL =
+  "https://www.oregonmetro.gov/waste-disposal-and-prevention/need-get-rid-something/metro-south-transfer-station";
 
 /**
- * SEED EXAMPLE DATA — for local development/demo only. These are placeholder
- * facility names and illustrative rates, not verified current pricing for
- * any real facility. Before this app is used for a real quote, replace this
- * with verified facility data (real name, address, current published rates,
- * hours, accepted-materials rules) sourced from the actual facility.
+ * SEED DATA — Metro Central and Metro South are real Portland-area
+ * facilities (Metro, the regional government, operates both; Recology
+ * Portland runs day-to-day operations under contract). Names, addresses,
+ * phone, and general hours were corroborated across oregonmetro.gov and
+ * multiple independent directory listings via web search.
+ *
+ * IMPORTANT — read before relying on this for a real customer quote:
+ * `oregonmetro.gov` could not be fetched directly from this build
+ * environment (blocked by this session's network egress policy), so every
+ * fact below came from a search-engine summary that *cites* oregonmetro.gov
+ * rather than a direct page fetch this session performed and can fully
+ * vouch for. Every record is marked `requiresVerification: true` until a
+ * human confirms it against the live source URL. Coordinates for Metro
+ * Central specifically could not be sourced at all and are a rough
+ * placement in the correct neighborhood (NW Portland Industrial district) —
+ * do not trust travel-distance output involving it without re-geocoding.
+ *
+ * A third facility (a metal scrap yard) that was previously seeded here was
+ * removed rather than kept as invented data — no real scrap-yard was
+ * sourced. Add one back only with real, cited data.
  */
+
+function verification(
+  sourceUrl: string,
+  notes: string,
+  requiresVerification = true,
+): SourceVerification {
+  return { sourceUrl, lastVerifiedDate: RESEARCH_DATE, requiresVerification, verificationNotes: notes };
+}
+
 const SEED_FACILITIES: Facility[] = [
   {
     id: "10000000-0000-0000-0000-000000000001",
-    name: "Example Metro Transfer Station",
+    name: "Metro Central Transfer Station",
     facilityType: "transfer_station",
-    address: "6161 NW Front Ave",
+    address: "6161 NW 61st Ave",
     city: "Portland",
     state: "OR",
     postalCode: "97210",
-    latitude: 45.5578,
-    longitude: -122.7195,
-    phone: null,
-    website: null,
+    // Not independently geocoded — placed approximately in the NW Portland
+    // Industrial district where this address sits. Re-geocode before
+    // trusting travel-distance/time output for this facility.
+    latitude: 45.5567,
+    longitude: -122.7445,
+    phone: "503-234-3000",
+    website: "https://www.oregonmetro.gov/waste-disposal-and-prevention/need-get-rid-something/metro-central-transfer-station",
     acceptedDebris: [
       "general_junk",
       "yard_debris",
       "construction_debris",
       "appliances",
       "furniture",
-      "metal_scrap",
       "mattresses",
+      "tires",
+      "electronics",
+      "metal_scrap",
     ],
     prohibitedDebris: ["hazmat"],
-    hazmatNotes: "Household hazardous waste not accepted — placeholder note, verify locally.",
+    hazmatNotes:
+      "Metro operates a household hazardous waste depot on-site, but it is a separate service (appointment/rules apply) from the general transfer-station drop-off this estimator prices — do not include hazmat in a junk-removal load routed here.",
     maxLoadWeightLbs: null,
-    hours: [1, 2, 3, 4, 5, 6].map((day) => ({
+    hours: [0, 1, 2, 3, 4, 5, 6].map((day) => ({
       dayOfWeek: day,
-      opensAt: "07:00",
-      closesAt: "17:30",
+      opensAt: "08:00",
+      closesAt: "17:00",
       closed: false,
     })),
     isActive: true,
+    verification: verification(
+      METRO_CENTRAL_URL,
+      "Address, phone, and general-public hours (8am-5pm daily) corroborated across oregonmetro.gov (via search summary) and independent directory listings. Coordinates are an unverified approximation. Direct fetch of oregonmetro.gov blocked by this session's network policy — confirm against the live page.",
+    ),
     createdAt: NOW,
     updatedAt: NOW,
   },
   {
     id: "10000000-0000-0000-0000-000000000002",
-    name: "Example County Landfill",
-    facilityType: "landfill",
-    address: "2001 SW Landfill Rd",
-    city: "Portland",
+    name: "Metro South Transfer Station",
+    facilityType: "transfer_station",
+    address: "2001 Washington St",
+    city: "Oregon City",
     state: "OR",
-    postalCode: "97219",
-    latitude: 45.4402,
-    longitude: -122.7295,
-    phone: null,
-    website: null,
+    postalCode: "97045",
+    // Derived from a geocode of the adjacent address (2002 Washington St);
+    // not the exact parcel. Re-geocode before trusting travel output.
+    latitude: 45.3692,
+    longitude: -122.5876,
+    phone: "503-234-3000",
+    website: "https://www.oregonmetro.gov/waste-disposal-and-prevention/need-get-rid-something/metro-south-transfer-station",
     acceptedDebris: [
       "general_junk",
       "yard_debris",
       "construction_debris",
       "appliances",
       "furniture",
-      "metal_scrap",
       "mattresses",
-      "tires",
+      "electronics",
     ],
-    prohibitedDebris: ["hazmat", "electronics"],
-    hazmatNotes: "No hazardous waste or e-waste — placeholder note, verify locally.",
-    maxLoadWeightLbs: 20000,
-    hours: [1, 2, 3, 4, 5, 6].map((day) => ({
-      dayOfWeek: day,
-      opensAt: "06:30",
-      closesAt: "16:00",
-      closed: false,
-    })),
-    isActive: true,
-    createdAt: NOW,
-    updatedAt: NOW,
-  },
-  {
-    id: "10000000-0000-0000-0000-000000000003",
-    name: "Example Community Scrap & Metal Recycling",
-    facilityType: "scrap_yard",
-    address: "8421 N Scrap Yard Way",
-    city: "Portland",
-    state: "OR",
-    postalCode: "97203",
-    latitude: 45.5951,
-    longitude: -122.7539,
-    phone: null,
-    website: null,
-    acceptedDebris: ["metal_scrap", "appliances"],
-    prohibitedDebris: ["hazmat"],
-    hazmatNotes: null,
+    prohibitedDebris: ["hazmat", "tires"],
+    hazmatNotes:
+      "Metro South has a household hazardous waste facility on-site (separate service, free for households up to a container-size limit, appointment/rules apply) — not part of this estimator's general junk-load pricing. Whether Metro South accepts tires at the general public gate the same way Metro Central does was not confirmed this session — treat tires as unaccepted here until verified.",
     maxLoadWeightLbs: null,
-    hours: [1, 2, 3, 4, 5].map((day) => ({
+    hours: [0, 1, 2, 3, 4, 5, 6].map((day) => ({
       dayOfWeek: day,
       opensAt: "08:00",
-      closesAt: "16:30",
+      closesAt: "17:00",
       closed: false,
     })),
     isActive: true,
+    verification: verification(
+      METRO_SOUTH_URL,
+      "Address, phone, and general-public hours (8am-5pm daily) corroborated across oregonmetro.gov (via search summary) and independent directory listings. Coordinates derived from a secondary geocode of the adjacent address, not the exact parcel. Direct fetch of oregonmetro.gov blocked by this session's network policy — confirm against the live page.",
+    ),
     createdAt: NOW,
     updatedAt: NOW,
   },
@@ -120,66 +147,39 @@ const SEED_PRICING_RULES: FacilityPricingRule[] = [
     facilityId: "10000000-0000-0000-0000-000000000001",
     debrisCategory: "general_junk",
     unit: "per_ton",
-    rate: 130,
-    minimumFee: 25,
-    effectiveDate: "2026-01-01",
+    rate: 162.14,
+    minimumFee: null,
+    effectiveDate: "2025-07-01",
     endDate: null,
-    notes: "Example rate — not verified.",
+    notes:
+      "$162.14/ton is Metro's published FY2025-26 tip fee (up from $153.67/ton), plus a $7.85/transaction fee not modeled separately here. UNCONFIRMED: whether this exact figure is the self-haul walk-in public rate vs. a licensed-hauler/franchise tip fee — these can differ at Metro facilities and this session could not confirm which applies. A per-load minimum fee is published but its exact dollar amount could not be confirmed this session. Metro Council sets new rates each fiscal year (next reset July 1, 2026) — re-verify before relying on this for a live quote.",
+    verification: verification(METRO_FEE_SCHEDULE_URL, "See notes — self-haul vs. tip-fee ambiguity and minimum-fee amount both unconfirmed."),
   },
   {
     id: "20000000-0000-0000-0000-000000000002",
-    facilityId: "10000000-0000-0000-0000-000000000001",
-    debrisCategory: "yard_debris",
+    facilityId: "10000000-0000-0000-0000-000000000002",
+    debrisCategory: "general_junk",
     unit: "per_ton",
-    rate: 60,
-    minimumFee: 15,
-    effectiveDate: "2026-01-01",
+    rate: 162.14,
+    minimumFee: null,
+    effectiveDate: "2025-07-01",
     endDate: null,
-    notes: "Example rate — not verified.",
+    notes:
+      "Metro sets one region-wide tip fee schedule across both transfer stations per oregonmetro.gov (via search summary); applied to Metro South on that basis, not independently confirmed for this specific facility. Same self-haul-vs-tip-fee and minimum-fee caveats as Metro Central's rule.",
+    verification: verification(METRO_FEE_SCHEDULE_URL, "Applied from the region-wide schedule, not independently confirmed per-facility."),
   },
   {
     id: "20000000-0000-0000-0000-000000000003",
     facilityId: "10000000-0000-0000-0000-000000000001",
-    debrisCategory: "construction_debris",
-    unit: "per_ton",
-    rate: 145,
-    minimumFee: 30,
-    effectiveDate: "2026-01-01",
-    endDate: null,
-    notes: "Example rate — not verified.",
-  },
-  {
-    id: "20000000-0000-0000-0000-000000000004",
-    facilityId: "10000000-0000-0000-0000-000000000002",
-    debrisCategory: "general_junk",
-    unit: "per_ton",
-    rate: 105,
-    minimumFee: 20,
-    effectiveDate: "2026-01-01",
-    endDate: null,
-    notes: "Example rate — not verified.",
-  },
-  {
-    id: "20000000-0000-0000-0000-000000000005",
-    facilityId: "10000000-0000-0000-0000-000000000002",
-    debrisCategory: "construction_debris",
-    unit: "per_ton",
-    rate: 118,
-    minimumFee: 25,
-    effectiveDate: "2026-01-01",
-    endDate: null,
-    notes: "Example rate — not verified.",
-  },
-  {
-    id: "20000000-0000-0000-0000-000000000006",
-    facilityId: "10000000-0000-0000-0000-000000000003",
-    debrisCategory: "metal_scrap",
-    unit: "flat",
-    rate: 0,
+    debrisCategory: "tires",
+    unit: "per_item",
+    rate: 4,
     minimumFee: null,
-    effectiveDate: "2026-01-01",
+    effectiveDate: "2025-07-01",
     endDate: null,
-    notes: "Scrap metal often pays the hauler rather than charging — example only.",
+    notes:
+      "Metro's published tire fee is graduated, not flat: $30 for the first tire, then $2 (no rim) or $4 (with rim) for each additional tire. This schema only supports a flat per-item rate, so $4 (the higher, more conservative per-tire figure) is used as an approximation for tires after the first — it will UNDER-price a single-tire drop-off and should not be trusted for an exact tire-only quote. Model a graduated fee structure before relying on this for real pricing.",
+    verification: verification(METRO_FEE_SCHEDULE_URL, "Graduated real-world fee structure not fully representable in this schema — flat approximation, flagged."),
   },
 ];
 
@@ -187,29 +187,13 @@ const SEED_SPECIAL_FEES: FacilitySpecialFee[] = [
   {
     id: "30000000-0000-0000-0000-000000000001",
     facilityId: "10000000-0000-0000-0000-000000000001",
-    itemLabel: "tire",
-    fee: 5,
-    effectiveDate: "2026-01-01",
-    endDate: null,
-    notes: "Example per-tire surcharge — not verified.",
-  },
-  {
-    id: "30000000-0000-0000-0000-000000000002",
-    facilityId: "10000000-0000-0000-0000-000000000001",
     itemLabel: "mattress",
-    fee: 20,
-    effectiveDate: "2026-01-01",
+    fee: 0,
+    effectiveDate: "2025-07-01",
     endDate: null,
-    notes: "Example per-mattress surcharge — not verified.",
-  },
-  {
-    id: "30000000-0000-0000-0000-000000000003",
-    facilityId: "10000000-0000-0000-0000-000000000002",
-    itemLabel: "refrigerator",
-    fee: 15,
-    effectiveDate: "2026-01-01",
-    endDate: null,
-    notes: "Example Freon-recovery surcharge — not verified.",
+    notes:
+      "Per oregonmetro.gov (via search summary), the first 4 mattresses/box springs per customer per day are accepted free (excludes car beds, foldout sofa beds, futons, crib mattresses, waterbeds, air mattresses), and a $2.30 credit applies per mattress when part of a mixed load. Modeled here as $0 rather than inventing a charge — confirm current policy and any per-day-limit overage fee before relying on this.",
+    verification: verification(METRO_FEE_SCHEDULE_URL, "Free/credited under current policy per source summary, not a charge — re-verify limits."),
   },
 ];
 
@@ -257,6 +241,16 @@ class SupabaseFacilityRepository implements FacilityRepository {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
+function mapVerification(row: any): SourceVerification {
+  return {
+    sourceUrl: row.source_url ?? null,
+    lastVerifiedDate: row.last_verified_date ?? null,
+    requiresVerification: row.requires_verification ?? true,
+    verificationNotes: row.verification_notes ?? null,
+  };
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function mapFacilityRow(row: any): Facility {
   return {
     id: row.id,
@@ -276,6 +270,7 @@ function mapFacilityRow(row: any): Facility {
     maxLoadWeightLbs: row.max_load_weight_lbs,
     hours: [],
     isActive: row.is_active,
+    verification: mapVerification(row),
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -293,6 +288,7 @@ function mapPricingRuleRow(row: any): FacilityPricingRule {
     effectiveDate: row.effective_date,
     endDate: row.end_date,
     notes: row.notes,
+    verification: mapVerification(row),
   };
 }
 
@@ -306,6 +302,7 @@ function mapSpecialFeeRow(row: any): FacilitySpecialFee {
     effectiveDate: row.effective_date,
     endDate: row.end_date,
     notes: row.notes,
+    verification: mapVerification(row),
   };
 }
 

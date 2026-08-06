@@ -4,6 +4,7 @@ import { getEstimate } from "@/lib/estimates/service";
 import { QuoteTiersAndActions } from "@/components/estimate/QuoteActions";
 import { NavigationIcon } from "@/components/icons";
 import { PrintButton } from "@/components/PrintButton";
+import { DEFAULT_BUSINESS } from "@/lib/config/business";
 
 export default async function QuotePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -35,6 +36,13 @@ export default async function QuotePage({ params }: { params: Promise<{ id: stri
                 Doesn&apos;t accept: {facility.unacceptedCategories.join(", ")}
               </p>
             )}
+            {(facility.facility.verification.requiresVerification ||
+              facility.dumpFee.hasUnverifiedPricing) && (
+              <p className="mt-2 rounded-lg bg-amber-50 p-2 text-sm text-amber-800">
+                Needs verification: facility rate or details are not yet confirmed against the
+                source — do not treat this price as final.
+              </p>
+            )}
             <a
               href={`https://www.google.com/maps/dir/?api=1&destination=${facility.facility.latitude},${facility.facility.longitude}&travelmode=driving`}
               target="_blank"
@@ -53,6 +61,14 @@ export default async function QuotePage({ params }: { params: Promise<{ id: stri
         />
 
         <PrintButton />
+
+        <footer className="pb-6 pt-2 text-center text-sm text-brand-slate">
+          <p className="font-semibold text-brand-navy">{DEFAULT_BUSINESS.name}</p>
+          <p>{DEFAULT_BUSINESS.tagline}</p>
+          <p>
+            {DEFAULT_BUSINESS.phone} · {DEFAULT_BUSINESS.email}
+          </p>
+        </footer>
       </div>
     </div>
   );

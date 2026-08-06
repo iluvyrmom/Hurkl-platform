@@ -67,6 +67,15 @@ create table facilities (
   hazmat_notes text,
   max_load_weight_lbs numeric,
   is_active boolean not null default true,
+  -- Provenance for the facility's own listed facts (address/phone/hours/
+  -- accepted materials) — see facility_pricing_rules and
+  -- facility_special_fees for the same provenance on rates. Never trust a
+  -- facility record for a real customer quote while requires_verification
+  -- is true without a human confirming it against source_url first.
+  source_url text,
+  last_verified_date date,
+  requires_verification boolean not null default true,
+  verification_notes text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -100,6 +109,14 @@ create table facility_pricing_rules (
   effective_date date not null,
   end_date date,
   notes text,
+  -- Same provenance contract as facilities.source_url/last_verified_date/
+  -- requires_verification: a rate entered here without a confirmed source
+  -- must be marked requires_verification = true, never presented to a
+  -- customer as a firm number. See lib/domain/facility.ts SourceVerification.
+  source_url text,
+  last_verified_date date,
+  requires_verification boolean not null default true,
+  verification_notes text,
   created_at timestamptz not null default now(),
   check (end_date is null or end_date > effective_date)
 );
@@ -115,6 +132,10 @@ create table facility_special_fees (
   effective_date date not null,
   end_date date,
   notes text,
+  source_url text,
+  last_verified_date date,
+  requires_verification boolean not null default true,
+  verification_notes text,
   created_at timestamptz not null default now(),
   check (end_date is null or end_date > effective_date)
 );

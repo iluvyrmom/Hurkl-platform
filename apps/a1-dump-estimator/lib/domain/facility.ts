@@ -34,6 +34,26 @@ export interface FacilityHours {
   closed: boolean;
 }
 
+/**
+ * Provenance for any fact sourced from an external authority (a facility's
+ * own published rates, hours, or rules). Required on every record that
+ * carries real-world pricing or policy data — see CONTINUOUS_INTELLIGENCE.md
+ * and VERIFIED_INTELLIGENCE.md's principle, applied here: a fact is only as
+ * good as knowing where it came from and how stale it might be.
+ *
+ * `requiresVerification: true` means the associated value (a rate, a fee, an
+ * accepted-materials list) is either unconfirmed or was sourced indirectly
+ * (e.g. a search-engine summary citing the source rather than a direct fetch
+ * of the source page) and must not be presented to a customer as a firm
+ * number without a human confirming it against the live source first.
+ */
+export interface SourceVerification {
+  sourceUrl: string | null;
+  lastVerifiedDate: string | null; // ISO date
+  requiresVerification: boolean;
+  verificationNotes: string | null;
+}
+
 export interface Facility {
   id: string;
   name: string;
@@ -55,6 +75,7 @@ export interface Facility {
   maxLoadWeightLbs: number | null;
   hours: FacilityHours[];
   isActive: boolean;
+  verification: SourceVerification;
   createdAt: string;
   updatedAt: string;
 }
@@ -78,6 +99,7 @@ export interface FacilityPricingRule {
   effectiveDate: string; // ISO date
   endDate: string | null; // ISO date, null = open-ended
   notes: string | null;
+  verification: SourceVerification;
 }
 
 /** A per-item surcharge (e.g. refrigerator, tire, mattress) on top of category pricing. */
@@ -89,6 +111,7 @@ export interface FacilitySpecialFee {
   effectiveDate: string;
   endDate: string | null;
   notes: string | null;
+  verification: SourceVerification;
 }
 
 export interface FacilitySelectionCriteria {
@@ -107,9 +130,12 @@ export interface FacilityDumpFeeBreakdown {
     rate: number;
     quantity: number;
     subtotal: number;
+    requiresVerification: boolean;
   }>;
-  specialFees: Array<{ itemLabel: string; fee: number }>;
+  specialFees: Array<{ itemLabel: string; fee: number; requiresVerification: boolean }>;
   totalDumpFee: number;
+  /** True if any line item or special fee above was priced from an unverified rate — the UI must surface this, never hide it in a customer-facing total. */
+  hasUnverifiedPricing: boolean;
 }
 
 export interface FacilitySelectionResult {

@@ -70,6 +70,7 @@ export function calculateDumpFee(
         rate: 0,
         quantity: 0,
         subtotal: 0,
+        requiresVerification: true,
       });
       continue;
     }
@@ -100,7 +101,14 @@ export function calculateDumpFee(
       subtotal = rule.minimumFee;
     }
 
-    lineItems.push({ category: entry.category, unit: rule.unit, rate: rule.rate, quantity, subtotal });
+    lineItems.push({
+      category: entry.category,
+      unit: rule.unit,
+      rate: rule.rate,
+      quantity,
+      subtotal,
+      requiresVerification: rule.verification.requiresVerification,
+    });
   }
 
   const matchedSpecialFees: FacilityDumpFeeBreakdown["specialFees"] = [];
@@ -110,7 +118,11 @@ export function calculateDumpFee(
       (fee) => isRuleActive(fee, asOf) && label.toLowerCase().includes(fee.itemLabel.toLowerCase()),
     );
     if (match) {
-      matchedSpecialFees.push({ itemLabel: match.itemLabel, fee: match.fee });
+      matchedSpecialFees.push({
+        itemLabel: match.itemLabel,
+        fee: match.fee,
+        requiresVerification: match.verification.requiresVerification,
+      });
     }
   }
 
@@ -123,5 +135,9 @@ export function calculateDumpFee(
     lineItems,
     specialFees: matchedSpecialFees,
     totalDumpFee: Math.round(totalDumpFee * 100) / 100,
+    hasUnverifiedPricing:
+      lineItems.some((item) => item.requiresVerification) ||
+      matchedSpecialFees.some((fee) => fee.requiresVerification) ||
+      facility.verification.requiresVerification,
   };
 }

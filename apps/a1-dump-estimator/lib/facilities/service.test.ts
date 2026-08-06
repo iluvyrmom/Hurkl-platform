@@ -1,7 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { selectBestFacility } from "./service";
-import type { Facility, FacilityPricingRule } from "@/lib/domain/facility";
+import type { Facility, FacilityPricingRule, SourceVerification } from "@/lib/domain/facility";
 import type { MapsProvider } from "@/lib/providers/maps";
+
+const VERIFIED: SourceVerification = {
+  sourceUrl: "https://example.com/rates",
+  lastVerifiedDate: "2026-01-01",
+  requiresVerification: false,
+  verificationNotes: null,
+};
 
 function makeFacility(overrides: Partial<Facility>): Facility {
   return {
@@ -22,6 +29,7 @@ function makeFacility(overrides: Partial<Facility>): Facility {
     maxLoadWeightLbs: null,
     hours: [],
     isActive: true,
+    verification: VERIFIED,
     createdAt: "2026-01-01T00:00:00Z",
     updatedAt: "2026-01-01T00:00:00Z",
     ...overrides,
@@ -39,6 +47,7 @@ const rules: FacilityPricingRule[] = [
     effectiveDate: "2026-01-01",
     endDate: null,
     notes: null,
+    verification: VERIFIED,
   },
   {
     id: "expensive-rule",
@@ -50,6 +59,7 @@ const rules: FacilityPricingRule[] = [
     effectiveDate: "2026-01-01",
     endDate: null,
     notes: null,
+    verification: VERIFIED,
   },
 ];
 
