@@ -71,5 +71,12 @@ export async function POST(request: Request) {
     },
   );
 
+  // Temporary diagnostic logging while validating the first real
+  // Telegram loop end-to-end — safe to remove once confirmed working.
+  console.log("Telegram webhook processed", {
+    externalUserId: String(message.from.id),
+    handled: result.handled,
+  });
+
   return NextResponse.json({ ok: true, handled: result.handled });
 }
