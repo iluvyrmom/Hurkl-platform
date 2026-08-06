@@ -1,0 +1,52 @@
+@import "tailwindcss";
+
+/*
+ * A-1 Dump Estimator brand tokens.
+ * Placeholder palette (navy + safety orange) chosen for outdoor/bright-sunlight
+ * legibility and high contrast on a phone screen — swap for A-1's real brand
+ * colors/logo when supplied. See README "Branding" section.
+ */
+@theme {
+  --color-brand-navy: #0b2545;
+  --color-brand-navy-dark: #071a33;
+  --color-brand-orange: #f26522;
+  --color-brand-orange-dark: #d1550f;
+  --color-brand-slate: #64748b;
+  --color-brand-bg: #f8fafc;
+  --color-brand-success: #15803d;
+  --color-brand-danger: #b91c1c;
+
+  --font-sans:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+html,
+body {
+  height: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+
+body {
+  background: var(--color-brand-bg);
+  color: var(--color-brand-navy-dark);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Large, thumb-friendly hit targets by default — this app is used standing
+   outdoors at a customer's property, often one-handed. */
+button,
+a[role="button"],
+input,
+select,
+textarea {
+  font-size: 1rem;
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+}
