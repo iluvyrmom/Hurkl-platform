@@ -2,6 +2,7 @@ import type { Job, JobCompletion } from "@/lib/domain/job";
 import { getJobRepository } from "@/lib/repository/job-repository";
 import { getEstimateRepository } from "@/lib/repository/estimate-repository";
 import { getLearningRepository } from "@/lib/repository/learning-repository";
+import { DuplicateReceiptError } from "@/lib/receipts/duplicate-detection";
 
 export async function listJobs(businessId: string): Promise<Job[]> {
   return getJobRepository().list(businessId);
@@ -16,6 +17,13 @@ export async function getJob(id: string): Promise<Job | null> {
  * receipt image before completion is accepted — enforced here, not just in
  * the UI, since this is a hard product requirement ("Job Completion" in the
  * spec), not a suggestion.
+ *
+ * Duplicate-receipt detection runs before completion is accepted: if the
+ * receipt's image hash or OCR-extracted ticket number matches a receipt
+ * already on file for a different job in this business, completion is
+ * BLOCKED (DuplicateReceiptError) unless the receipt already carries an
+ * explicit human override (`duplicateOverrideConfirmed`) — see
+ * lib/receipts/duplicate-detection.ts and components/job/CompleteJobForm.tsx.
  */
 export async function completeJob(
   jobId: string,
@@ -31,6 +39,16 @@ export async function completeJob(
   const jobRepo = getJobRepository();
   const job = await jobRepo.get(jobId);
   if (!job) throw new Error(`Job ${jobId} not found`);
+
+  const receipt = completion.dumpReceipt;
+  if (!receipt.duplicateOverrideConfirmed) {
+    const duplicate = await jobRepo.findDuplicateReceipt(
+      job.businessId,
+      { imageHash: receipt.imageHash, ticketNumber: receipt.ocrTicketNumber },
+      jobId,
+    );
+    if (duplicate) throw new DuplicateReceiptError(duplicate.jobId);
+  }
 
   const fullCompletion: JobCompletion = { ...completion, completedAt: new Date().toISOString() };
   const completedJob = await jobRepo.complete(jobId, fullCompletion);

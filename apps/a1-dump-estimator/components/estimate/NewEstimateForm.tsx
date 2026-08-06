@@ -7,7 +7,9 @@ import { PhotoUploader, type LocalPhoto } from "./PhotoUploader";
 import { DEBRIS_CATEGORIES, DEBRIS_CATEGORY_LABELS, LOAD_SIZE_PRESETS } from "@/lib/estimator/labels";
 import type { CrewSize, ManualItemEntry } from "@/lib/domain/estimate";
 import type { DebrisCategory } from "@/lib/domain/facility";
-import { createEstimateAction, geocodeAddressAction } from "@/app/new-estimate/actions";
+import type { DetectedItem, PhotoAnalysisResult } from "@/lib/domain/photo-analysis";
+import { analyzePhotoAction, createEstimateAction, geocodeAddressAction } from "@/app/new-estimate/actions";
+import { fileToDataUrl } from "@/lib/files/file-to-data-url";
 
 type LocationStatus = "idle" | "locating" | "found" | "error" | "geocoded" | "unavailable";
 
@@ -18,6 +20,8 @@ export function NewEstimateForm() {
   const [notes, setNotes] = useState("");
   const [crewSize, setCrewSize] = useState<CrewSize>(2);
   const [photos, setPhotos] = useState<LocalPhoto[]>([]);
+  const [photoAnalyses, setPhotoAnalyses] = useState<Record<string, PhotoAnalysisResult | "loading">>({});
+  const [addedDetectionKeys, setAddedDetectionKeys] = useState<Set<string>>(new Set());
   const [items, setItems] = useState<ManualItemEntry[]>([]);
   const [newItemCategory, setNewItemCategory] = useState<DebrisCategory>("general_junk");
   const [newItemQuantity, setNewItemQuantity] = useState(1);
@@ -57,6 +61,44 @@ export function NewEstimateForm() {
       setCoords({ lat: result.coordinates.latitude, lng: result.coordinates.longitude });
       setLocationStatus("geocoded");
     });
+  }
+
+  function analyzePhotos() {
+    const unanalyzed = photos.filter((p) => !photoAnalyses[p.id]);
+    if (unanalyzed.length === 0) return;
+
+    for (const photo of unanalyzed) {
+      setPhotoAnalyses((prev) => ({ ...prev, [photo.id]: "loading" }));
+    }
+
+    startTransition(async () => {
+      const results = await Promise.all(
+        unanalyzed.map(async (photo) => {
+          const dataUrl = await fileToDataUrl(photo.file);
+          const result = await analyzePhotoAction(photo.id, dataUrl);
+          return [photo.id, result] as const;
+        }),
+      );
+      setPhotoAnalyses((prev) => {
+        const next = { ...prev };
+        for (const [id, result] of results) next[id] = result;
+        return next;
+      });
+    });
+  }
+
+  function addDetectedItem(photoId: string, detectionIndex: number, detected: DetectedItem) {
+    const key = `${photoId}-${detectionIndex}`;
+    setItems((prev) => [
+      ...prev,
+      {
+        label: `${detected.label} (from photo)`,
+        category: detected.category,
+        quantity: detected.estimatedQuantity,
+        estimatedWeightLbs: detected.estimatedWeightLbs,
+      },
+    ]);
+    setAddedDetectionKeys((prev) => new Set(prev).add(key));
   }
 
   function addItem() {
@@ -168,6 +210,66 @@ export function NewEstimateForm() {
       <Card className="space-y-3">
         <h2 className="text-base font-bold text-brand-navy">Photos</h2>
         <PhotoUploader photos={photos} onChange={setPhotos} />
+
+        {photos.length > 0 && (
+          <button
+            type="button"
+            onClick={analyzePhotos}
+            disabled={isPending}
+            className="min-h-[44px] w-full rounded-lg border-2 border-brand-navy text-sm font-semibold text-brand-navy disabled:opacity-50"
+          >
+            Analyze Photos
+          </button>
+        )}
+
+        {photos.map((photo) => {
+          const analysis = photoAnalyses[photo.id];
+          if (!analysis) return null;
+          if (analysis === "loading") {
+            return (
+              <p key={photo.id} className="text-sm text-brand-slate">
+                Analyzing photo…
+              </p>
+            );
+          }
+          if (analysis.requiresManualReview || analysis.detectedItems.length === 0) {
+            return (
+              <p key={photo.id} className="text-sm text-brand-slate">
+                No confident item detections for this photo ({analysis.provider}) — add items
+                manually below.
+              </p>
+            );
+          }
+          return (
+            <div key={photo.id} className="space-y-1">
+              {analysis.detectedItems.map((detected, index) => {
+                const key = `${photo.id}-${index}`;
+                const alreadyAdded = addedDetectionKeys.has(key);
+                return (
+                  <div
+                    key={key}
+                    className="flex items-center justify-between rounded-lg border border-slate-200 p-2 text-sm"
+                  >
+                    <span className="text-brand-navy">
+                      {detected.estimatedQuantity}× {detected.label}{" "}
+                      <span className="text-brand-slate">
+                        ({Math.round(detected.confidence * 100)}% confident)
+                      </span>
+                    </span>
+                    <button
+                      type="button"
+                      disabled={alreadyAdded}
+                      onClick={() => addDetectedItem(photo.id, index, detected)}
+                      className="text-xs font-semibold text-brand-orange disabled:text-brand-slate"
+                    >
+                      {alreadyAdded ? "Added" : "Add"}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })}
       </Card>
 
       <Card className="space-y-3">

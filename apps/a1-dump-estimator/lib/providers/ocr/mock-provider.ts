@@ -8,8 +8,14 @@ export class MockOCRProvider implements OCRProvider {
     return {
       provider: this.name,
       rawText: null,
-      extractedWeightLbs: null,
-      extractedFee: null,
+      facilityNameGuess: null,
+      ticketNumber: null,
+      receiptDate: null,
+      receiptTime: null,
+      grossWeightLbs: null,
+      tareWeightLbs: null,
+      netWeightLbs: null,
+      amountCharged: null,
       requiresManualReview: true,
     };
   }

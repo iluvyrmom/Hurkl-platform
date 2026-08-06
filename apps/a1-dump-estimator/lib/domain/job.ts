@@ -4,12 +4,27 @@ import type { PaymentStatus } from "./payment";
 export type JobStatus = "scheduled" | "in_progress" | "completed" | "cancelled";
 
 export interface DumpReceiptRecord {
+  /** Never overwritten once set — the original receipt image is the permanent record; OCR only ever adds assistive fields alongside it. */
   imageStoragePath: string;
+  /** SHA-256 of the receipt image bytes — the primary signal for duplicate-receipt detection (see lib/receipts/duplicate-detection.ts). */
+  imageHash: string | null;
+  ocrProvider: string | null;
   ocrExtractedText: string | null;
-  ocrExtractedWeightLbs: number | null;
-  ocrExtractedFee: number | null;
+  ocrFacilityNameGuess: string | null;
+  ocrTicketNumber: string | null;
+  ocrReceiptDate: string | null;
+  ocrReceiptTime: string | null;
+  ocrGrossWeightLbs: number | null;
+  ocrTareWeightLbs: number | null;
+  ocrNetWeightLbs: number | null;
+  ocrAmountCharged: number | null;
   /** OCR is assistive only — a human confirms before this is trusted for payout/learning data. */
   verifiedByUserId: string | null;
+  /** Set when this receipt matched another job's receipt (same image hash or same ticket number) — see lib/receipts/duplicate-detection.ts. */
+  duplicateOfJobId: string | null;
+  /** True once a human explicitly confirmed the duplicate match is not a mistake and completion should proceed anyway. */
+  duplicateOverrideConfirmed: boolean;
+  duplicateOverrideByUserId: string | null;
   uploadedAt: string;
 }
 

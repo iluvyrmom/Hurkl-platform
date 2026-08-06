@@ -50,6 +50,44 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
             {job.completion.actualDumpFee != null && (
               <p className="text-sm text-brand-slate">Actual dump fee: ${job.completion.actualDumpFee}</p>
             )}
+            {job.completion.dumpReceipt && (
+              <div className="mt-3 space-y-1 border-t border-slate-200 pt-3">
+                <p className="text-xs font-semibold uppercase text-brand-slate">
+                  Receipt OCR ({job.completion.dumpReceipt.ocrProvider ?? "not run"})
+                </p>
+                {job.completion.dumpReceipt.ocrFacilityNameGuess && (
+                  <p className="text-sm text-brand-slate">
+                    Facility: {job.completion.dumpReceipt.ocrFacilityNameGuess}
+                  </p>
+                )}
+                {job.completion.dumpReceipt.ocrTicketNumber && (
+                  <p className="text-sm text-brand-slate">
+                    Ticket #: {job.completion.dumpReceipt.ocrTicketNumber}
+                  </p>
+                )}
+                {job.completion.dumpReceipt.ocrNetWeightLbs != null && (
+                  <p className="text-sm text-brand-slate">
+                    Net weight (OCR): {job.completion.dumpReceipt.ocrNetWeightLbs} lbs
+                  </p>
+                )}
+                {job.completion.dumpReceipt.ocrAmountCharged != null && (
+                  <p className="text-sm text-brand-slate">
+                    Amount charged (OCR): ${job.completion.dumpReceipt.ocrAmountCharged}
+                  </p>
+                )}
+                {job.completion.dumpReceipt.duplicateOverrideConfirmed && (
+                  <p className="text-sm font-medium text-brand-danger">
+                    Duplicate-receipt match was overridden and confirmed by a crew member.
+                  </p>
+                )}
+                {!job.completion.dumpReceipt.ocrTicketNumber &&
+                  !job.completion.dumpReceipt.ocrFacilityNameGuess && (
+                    <p className="text-sm text-brand-slate">
+                      No OCR data extracted — needs manual review against the photo.
+                    </p>
+                  )}
+              </div>
+            )}
           </Card>
         ) : (
           <CompleteJobForm jobId={job.id} />

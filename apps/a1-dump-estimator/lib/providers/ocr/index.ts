@@ -1,14 +1,16 @@
 import type { OCRProvider } from "./types";
 import { MockOCRProvider } from "./mock-provider";
+import { OpenAIReceiptOCRProvider } from "./openai-provider";
 
 export type { OCRProvider, ReceiptOCRResult } from "./types";
 
-/**
- * No real OCR backend is wired yet (future: Google Cloud Vision, AWS
- * Textract, etc., behind this same interface) — Phase 1 ships the
- * abstraction and the honest mock so completion/receipt UI can be built
- * now without waiting on a provider decision.
- */
 export function getOCRProvider(): OCRProvider {
-  return new MockOCRProvider();
+  const selected = process.env.OCR_PROVIDER ?? "mock";
+  switch (selected) {
+    case "openai":
+      return new OpenAIReceiptOCRProvider();
+    case "mock":
+    default:
+      return new MockOCRProvider();
+  }
 }

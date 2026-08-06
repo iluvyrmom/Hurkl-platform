@@ -15,6 +15,12 @@ export interface JobRepository {
   update(id: string, patch: Partial<Job>): Promise<Job>;
   complete(id: string, completion: JobCompletion): Promise<Job>;
   updatePaymentStatus(id: string, paymentStatus: PaymentStatus): Promise<Job>;
+  /** Duplicate-receipt detection: matches by image hash (primary signal) or ticket number (secondary), scoped to the business, excluding the job being completed. */
+  findDuplicateReceipt(
+    businessId: string,
+    signal: { imageHash: string | null; ticketNumber: string | null },
+    excludeJobId: string,
+  ): Promise<{ jobId: string } | null>;
 }
 
 class InMemoryJobRepository implements JobRepository {
@@ -62,6 +68,26 @@ class InMemoryJobRepository implements JobRepository {
     const updated: Job = { ...existing, paymentStatus, updatedAt: new Date().toISOString() };
     inMemoryStore.jobs.set(id, updated);
     return updated;
+  }
+
+  async findDuplicateReceipt(
+    businessId: string,
+    signal: { imageHash: string | null; ticketNumber: string | null },
+    excludeJobId: string,
+  ): Promise<{ jobId: string } | null> {
+    for (const job of inMemoryStore.jobs.values()) {
+      if (job.businessId !== businessId || job.id === excludeJobId || !job.completion?.dumpReceipt) {
+        continue;
+      }
+      const receipt = job.completion.dumpReceipt;
+      const hashMatch = signal.imageHash != null && receipt.imageHash === signal.imageHash;
+      const ticketMatch =
+        signal.ticketNumber != null &&
+        receipt.ocrTicketNumber != null &&
+        receipt.ocrTicketNumber === signal.ticketNumber;
+      if (hashMatch || ticketMatch) return { jobId: job.id };
+    }
+    return null;
   }
 }
 
@@ -153,10 +179,23 @@ class SupabaseJobRepository implements JobRepository {
 
   async complete(id: string, completion: JobCompletion): Promise<Job> {
     const client = await this.client();
+    const receipt = completion.dumpReceipt;
     const { error: completionError } = await client.from("job_completions").upsert({
       job_id: id,
       clean_site_photo_paths: completion.cleanSitePhotoPaths,
-      dump_receipt_image_path: completion.dumpReceipt?.imageStoragePath ?? null,
+      dump_receipt_image_path: receipt?.imageStoragePath ?? null,
+      receipt_image_hash: receipt?.imageHash ?? null,
+      facility_name_guess: receipt?.ocrFacilityNameGuess ?? null,
+      ticket_number: receipt?.ocrTicketNumber ?? null,
+      receipt_date: receipt?.ocrReceiptDate ?? null,
+      receipt_time: receipt?.ocrReceiptTime ?? null,
+      gross_weight_lbs: receipt?.ocrGrossWeightLbs ?? null,
+      tare_weight_lbs: receipt?.ocrTareWeightLbs ?? null,
+      net_weight_lbs: receipt?.ocrNetWeightLbs ?? null,
+      amount_charged: receipt?.ocrAmountCharged ?? null,
+      duplicate_of_job_id: receipt?.duplicateOfJobId ?? null,
+      duplicate_override_confirmed: receipt?.duplicateOverrideConfirmed ?? false,
+      duplicate_override_by_user_id: receipt?.duplicateOverrideByUserId ?? null,
       actual_weight_lbs: completion.actualWeightLbs,
       actual_dump_fee: completion.actualDumpFee,
       actual_labor_hours: completion.actualLaborHours,
@@ -174,6 +213,76 @@ class SupabaseJobRepository implements JobRepository {
     if (error) throw error;
     return mapRow(data);
   }
+
+  async findDuplicateReceipt(
+    businessId: string,
+    signal: { imageHash: string | null; ticketNumber: string | null },
+    excludeJobId: string,
+  ): Promise<{ jobId: string } | null> {
+    if (!signal.imageHash && !signal.ticketNumber) return null;
+    const client = await this.client();
+
+    const orConditions = [
+      signal.imageHash ? `receipt_image_hash.eq.${signal.imageHash}` : null,
+      signal.ticketNumber ? `ticket_number.eq.${signal.ticketNumber}` : null,
+    ]
+      .filter((c): c is string => c !== null)
+      .join(",");
+
+    const { data, error } = await client
+      .from("job_completions")
+      .select("job_id, jobs!inner(business_id)")
+      .or(orConditions)
+      .neq("job_id", excludeJobId)
+      .eq("jobs.business_id", businessId)
+      .limit(1)
+      .maybeSingle();
+    if (error) throw error;
+    return data ? { jobId: data.job_id as string } : null;
+  }
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function mapCompletionRow(row: any): JobCompletion | null {
+  if (!row) return null;
+  const completionRow = Array.isArray(row) ? row[0] : row;
+  if (!completionRow) return null;
+
+  return {
+    cleanSitePhotoPaths: completionRow.clean_site_photo_paths ?? [],
+    dumpReceipt: completionRow.dump_receipt_image_path
+      ? {
+          imageStoragePath: completionRow.dump_receipt_image_path,
+          imageHash: completionRow.receipt_image_hash,
+          ocrProvider: null,
+          ocrExtractedText: null,
+          ocrFacilityNameGuess: completionRow.facility_name_guess,
+          ocrTicketNumber: completionRow.ticket_number,
+          ocrReceiptDate: completionRow.receipt_date,
+          ocrReceiptTime: completionRow.receipt_time,
+          ocrGrossWeightLbs:
+            completionRow.gross_weight_lbs != null ? Number(completionRow.gross_weight_lbs) : null,
+          ocrTareWeightLbs:
+            completionRow.tare_weight_lbs != null ? Number(completionRow.tare_weight_lbs) : null,
+          ocrNetWeightLbs:
+            completionRow.net_weight_lbs != null ? Number(completionRow.net_weight_lbs) : null,
+          ocrAmountCharged:
+            completionRow.amount_charged != null ? Number(completionRow.amount_charged) : null,
+          verifiedByUserId: null,
+          duplicateOfJobId: completionRow.duplicate_of_job_id,
+          duplicateOverrideConfirmed: completionRow.duplicate_override_confirmed ?? false,
+          duplicateOverrideByUserId: completionRow.duplicate_override_by_user_id,
+          uploadedAt: completionRow.completed_at,
+        }
+      : null,
+    actualWeightLbs:
+      completionRow.actual_weight_lbs != null ? Number(completionRow.actual_weight_lbs) : null,
+    actualDumpFee: completionRow.actual_dump_fee != null ? Number(completionRow.actual_dump_fee) : null,
+    actualLaborHours:
+      completionRow.actual_labor_hours != null ? Number(completionRow.actual_labor_hours) : null,
+    completedAt: completionRow.completed_at,
+    completedByUserId: completionRow.completed_by_user_id,
+  };
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -190,7 +299,7 @@ function mapRow(row: any): Job {
     scheduledAt: row.scheduled_at,
     status: row.status,
     paymentStatus: row.payment_status,
-    completion: row.job_completions ?? null,
+    completion: mapCompletionRow(row.job_completions),
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };

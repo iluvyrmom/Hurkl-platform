@@ -1,8 +1,14 @@
 export interface ReceiptOCRResult {
   provider: string;
   rawText: string | null;
-  extractedWeightLbs: number | null;
-  extractedFee: number | null;
+  facilityNameGuess: string | null;
+  ticketNumber: string | null;
+  receiptDate: string | null; // ISO date, if legible
+  receiptTime: string | null; // "HH:MM", if legible
+  grossWeightLbs: number | null;
+  tareWeightLbs: number | null;
+  netWeightLbs: number | null;
+  amountCharged: number | null;
   /** OCR is assistive only — a human must confirm before this feeds a job's official record. */
   requiresManualReview: boolean;
 }
