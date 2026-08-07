@@ -35,6 +35,14 @@ export async function resolveTelegramSender(
     .maybeSingle();
 
   if (linkError || !link) {
+    // Temporary diagnostic logging while validating the first real
+    // Telegram loop end-to-end — safe to remove once confirmed working.
+    // Never log this in a customer-facing path; internal-only channel.
+    console.log("telegram_links lookup failed", {
+      telegramUserId,
+      errorMessage: linkError?.message,
+      errorCode: (linkError as { code?: string } | null)?.code,
+    });
     throw new UnrecognizedSenderError();
   }
 
@@ -45,6 +53,11 @@ export async function resolveTelegramSender(
     .maybeSingle();
 
   if (profileError || !profile) {
+    console.log("profiles lookup failed", {
+      profileId: link.profile_id,
+      errorMessage: profileError?.message,
+      errorCode: (profileError as { code?: string } | null)?.code,
+    });
     throw new UnrecognizedSenderError();
   }
 
