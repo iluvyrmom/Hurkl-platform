@@ -2,7 +2,8 @@ import type { OCRProvider } from "./types";
 import { MockOCRProvider } from "./mock-provider";
 import { OpenAIReceiptOCRProvider } from "./openai-provider";
 
-export type { OCRProvider, ReceiptOCRResult } from "./types";
+export type { OCRProvider, ReceiptOCRResult, ReceiptFormat } from "./types";
+export { needsSpecialReceiptReview } from "./types";
 
 export function getOCRProvider(): OCRProvider {
   const selected = process.env.OCR_PROVIDER ?? "mock";

@@ -5,6 +5,7 @@ import { getCustomer } from "@/lib/customers/service";
 import { listPaymentsForJob } from "@/lib/payments/service";
 import { CompleteJobForm } from "@/components/job/CompleteJobForm";
 import { PaymentPanel } from "@/components/job/PaymentPanel";
+import { needsSpecialReceiptReview } from "@/lib/providers/ocr";
 
 export default async function JobDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -55,6 +56,17 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
                 <p className="text-xs font-semibold uppercase text-brand-slate">
                   Receipt OCR ({job.completion.dumpReceipt.ocrProvider ?? "not run"})
                 </p>
+                {needsSpecialReceiptReview({
+                  receiptFormat: job.completion.dumpReceipt.ocrReceiptFormat ?? "unknown",
+                }) && (
+                  <p className="rounded-lg bg-amber-50 p-2 text-sm font-medium text-amber-800">
+                    {job.completion.dumpReceipt.ocrReceiptFormat === "handwritten"
+                      ? "This receipt appears hand-written."
+                      : "This receipt could not be read as a standard format."}{" "}
+                    All extracted values (or lack of them) must be verified manually against the
+                    physical receipt before trusting them for payout or learning data.
+                  </p>
+                )}
                 {job.completion.dumpReceipt.ocrFacilityNameGuess && (
                   <p className="text-sm text-brand-slate">
                     Facility: {job.completion.dumpReceipt.ocrFacilityNameGuess}

@@ -1,6 +1,11 @@
+import type { ReceiptFormat } from "@/lib/domain/job";
+
+export type { ReceiptFormat };
+
 export interface ReceiptOCRResult {
   provider: string;
   rawText: string | null;
+  receiptFormat: ReceiptFormat;
   facilityNameGuess: string | null;
   ticketNumber: string | null;
   receiptDate: string | null; // ISO date, if legible
@@ -11,6 +16,11 @@ export interface ReceiptOCRResult {
   amountCharged: number | null;
   /** OCR is assistive only — a human must confirm before this feeds a job's official record. */
   requiresManualReview: boolean;
+}
+
+/** True when the receipt itself (not just routine OCR assistiveness) needs a human's extra attention before any extracted number is trusted. */
+export function needsSpecialReceiptReview(result: Pick<ReceiptOCRResult, "receiptFormat">): boolean {
+  return result.receiptFormat === "handwritten" || result.receiptFormat === "unsupported";
 }
 
 /**

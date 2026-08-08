@@ -3,7 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { completeJob } from "@/lib/jobs/service";
 import { requireMembership } from "@/lib/auth/business";
-import { getOCRProvider } from "@/lib/providers/ocr";
+import { getOCRProvider, needsSpecialReceiptReview } from "@/lib/providers/ocr";
+import type { ReceiptFormat } from "@/lib/providers/ocr";
 import { hashReceiptImage, DuplicateReceiptError } from "@/lib/receipts/duplicate-detection";
 
 export interface CompleteJobActionParams {
@@ -20,7 +21,7 @@ export interface CompleteJobActionParams {
 }
 
 export type CompleteJobActionResult =
-  | { ok: true }
+  | { ok: true; receiptFormat: ReceiptFormat; needsSpecialReceiptReview: boolean }
   | { ok: false; error: "duplicate"; duplicateOfJobId: string };
 
 export async function completeJobAction(
@@ -41,6 +42,7 @@ export async function completeJobAction(
         imageHash,
         ocrProvider: ocr.provider,
         ocrExtractedText: ocr.rawText,
+        ocrReceiptFormat: ocr.receiptFormat,
         ocrFacilityNameGuess: ocr.facilityNameGuess,
         ocrTicketNumber: ocr.ticketNumber,
         ocrReceiptDate: ocr.receiptDate,
@@ -68,5 +70,9 @@ export async function completeJobAction(
   }
 
   revalidatePath(`/jobs/${params.jobId}`);
-  return { ok: true };
+  return {
+    ok: true,
+    receiptFormat: ocr.receiptFormat,
+    needsSpecialReceiptReview: needsSpecialReceiptReview(ocr),
+  };
 }

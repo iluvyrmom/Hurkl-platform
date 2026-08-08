@@ -3,6 +3,18 @@ import type { PaymentStatus } from "./payment";
 
 export type JobStatus = "scheduled" | "in_progress" | "completed" | "cancelled";
 
+/**
+ * `printed` = a standard machine-printed scale ticket/receipt. `handwritten`
+ * = a hand-written receipt (common at small/informal facilities) — numbers
+ * extracted from these are far less reliable and must be flagged
+ * distinctly, not silently folded into ordinary OCR review. `unsupported` =
+ * a format the OCR provider recognizes but can't parse (torn, faded, not a
+ * receipt at all). `unknown` = no classification was attempted (always true
+ * for the mock OCR provider). See lib/providers/ocr/types.ts, which
+ * implements this same type for provider results.
+ */
+export type ReceiptFormat = "printed" | "handwritten" | "unsupported" | "unknown";
+
 export interface DumpReceiptRecord {
   /** Never overwritten once set — the original receipt image is the permanent record; OCR only ever adds assistive fields alongside it. */
   imageStoragePath: string;
@@ -10,6 +22,8 @@ export interface DumpReceiptRecord {
   imageHash: string | null;
   ocrProvider: string | null;
   ocrExtractedText: string | null;
+  /** "handwritten" or "unsupported" flags this receipt for extra manual review beyond the routine OCR check — see needsSpecialReceiptReview() in lib/providers/ocr/types.ts. */
+  ocrReceiptFormat: ReceiptFormat | null;
   ocrFacilityNameGuess: string | null;
   ocrTicketNumber: string | null;
   ocrReceiptDate: string | null;

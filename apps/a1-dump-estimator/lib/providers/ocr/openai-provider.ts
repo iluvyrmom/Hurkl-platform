@@ -1,5 +1,7 @@
 import { ProviderNotConfiguredError } from "../errors";
-import type { OCRProvider, ReceiptOCRResult } from "./types";
+import type { ReceiptFormat, OCRProvider, ReceiptOCRResult } from "./types";
+
+const VALID_FORMATS: ReceiptFormat[] = ["printed", "handwritten", "unsupported", "unknown"];
 
 /**
  * OpenAI Vision-backed document extraction. Requires OPENAI_API_KEY. No
@@ -30,10 +32,15 @@ export class OpenAIReceiptOCRProvider implements OCRProvider {
     const prompt = [
       "You are reading a scale ticket or dump-facility receipt for a junk-removal business.",
       "Extract exactly what is printed — never estimate or guess a value that isn't legible.",
+      "First classify receiptFormat: \"printed\" (standard machine-printed ticket, legible),",
+      '"handwritten" (hand-written receipt), "unsupported" (not a receipt, or too damaged/faded',
+      'to read), or "unknown" if you cannot tell. Be conservative — if any meaningful portion is',
+      "hand-written, classify the whole receipt as handwritten even if some fields are printed.",
       "Respond with strict JSON only:",
-      '{"rawText":string,"facilityNameGuess":string|null,"ticketNumber":string|null,',
-      '"receiptDate":string|null,"receiptTime":string|null,"grossWeightLbs":number|null,',
-      '"tareWeightLbs":number|null,"netWeightLbs":number|null,"amountCharged":number|null}',
+      '{"receiptFormat":string,"rawText":string,"facilityNameGuess":string|null,',
+      '"ticketNumber":string|null,"receiptDate":string|null,"receiptTime":string|null,',
+      '"grossWeightLbs":number|null,"tareWeightLbs":number|null,"netWeightLbs":number|null,',
+      '"amountCharged":number|null}',
       "receiptDate must be ISO format (YYYY-MM-DD) if present, receiptTime as HH:MM 24-hour.",
       "Use null for any field that is not clearly legible on the receipt.",
     ].join(" ");
@@ -69,7 +76,13 @@ export class OpenAIReceiptOCRProvider implements OCRProvider {
       return this.emptyResult();
     }
 
-    const parsed = JSON.parse(content) as Omit<ReceiptOCRResult, "provider" | "requiresManualReview">;
+    const parsed = JSON.parse(content) as Omit<
+      ReceiptOCRResult,
+      "provider" | "requiresManualReview"
+    >;
+    const receiptFormat: ReceiptFormat = VALID_FORMATS.includes(parsed.receiptFormat)
+      ? parsed.receiptFormat
+      : "unknown";
 
     // Assistive only, always — even a fully-populated read requires human
     // confirmation before it's trusted for the job's official record (see
@@ -77,6 +90,7 @@ export class OpenAIReceiptOCRProvider implements OCRProvider {
     return {
       provider: this.name,
       rawText: parsed.rawText ?? null,
+      receiptFormat,
       facilityNameGuess: parsed.facilityNameGuess ?? null,
       ticketNumber: parsed.ticketNumber ?? null,
       receiptDate: parsed.receiptDate ?? null,
@@ -93,6 +107,7 @@ export class OpenAIReceiptOCRProvider implements OCRProvider {
     return {
       provider: this.name,
       rawText: null,
+      receiptFormat: "unknown",
       facilityNameGuess: null,
       ticketNumber: null,
       receiptDate: null,
