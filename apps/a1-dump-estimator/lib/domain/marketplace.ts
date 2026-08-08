@@ -7,7 +7,9 @@
  * against without re-deriving it, mirroring the dependency-free-contract
  * pattern hurkl-platform's own lib/domain/*.ts already uses for Mason's
  * not-yet-built engines. Nothing in this file is wired into the Phase 1
- * estimator flow.
+ * estimator flow — "do not begin the national marketplace yet" is enforced
+ * by lib/architecture-boundaries.test.ts, which fails if anything outside
+ * this file ever imports from it.
  */
 
 export interface ReliabilityScoreFactors {

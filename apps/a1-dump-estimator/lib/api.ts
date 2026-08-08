@@ -1,11 +1,12 @@
 /**
  * The service surface this app exposes for future integration — including,
  * eventually, Mason (see hurkl-platform's root CLAUDE.md/PRODUCT.md; Mason
- * itself is explicitly NOT integrated here per this app's build spec).
- * Every function here is plain, typed, and side-effect-documented so a
- * future caller (an API route, a marketplace service, a Mason HAL
- * specialist) can call it without knowing about Next.js, Supabase, or the
- * in-memory fallback underneath.
+ * itself is explicitly NOT integrated here per this app's build spec — no
+ * Mason code is imported anywhere in this app, enforced by
+ * lib/architecture-boundaries.test.ts). Every function here is plain,
+ * typed, and side-effect-documented so a future caller (an API route, a
+ * marketplace service, a Mason HAL specialist) can call it without knowing
+ * about Next.js, Supabase, or the in-memory fallback underneath.
  */
 import type { CrewSize, Estimate, EstimateInput, EstimateTier } from "@/lib/domain/estimate";
 import type { Customer } from "@/lib/domain/customer";
