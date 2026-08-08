@@ -99,6 +99,8 @@ export interface Estimate {
   tiers: PriceEstimate[];
   selectedTier: EstimateTier | null;
   selectedFacility: FacilitySelectionResult | null;
+  /** Which snapshot of lib/estimator/constants.ts priced this estimate — see ESTIMATOR_MODEL_VERSION's doc comment. Never changes retroactively; a new estimate at a bumped version is how a pricing-defaults change actually takes effect. */
+  estimatorModelVersion: string;
   createdAt: string;
   updatedAt: string;
   createdByUserId: string | null;

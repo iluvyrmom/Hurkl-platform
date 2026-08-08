@@ -8,6 +8,7 @@ import { getPaymentProvider } from "@/lib/providers/payments";
 import { getOCRProvider } from "@/lib/providers/ocr";
 import { getNotificationProvider } from "@/lib/providers/notifications";
 import { getLearningAccuracySummary } from "@/lib/learning/service";
+import { ESTIMATOR_MODEL_VERSION } from "@/lib/estimator/constants";
 
 export default async function SettingsPage() {
   const businessId = await requireCurrentBusinessId();
@@ -58,7 +59,10 @@ export default async function SettingsPage() {
         </Card>
 
         <Card className="space-y-2">
-          <h2 className="text-base font-bold text-brand-navy">Learning system</h2>
+          <div className="flex items-center justify-between">
+            <h2 className="text-base font-bold text-brand-navy">Learning system</h2>
+            <span className="font-mono text-xs text-brand-slate">v{ESTIMATOR_MODEL_VERSION}</span>
+          </div>
           <p className="text-sm text-brand-slate">{accuracy.sampleSize} completed job(s) recorded</p>
           {accuracy.sampleSize > 0 && (
             <ul className="text-sm text-brand-slate">
@@ -73,6 +77,11 @@ export default async function SettingsPage() {
               )}
             </ul>
           )}
+          <p className="text-xs text-brand-slate">
+            Informational only — this never changes pricing automatically. A pricing-defaults
+            update requires an explicit, owner-approved bump to the estimator model version above
+            (lib/estimator/constants.ts).
+          </p>
         </Card>
       </div>
     </div>

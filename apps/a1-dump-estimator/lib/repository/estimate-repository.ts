@@ -84,6 +84,7 @@ class SupabaseEstimateRepository implements EstimateRepository {
         selected_tier: input.selectedTier,
         selected_facility_id: input.selectedFacility?.facility.id ?? null,
         selected_facility_snapshot: input.selectedFacility,
+        estimator_model_version: input.estimatorModelVersion,
         created_by_user_id: input.createdByUserId,
       })
       .select("*")
@@ -127,6 +128,7 @@ function mapRow(row: any): Estimate {
     tiers: row.tiers ?? [],
     selectedTier: row.selected_tier,
     selectedFacility: row.selected_facility_snapshot ?? null,
+    estimatorModelVersion: row.estimator_model_version,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     createdByUserId: row.created_by_user_id,

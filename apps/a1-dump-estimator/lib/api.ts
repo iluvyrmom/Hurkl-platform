@@ -80,6 +80,7 @@ export async function createEstimate(params: CreateEstimateParams): Promise<Esti
     tiers: result.tiers,
     selectedTier: null,
     selectedFacility: result.selectedFacility,
+    estimatorModelVersion: result.estimatorModelVersion,
     createdByUserId: params.createdByUserId ?? null,
   });
 }

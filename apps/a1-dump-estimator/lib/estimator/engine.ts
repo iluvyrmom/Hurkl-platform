@@ -10,6 +10,7 @@ import { aggregateLoad } from "./aggregate-load";
 import { selectBestFacility } from "@/lib/facilities/service";
 import {
   ESTIMATE_TIERS,
+  ESTIMATOR_MODEL_VERSION,
   FUEL_COST_PER_MILE,
   HOURLY_LABOR_RATE,
   MIN_JOB_HOURS,
@@ -34,6 +35,8 @@ export interface GenerateEstimateResult {
   selectedFacility: FacilitySelectionResult | null;
   estimatedWeightLbs: number;
   estimatedVolumeYards: number;
+  /** Which snapshot of lib/estimator/constants.ts priced this — see ESTIMATOR_MODEL_VERSION's doc comment. */
+  estimatorModelVersion: string;
 }
 
 function roundToNearestDollar(amount: number): number {
@@ -130,5 +133,11 @@ export async function generateEstimate(
     return { tier, totalPrice, breakdown };
   });
 
-  return { tiers, selectedFacility, estimatedWeightLbs, estimatedVolumeYards };
+  return {
+    tiers,
+    selectedFacility,
+    estimatedWeightLbs,
+    estimatedVolumeYards,
+    estimatorModelVersion: ESTIMATOR_MODEL_VERSION,
+  };
 }
