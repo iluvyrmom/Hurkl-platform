@@ -256,7 +256,9 @@ with confidence + required manual confirmation; Stripe Checkout + webhook-
 authoritative confirmation + idempotency + refunds; owner-recorded cash
 fallback; receipt OCR extraction; duplicate-receipt detection that actually
 blocks completion until overridden; a learning-record table wired to job
-completion.
+completion; real A-1 Best Moving brand colors (black/gold, from
+founder-supplied logo artwork — see `app/globals.css`'s `@theme` block and
+`lib/config/business.ts`).
 
 **Explicitly not done (future work, not silently skipped):** no live
 Supabase/Stripe/OpenAI/Google Maps project connected (no credentials exist
@@ -264,11 +266,10 @@ in this environment); no photo storage upload (photos are sent for
 analysis/OCR but never persisted to Storage); no SMS/email sending; no
 automatic feedback loop from learning records back into the estimator's
 defaults; no independent-contractor marketplace runtime (contracts only);
-real A-1 brand colors/logo not supplied — placeholder navy/orange palette
-is in `app/globals.css`, swap `@theme` there when real brand assets exist
-(a1bestmoving.com could not be reached to confirm real colors — see brand
-note in `lib/config/business.ts`); facility pricing still needs independent
-human verification against the live source before real customer use; no
-public no-login customer-facing quote view (a shareable quote link needs
-its own deliberate RLS design, not an ad hoc public-read policy — see the
-comment in `proxy.ts`).
+brand colors are a close visual match to the supplied logo artwork, not a
+vendor-issued hex spec — swap for exact values if a formal brand guideline
+exists; facility pricing still needs independent human verification
+against the live source before real customer use; no public no-login
+customer-facing quote view (a shareable quote link needs its own
+deliberate RLS design, not an ad hoc public-read policy — see the comment
+in `proxy.ts`).

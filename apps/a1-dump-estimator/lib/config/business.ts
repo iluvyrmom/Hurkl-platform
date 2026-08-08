@@ -7,12 +7,11 @@
  *
  * Name, phone, email, and tagline below were supplied directly by the
  * business owner and applied as given. `brandPrimaryColor`/
- * `brandAccentColor` are still a placeholder palette — this session could
- * not reach a1bestmoving.com (blocked by the site's own bot protection, not
- * a source we control) to confirm real brand hex codes, so the exact colors
- * are unverified. Swap them for the real values in `app/globals.css`'s
- * `@theme` block once supplied, and update the two color fields below to
- * match.
+ * `brandAccentColor` come from real A-1 Best Moving LLC logo artwork the
+ * owner supplied directly in-session (black/gold, "The best move you'll
+ * make.") — a close visual match to the logo's metallic gold and near-black,
+ * not a vendor-issued hex spec. See `app/globals.css`'s `@theme` block,
+ * which these two values must stay in sync with.
  */
 export const DEFAULT_BUSINESS = {
   id: "00000000-0000-0000-0000-000000000001",
@@ -24,8 +23,6 @@ export const DEFAULT_BUSINESS = {
   primaryAddress: "Portland, OR",
   primaryLatitude: 45.5152,
   primaryLongitude: -122.6784,
-  // Placeholder — see file comment above. Not yet confirmed against A-1's
-  // real brand assets.
-  brandPrimaryColor: "#0b2545",
-  brandAccentColor: "#f26522",
+  brandPrimaryColor: "#141414",
+  brandAccentColor: "#d4a72c",
 };

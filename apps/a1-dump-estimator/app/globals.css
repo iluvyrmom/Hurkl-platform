@@ -1,16 +1,24 @@
 @import "tailwindcss";
 
 /*
- * A-1 Dump Estimator brand tokens.
- * Placeholder palette (navy + safety orange) chosen for outdoor/bright-sunlight
- * legibility and high contrast on a phone screen — swap for A-1's real brand
- * colors/logo when supplied. See README "Branding" section.
+ * A-1 Best Moving LLC brand tokens — real palette, from the founder-
+ * supplied logo artwork (black/gold, "A-1 Best Moving LLC — The best move
+ * you'll make."). Values are a close visual match to the logo's metallic
+ * gold and near-black, not a vendor-issued hex spec — if an exact brand
+ * guideline (style guide PDF, design-tool export) exists, swap these for
+ * the precise values.
+ *
+ * Token names below (brand-navy/brand-orange) are legacy from this app's
+ * original placeholder palette and now hold the real gold/black values —
+ * kept as-is rather than renamed across every component that references
+ * them (bg-brand-orange, text-brand-navy, etc.), a purely internal/cosmetic
+ * cleanup with no user-facing effect.
  */
 @theme {
-  --color-brand-navy: #0b2545;
-  --color-brand-navy-dark: #071a33;
-  --color-brand-orange: #f26522;
-  --color-brand-orange-dark: #d1550f;
+  --color-brand-navy: #141414;
+  --color-brand-navy-dark: #000000;
+  --color-brand-orange: #d4a72c;
+  --color-brand-orange-dark: #b8891f;
   --color-brand-slate: #64748b;
   --color-brand-bg: #f8fafc;
   --color-brand-success: #15803d;
