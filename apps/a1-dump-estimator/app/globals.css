@@ -1,12 +1,13 @@
 @import "tailwindcss";
 
 /*
- * A-1 Best Moving LLC brand tokens — real palette, from the founder-
- * supplied logo artwork (black/gold, "A-1 Best Moving LLC — The best move
- * you'll make."). Values are a close visual match to the logo's metallic
- * gold and near-black, not a vendor-issued hex spec — if an exact brand
- * guideline (style guide PDF, design-tool export) exists, swap these for
- * the precise values.
+ * A-1 Best Moving LLC brand tokens — exact hex values from the founder-
+ * confirmed brand color chart (black/gold, "The best move you'll make."):
+ * #D4AF37 (gold), #F2C94C / #FFD66B (lighter gold accents), #111111 (near
+ * black), #232323 (dark gray), #E5E525 (light neutral), #FFFFFF. Only
+ * gold/near-black are wired into the two theme tokens below — the mid-tone
+ * gold and neutral swatches aren't currently used by any component, so
+ * they're not worth inventing a use for.
  *
  * Token names below (brand-navy/brand-orange) are legacy from this app's
  * original placeholder palette and now hold the real gold/black values —
@@ -15,10 +16,11 @@
  * cleanup with no user-facing effect.
  */
 @theme {
-  --color-brand-navy: #141414;
+  --color-brand-navy: #111111;
   --color-brand-navy-dark: #000000;
-  --color-brand-orange: #d4a72c;
-  --color-brand-orange-dark: #b8891f;
+  --color-brand-orange: #d4af37;
+  /* Not from the chart — a derived darker gold for button press/active states, since the chart's other gold swatches (#F2C94C, #FFD66B) are lighter, not darker. */
+  --color-brand-orange-dark: #b8941f;
   --color-brand-slate: #64748b;
   --color-brand-bg: #f8fafc;
   --color-brand-success: #15803d;

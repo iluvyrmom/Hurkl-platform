@@ -36,8 +36,8 @@ export default async function SettingsPage() {
           </p>
           <p className="mt-2 text-xs text-brand-slate">
             Business profile editing is future work — Phase 1 ships one seeded business record.
-            Brand colors match the real A-1 Best Moving logo artwork (see lib/config/business.ts) —
-            a close visual match, not a vendor-issued hex spec.
+            Brand colors are exact values from the founder-confirmed color chart (see
+            lib/config/business.ts).
           </p>
         </Card>
 
