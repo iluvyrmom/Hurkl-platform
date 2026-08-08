@@ -1,0 +1,62 @@
+@import "tailwindcss";
+
+/*
+ * A-1 Best Moving LLC brand tokens — exact hex values from the founder-
+ * confirmed brand color chart (black/gold, "The best move you'll make."):
+ * #D4AF37 (gold), #F2C94C / #FFD66B (lighter gold accents), #111111 (near
+ * black), #232323 (dark gray), #E5E525 (light neutral), #FFFFFF. Only
+ * gold/near-black are wired into the two theme tokens below — the mid-tone
+ * gold and neutral swatches aren't currently used by any component, so
+ * they're not worth inventing a use for.
+ *
+ * Token names below (brand-navy/brand-orange) are legacy from this app's
+ * original placeholder palette and now hold the real gold/black values —
+ * kept as-is rather than renamed across every component that references
+ * them (bg-brand-orange, text-brand-navy, etc.), a purely internal/cosmetic
+ * cleanup with no user-facing effect.
+ */
+@theme {
+  --color-brand-navy: #111111;
+  --color-brand-navy-dark: #000000;
+  --color-brand-orange: #d4af37;
+  /* Not from the chart — a derived darker gold for button press/active states, since the chart's other gold swatches (#F2C94C, #FFD66B) are lighter, not darker. */
+  --color-brand-orange-dark: #b8941f;
+  --color-brand-slate: #64748b;
+  --color-brand-bg: #f8fafc;
+  --color-brand-success: #15803d;
+  --color-brand-danger: #b91c1c;
+
+  --font-sans:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+html,
+body {
+  height: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+
+body {
+  background: var(--color-brand-bg);
+  color: var(--color-brand-navy-dark);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Large, thumb-friendly hit targets by default — this app is used standing
+   outdoors at a customer's property, often one-handed. */
+button,
+a[role="button"],
+input,
+select,
+textarea {
+  font-size: 1rem;
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+}
