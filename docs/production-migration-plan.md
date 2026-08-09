@@ -1,6 +1,6 @@
 # Production migration plan — `Hurkl-production`
 
-Status: **plan only — migrations have NOT been applied to `Hurkl-production`.** This document is the review and verification record required before that happens. See `docs/development.md`'s "Database" section for the general local/CLI mechanics; this document is specific to the real project.
+Status: **Historical — this plan has since been executed.** All 6 migrations (`00000000000001` through `00000000000006`) are applied to `Hurkl-production` as of 2026-08-06, including a 6th one not covered by this document (`00000000000006_grant_table_privileges.sql` — see `docs/communications-architecture.md`'s "Production incident, 2026-08-06" for why). This document is kept as the review/verification record for migrations 1–3; the plan-only framing below no longer reflects current reality.
 
 **Update:** findings F1, F2, and F4 from the original review (below) have since been fixed directly in `supabase/migrations/00000000000001_tenant_foundation.sql` and `00000000000002_customers_and_audit_log.sql`, since neither had been applied anywhere real yet. File hashes in this document were recomputed after the fix — see the "Findings summary" and updated hashes below.
 

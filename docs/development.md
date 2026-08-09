@@ -109,15 +109,17 @@ See `docs/communications-architecture.md` for the full design. This is the found
 
 ### Running it live
 
-There's no public deployment yet, so Telegram's real webhook can't be registered — use the long-polling dev bridge instead:
+**As of 2026-08-06, a real deployment exists** (`hurkl-platform` on Netlify — see `ARCHITECTURE.md` §8) and the real webhook is registered, so this is the live path now:
 
-```bash
-npm run telegram:dev-bridge
+```
+https://api.telegram.org/bot<TELEGRAM_BOT_TOKEN>/setWebhook?url=https://hurkl-platform.netlify.app/api/telegram/webhook&secret_token=<TELEGRAM_WEBHOOK_SECRET>
 ```
 
-Leave it running, then message the "Mason Herkle" bot for real. Confirm: a reply arrives (from `MockAIModelProvider` — see the communications-architecture doc for why Mason's real reasoning isn't wired up yet), and rows exist in `conversations`, `messages` (both directions), and `audit_log` for the conversation.
+`app/api/telegram/webhook/route.ts` receives the message directly — no dev bridge needed to test this in production anymore. `scripts/telegram-dev-bridge.ts` (long-polling, `npm run telegram:dev-bridge`) still works and remains useful for local-only testing before something is deployed, or against a fresh environment that doesn't have a public URL yet.
 
-Once a real deployment exists, `app/api/telegram/webhook/route.ts` is the production path — register it with Telegram's `setWebhook` (with `TELEGRAM_WEBHOOK_SECRET` set) instead of running the dev bridge.
+Confirm it's working: message the bot, expect a reply (from `MockAIModelProvider` — see the communications-architecture doc for why Mason's real reasoning isn't wired up yet), and check `conversations`, `messages` (both directions), and `audit_log` for the conversation.
+
+If migrations were applied to a Supabase project through anything other than Supabase's own project-creation bootstrap, also confirm `00000000000006_grant_table_privileges.sql` actually ran — see `docs/communications-architecture.md`'s "Production incident, 2026-08-06." Without it, every real request silently fails with the app's own service-role key getting `permission denied` from Postgres, which looks identical to "the sender isn't linked" until you check `telegram_identity.ts`'s error logs.
 
 ## What's required right now (Phase 1)
 

@@ -263,6 +263,7 @@ External side effects (sending an SMS, creating a calendar event, charging a car
 
 ## 8. Deployment
 
+- **Status note (2026-08-06):** a first real deployment now exists — `hurkl-platform` on Netlify (`hurkl-platform.netlify.app`), connected to this repo's `main` branch, deployed ahead of the numbered phase sequence specifically to give Mason's Telegram channel (§3, `docs/communications-architecture.md`) a public URL for Telegram's webhook to call. This is not a claim that Phase 8 (the full deployment/scaling story) is complete — no staging environment, no CI-gated merges, no production Twilio/voice infrastructure. See `docs/communications-architecture.md`'s "Production incident, 2026-08-06" for a real issue this surfaced (missing database-role privileges) and how it was fixed.
 - **Environments:** local development, staging (per-branch preview via Vercel/Netlify), production.
 - **Secrets:** environment variables managed by the hosting provider's secret store (never committed — see SECURITY.md and `.gitignore`). ElevenLabs, Twilio, Deepgram, Claude, and database credentials all live here, per environment.
 - **Infrastructure as code:** not necessary at pilot scale given managed providers (Supabase, Vercel/Netlify, Trigger.dev); revisit (e.g., Terraform) if/when self-managed infrastructure is introduced.
