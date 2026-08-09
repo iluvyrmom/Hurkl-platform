@@ -34,15 +34,20 @@ export async function resolveTelegramSender(
     .eq("telegram_user_id", telegramUserId)
     .maybeSingle();
 
-  if (linkError || !link) {
-    // Temporary diagnostic logging while validating the first real
-    // Telegram loop end-to-end — safe to remove once confirmed working.
-    // Never log this in a customer-facing path; internal-only channel.
-    console.log("telegram_links lookup failed", {
-      telegramUserId,
-      errorMessage: linkError?.message,
-      errorCode: (linkError as { code?: string } | null)?.code,
+  if (linkError) {
+    // A genuine query failure (bad grants, connectivity, etc.) is not
+    // the same thing as "a stranger messaged the bot" — the former is
+    // a real bug worth a server-side log; collapsing both into a
+    // silent UnrecognizedSenderError is what masked a production
+    // permissions incident on 2026-08-06 (see migration
+    // 00000000000006_grant_table_privileges.sql).
+    console.error("telegram_links lookup failed", {
+      code: linkError.code,
+      message: linkError.message,
     });
+    throw new UnrecognizedSenderError();
+  }
+  if (!link) {
     throw new UnrecognizedSenderError();
   }
 
@@ -52,12 +57,14 @@ export async function resolveTelegramSender(
     .eq("id", link.profile_id)
     .maybeSingle();
 
-  if (profileError || !profile) {
-    console.log("profiles lookup failed", {
-      profileId: link.profile_id,
-      errorMessage: profileError?.message,
-      errorCode: (profileError as { code?: string } | null)?.code,
+  if (profileError) {
+    console.error("profiles lookup failed", {
+      code: profileError.code,
+      message: profileError.message,
     });
+    throw new UnrecognizedSenderError();
+  }
+  if (!profile) {
     throw new UnrecognizedSenderError();
   }
 

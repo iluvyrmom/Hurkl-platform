@@ -118,9 +118,6 @@ export async function receiveMessage(
     sender = await resolveTelegramSender(admin, inbound.externalUserId);
   } catch (error) {
     if (error instanceof UnrecognizedSenderError) {
-      // Temporary diagnostic logging while validating the first real
-      // Telegram loop end-to-end — safe to remove once confirmed working.
-      console.log("Telegram sender unrecognized", { externalUserId: inbound.externalUserId });
       return { handled: false };
     }
     throw error;
