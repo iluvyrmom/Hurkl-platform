@@ -14,6 +14,10 @@ vi.mock("../../../../lib/supabase/admin", () => ({
   createSupabaseAdminClient: vi.fn().mockReturnValue({}),
 }));
 
+vi.mock("../../../../lib/mason/providers/get-ai-model-provider", () => ({
+  getAIModelProvider: vi.fn().mockReturnValue({ complete: vi.fn() }),
+}));
+
 const getServerEnv = vi.fn();
 vi.mock("../../../../lib/env", () => ({ getServerEnv: () => getServerEnv() }));
 
@@ -87,6 +91,7 @@ describe("POST /api/telegram/webhook", () => {
         channel: "telegram",
         externalUserId: "555000111",
         externalConversationId: "999",
+        externalMessageId: "42",
         text: "status check",
       }),
     );

@@ -15,11 +15,13 @@
 import { receiveMessage } from "../lib/communications/inbound.ts";
 import { TelegramAdapter } from "../lib/communications/telegram-adapter.ts";
 import { getServerEnv } from "../lib/env.ts";
+import { getAIModelProvider } from "../lib/mason/providers/get-ai-model-provider.ts";
 import { createSupabaseAdminClient } from "../lib/supabase/admin.ts";
 
 interface TelegramUpdate {
   update_id: number;
   message?: {
+    message_id: number;
     from?: { id: number };
     chat: { id: number };
     text?: string;
@@ -40,6 +42,7 @@ if (!env.TELEGRAM_BOT_TOKEN) {
 
 const admin = createSupabaseAdminClient();
 const adapter = new TelegramAdapter(env.TELEGRAM_BOT_TOKEN);
+const aiModel = getAIModelProvider();
 
 let offset = 0;
 console.log("Telegram dev bridge running — Ctrl+C to stop.");
@@ -63,11 +66,12 @@ for (;;) {
     if (!message?.text || !message.from) continue;
 
     const result = await receiveMessage(
-      { admin, adapter },
+      { admin, adapter, aiModel },
       {
         channel: "telegram",
         externalUserId: String(message.from.id),
         externalConversationId: String(message.chat.id),
+        externalMessageId: String(message.message_id),
         text: message.text,
         receivedAt: new Date(message.date * 1000).toISOString(),
         raw: update,

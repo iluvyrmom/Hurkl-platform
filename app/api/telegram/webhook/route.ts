@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { receiveMessage } from "../../../../lib/communications/inbound";
 import { TelegramAdapter } from "../../../../lib/communications/telegram-adapter";
 import { getServerEnv } from "../../../../lib/env";
+import { getAIModelProvider } from "../../../../lib/mason/providers/get-ai-model-provider";
 import { createSupabaseAdminClient } from "../../../../lib/supabase/admin";
 
 // This route depends on live external state (the request itself, plus
@@ -58,13 +59,15 @@ export async function POST(request: Request) {
 
   const admin = createSupabaseAdminClient();
   const adapter = new TelegramAdapter(env.TELEGRAM_BOT_TOKEN);
+  const aiModel = getAIModelProvider();
 
   const result = await receiveMessage(
-    { admin, adapter },
+    { admin, adapter, aiModel },
     {
       channel: "telegram",
       externalUserId: String(message.from.id),
       externalConversationId: String(message.chat.id),
+      externalMessageId: String(message.message_id),
       text: message.text,
       receivedAt: new Date(message.date * 1000).toISOString(),
       raw: update,

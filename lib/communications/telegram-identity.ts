@@ -12,6 +12,7 @@ export interface TelegramSenderIdentity {
   profileId: string;
   companyId: string | null;
   role: UserRole;
+  fullName: string | null;
 }
 
 /**
@@ -53,7 +54,7 @@ export async function resolveTelegramSender(
 
   const { data: profile, error: profileError } = await admin
     .from("profiles")
-    .select("id, company_id, role")
+    .select("id, company_id, role, full_name")
     .eq("id", link.profile_id)
     .maybeSingle();
 
@@ -68,5 +69,10 @@ export async function resolveTelegramSender(
     throw new UnrecognizedSenderError();
   }
 
-  return { profileId: profile.id, companyId: profile.company_id, role: profile.role };
+  return {
+    profileId: profile.id,
+    companyId: profile.company_id,
+    role: profile.role,
+    fullName: profile.full_name ?? null,
+  };
 }

@@ -21,6 +21,8 @@ export interface InboundMessage {
   externalUserId: string;
   /** The channel's own conversation/thread identifier — e.g. a Telegram chat id. */
   externalConversationId: string;
+  /** The channel's own message identifier, when it has one — e.g. Telegram's message_id. Used for duplicate-delivery protection (see lib/communications/inbound.ts); omit if the channel doesn't supply one. */
+  externalMessageId?: string;
   text: string;
   receivedAt: string;
   /** The original channel payload, kept only for audit-log metadata — never parsed by shared pipeline code. */

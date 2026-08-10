@@ -6,3 +6,6 @@
  * docs/communications-architecture.md for why.
  */
 export const HURKL_INTERNAL_COMPANY_ID = "00000000-0000-0000-0000-000000000001";
+
+/** The seeded name of the internal company row, per the migration above — fixed, so this is safe to use directly rather than querying it. */
+export const HURKL_INTERNAL_COMPANY_NAME = "HURKL (Internal)";
