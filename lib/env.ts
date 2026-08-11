@@ -85,6 +85,14 @@ export interface ServerEnv {
   ANTHROPIC_MONTHLY_SPEND_CEILING_USD?: string;
   ANTHROPIC_COMPANY_DAILY_SPEND_CEILING_USD?: string;
   ANTHROPIC_COMPANY_MONTHLY_SPEND_CEILING_USD?: string;
+
+  // A-1's existing, separately-hosted customer site (a-1bestmoving,
+  // not this repo — see docs/a1-best-moving-launch.md) posts its
+  // "quote-estimate" Netlify Form submissions here via a Netlify Forms
+  // outgoing webhook. This secret is the URL path segment that stands
+  // in for auth, since that webhook's config has no custom-header
+  // option. Unset means the route always 404s, not "unauthenticated".
+  A1_NETLIFY_WEBHOOK_SECRET?: string;
 }
 
 export interface ClientEnv {
@@ -136,6 +144,7 @@ export function getServerEnv(): ServerEnv {
       process.env.ANTHROPIC_COMPANY_DAILY_SPEND_CEILING_USD,
     ANTHROPIC_COMPANY_MONTHLY_SPEND_CEILING_USD:
       process.env.ANTHROPIC_COMPANY_MONTHLY_SPEND_CEILING_USD,
+    A1_NETLIFY_WEBHOOK_SECRET: process.env.A1_NETLIFY_WEBHOOK_SECRET,
   };
 }
 
