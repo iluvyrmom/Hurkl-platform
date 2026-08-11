@@ -14,6 +14,7 @@ const MIGRATION_FILES = [
   "00000000000005_company_account_types.sql",
   "00000000000006_grant_table_privileges.sql",
   "00000000000007_mason_reasoning.sql",
+  "00000000000008_leads_and_company_profile.sql",
 ];
 
 /**

@@ -214,6 +214,8 @@ These are binding engineering requirements, not aspirations:
 - Storage (documents, photos, call recordings) is partitioned per tenant (separate storage prefixes/buckets), with access rules mirroring RLS.
 - Cross-tenant HURKL admin access (for support/billing) goes through a separate, explicitly audited admin path — never through the same query paths tenants use.
 
+**Status note (2026-08-11):** `leads` (listed above as an anticipated tenant-scoped table) is now real — `supabase/migrations/00000000000008_leads_and_company_profile.sql`, built for A-1 Best Moving's launch. It also establishes the pattern for the first genuinely public, unauthenticated write path into a tenant-scoped table: never a bare RLS INSERT policy for `anon`, always a narrow `SECURITY DEFINER` function (`submit_lead()`) that validates input and resolves the target company by its public `website_slug`, never a client-supplied internal id. A parallel `get_company_public_profile()` function exposes only the public-safe subset of a company's own row (name/phone/email/slogan) the same way. See `docs/a1-best-moving-launch.md` for the full design and current gaps (quoting/booking/invoicing/payment are not yet built on top of this).
+
 ### Territory and trade exclusivity: a narrow, explicit exception
 
 `PRODUCT.md`'s configurable trade-and-territory exclusivity (a protected market per tenant, based on both territory and competing trade/service category) requires checking a new or expanding tenant's requested protected market against other tenants' existing ones. That is, by definition, a cross-tenant read — the one deliberate, narrowly-scoped exception to the tenant-isolation rule above, not a precedent for any other feature.
