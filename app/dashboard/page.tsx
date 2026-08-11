@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "../../lib/supabase/server";
 import { CustomersPanel } from "./customers-panel";
+import { LeadsPanel } from "./leads-panel";
 import { SignOutButton } from "./sign-out-button";
 
 // This page depends on per-request auth state (cookies) and must never be
@@ -34,6 +35,7 @@ export default async function DashboardPage() {
     <main>
       <h1>HURKL</h1>
       <SignOutButton />
+      <LeadsPanel />
       <CustomersPanel />
     </main>
   );

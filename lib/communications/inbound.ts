@@ -8,6 +8,12 @@ import {
 import { routeModelTier } from "../mason/model-routing";
 import { buildMasonSystemPrompt } from "../mason/system-prompt";
 import { classifyMessageTaskType } from "../mason/task-classification";
+import {
+  evaluateBudget,
+  getBudgetStatus,
+  wouldExceedBudgetForAdvancedReasoning,
+  type SpendReader,
+} from "../mason/spend-guard";
 import type { Channel, CommunicationAdapter, InboundMessage } from "./adapter";
 import { HURKL_INTERNAL_COMPANY_ID, HURKL_INTERNAL_COMPANY_NAME } from "./internal-company";
 import { resolveTelegramSender, UnrecognizedSenderError } from "./telegram-identity";
@@ -148,6 +154,22 @@ async function insertMessage(admin: SupabaseClient, input: InsertMessageInput): 
 const FALLBACK_REPLY_TEXT =
   "Mason is having trouble responding right now — please try again in a moment.";
 
+// Rough chars-per-token heuristic for projecting the cost of an
+// advanced_reasoning call *before* making it (see
+// wouldExceedBudgetForAdvancedReasoning) — not token-accurate, just
+// conservative enough to avoid an obvious single-call budget overshoot.
+const APPROX_CHARS_PER_TOKEN = 4;
+
+function estimateProjectedInputTokens(
+  systemPrompt: string,
+  userMessage: string,
+  history: ConversationTurn[],
+): number {
+  const historyChars = history.reduce((sum, turn) => sum + turn.text.length, 0);
+  const totalChars = systemPrompt.length + userMessage.length + historyChars;
+  return Math.ceil(totalChars / APPROX_CHARS_PER_TOKEN);
+}
+
 /**
  * The one shared pipeline every channel's inbound entry point calls
  * (see app/api/telegram/webhook/route.ts and
@@ -159,10 +181,16 @@ const FALLBACK_REPLY_TEXT =
  * 4. persist the inbound message — duplicate deliveries of an already-
  *    processed message are dropped here (see DuplicateMessageError)
  * 5. audit log the receipt
- * 6. call Mason (real routing + AIModelProvider — mock unless
- *    ANTHROPIC_API_KEY is set; see get-ai-model-provider.ts). A
- *    reasoning failure falls back to a safe reply rather than
- *    corrupting the conversation or leaving the sender with silence.
+ * 6. check the hard spend guard (lib/mason/spend-guard.ts) — if any
+ *    HURKL-wide or per-company daily/monthly ceiling is already met,
+ *    no Anthropic request is made at all (a "message_budget_blocked"
+ *    audit entry is recorded instead); otherwise call Mason (real
+ *    routing + AIModelProvider — mock unless ANTHROPIC_API_KEY is set;
+ *    see get-ai-model-provider.ts), downgrading a single
+ *    advanced_reasoning call to low_cost if its projected cost would
+ *    newly tip a ceiling. A reasoning failure falls back to a safe
+ *    reply rather than corrupting the conversation or leaving the
+ *    sender with silence.
  * 7. persist Mason's outbound message (with usage/cost accounting)
  * 8. CommunicationAdapter.send() → back through the channel
  * 9. audit log the response
@@ -240,28 +268,91 @@ export async function receiveMessage(
     senderRole: sender.role,
   });
 
+  // Hard server-side spend guard — checked before every real Anthropic
+  // request, any tier, for every sender including hurkl_admin/owner
+  // (no identity is exempt; see lib/mason/spend-guard.ts). Gate A below
+  // blocks the call entirely once an accumulated ceiling is already
+  // met; Gate B (further down) only downgrades a single
+  // advanced_reasoning call to low_cost when it would newly tip a
+  // ceiling — it never blocks outright.
+  // Cast through `unknown`: assigning the real SupabaseClient directly
+  // against SpendReader's chainable interface makes the TS checker
+  // expand PostgrestFilterBuilder's generics against our own
+  // self-referential type and blow the instantiation-depth limit
+  // (TS2589) — the real client satisfies SpendReader's shape at
+  // runtime (same .from().select().eq()/.gte() surface used
+  // elsewhere in this file), so the cast is safe.
+  const budgetStatus = await getBudgetStatus(admin as unknown as SpendReader, companyId);
+  const budgetDecision = evaluateBudget(budgetStatus);
+
   let aiResponse;
-  try {
-    aiResponse = await aiModel.complete({ tier, systemPrompt, userMessage: inbound.text, history });
-  } catch (error) {
-    // A reasoning failure must not corrupt the conversation or leave
-    // the sender with silence — fall back to a safe, clearly-labeled
-    // reply instead of propagating the error (which would 500 the
-    // webhook and risk a Telegram-redelivery loop).
-    console.error("Mason reasoning failed", {
+  if (!budgetDecision.allowed) {
+    console.warn("Anthropic spend ceiling reached — using fallback reply, no request sent", {
       conversationId: conversation.id,
       tier,
-      error: error instanceof Error ? error.message : String(error),
+      exceededCeiling: budgetDecision.exceededCeiling,
+    });
+    await recordAuditLogEntry(admin, {
+      companyId,
+      actorUserId: sender.profileId,
+      action: "message_budget_blocked",
+      autonomyTier: "tier_1_automatic",
+      policyReference: "communications.respond",
+      subjectType: "conversation",
+      subjectId: conversation.id,
+      metadata: { channel: inbound.channel, tier, exceededCeiling: budgetDecision.exceededCeiling },
     });
     aiResponse = {
       text: FALLBACK_REPLY_TEXT,
       tier,
-      modelId: "fallback",
+      modelId: "budget_limit",
       inputTokens: 0,
       outputTokens: 0,
       estimatedCostUsd: 0,
       latencyMs: 0,
     };
+  } else {
+    let effectiveTier = tier;
+    if (tier === "advanced_reasoning") {
+      const projectedInputTokens = estimateProjectedInputTokens(
+        systemPrompt,
+        inbound.text,
+        history,
+      );
+      if (wouldExceedBudgetForAdvancedReasoning(budgetDecision.status, projectedInputTokens)) {
+        effectiveTier = "low_cost";
+      }
+    }
+
+    try {
+      aiResponse = await aiModel.complete({
+        tier: effectiveTier,
+        systemPrompt,
+        userMessage: inbound.text,
+        history,
+      });
+    } catch (error) {
+      // A reasoning failure must not corrupt the conversation or leave
+      // the sender with silence — fall back to a safe, clearly-labeled
+      // reply instead of propagating the error (which would 500 the
+      // webhook and risk a Telegram-redelivery loop). Distinct from
+      // the budget-block path above: this is a real provider failure,
+      // not a refusal to spend, and must not be counted as one.
+      console.error("Mason reasoning failed", {
+        conversationId: conversation.id,
+        tier: effectiveTier,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      aiResponse = {
+        text: FALLBACK_REPLY_TEXT,
+        tier: effectiveTier,
+        modelId: "fallback",
+        inputTokens: 0,
+        outputTokens: 0,
+        estimatedCostUsd: 0,
+        latencyMs: 0,
+      };
+    }
   }
 
   await insertMessage(admin, {
