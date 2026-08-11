@@ -49,6 +49,8 @@ This reframes, but does not replace, every growth/opportunity engine already doc
 
 **This is architecture and contracts only.** Nothing here authorizes a real specialist agent, execution engine, or autonomous production behavior — see `lib/domain/hal.ts` for the dependency-free TypeScript contracts (types only) and `docs/business-intelligence/HAL_SPECIALIST_WORKFORCE.md` for the full organizational model, initial specialist registry, and Quality Assurance Layer detail.
 
+**Correction (Knowledge Capture Session 010):** "Executive" above describes how Mason runs HAL internally, not his job title — Mason's actual identity is **Office Manager** (per `PRODUCT.md`), with his own real expertise that is never delegated to a specialist. Session 010 also adds an operational service-delivery specialist family (Lead Qualification, Estimating, Calendar & Capacity, Invoice, Sales, Dispatch, Customer Follow-Up — see `lib/domain/hal.ts`'s `SpecialistType`) alongside the growth/BD roster already listed here, and formalizes the Critical Review Specialist's ("the Critic's") per-claim classification taxonomy. See `docs/business-intelligence/HAL_SPECIALIST_WORKFORCE.md` for the full detail — still architecture and contracts only, same scope as the rest of this section.
+
 ## 2. Recommended stack (founder-approved)
 
 | Layer | Recommendation | Why | Alternatives considered |

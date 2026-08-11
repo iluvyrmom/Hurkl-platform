@@ -21,8 +21,17 @@
  * time" per HAL_SPECIALIST_WORKFORCE.md. Adding a specialist means
  * adding a value here and a corresponding SpecialistDefinition, never
  * expanding what Mason personally "knows."
+ *
+ * Two families, per Knowledge Capture Session 010
+ * (HAL_SPECIALIST_WORKFORCE.md's "Operational Service-Delivery
+ * Specialists" section): the original roster below this comment is
+ * growth/business-development-facing (finding and winning tomorrow's
+ * work); the "Operational service-delivery specialists" group below
+ * that is operations-facing (running today's already-won work — every
+ * tenant needs these, not just ones pursuing growth/BD).
  */
 export type SpecialistType =
+  // --- Growth / business-development specialists (original roster) ---
   | "permit_specialist"
   | "property_specialist"
   | "developer_intelligence_specialist"
@@ -44,7 +53,27 @@ export type SpecialistType =
   | "building_code_specialist"
   | "financial_exposure_specialist"
   | "strategic_intelligence_specialist"
-  | "memory_specialist";
+  | "memory_specialist"
+  // --- Operational service-delivery specialists (Session 010) ---
+  // The lead → qualification → estimate → calendar/capacity → booking
+  // → invoice → follow-up pipeline every tenant runs, regardless of
+  // industry — never named after any one trade (e.g. never "moving
+  // estimator"); a tenant's industry is configuration this specialist
+  // reads, not part of its identity, per CLAUDE.md's platform-neutrality
+  // rule. Distinct from lead_center_specialist above, which scores
+  // outbound growth/BD opportunities, not a tenant's own inbound leads.
+  | "lead_qualification_specialist"
+  | "estimating_specialist"
+  | "calendar_capacity_specialist"
+  | "invoice_specialist"
+  | "sales_specialist"
+  | "dispatch_specialist"
+  | "customer_follow_up_specialist";
+// Deliberately NOT adding separate "marketing" or "compliance" types
+// here: marketing_specialist already exists above, and compliance is
+// already covered by licensing_specialist/osha_specialist/
+// building_code_specialist — narrower and more useful than one generic
+// compliance type would be. See HAL_SPECIALIST_WORKFORCE.md.
 
 /**
  * The Quality Assurance Layer a specialist report passes through
@@ -117,6 +146,40 @@ export interface AssuranceReviewResult {
   report: SpecialistReport;
   passed: boolean;
   notes: string;
+}
+
+/**
+ * The Critical Review Specialist's (the founder's plain-language name:
+ * "the Critic") classification for each claim in a specialist report —
+ * Session 010's sharpening of the mandatory critical_review gate.
+ * Distinct from evidence.ts's VerificationStatus, which classifies
+ * regulatory/compliance findings specifically against a documented
+ * source; this classifies any specialist claim (a price, a schedule
+ * conflict, a recommendation) by how well-founded it is. The Critic
+ * must actively assign one of these to each material claim, never
+ * default to treating an unreviewed claim as a VERIFIED_FACT, and
+ * Mason must never present a NEEDS_INFORMATION/UNKNOWN claim to the
+ * owner or customer as though it were a VERIFIED_FACT. Enforces
+ * Principle 008 (Verified Intelligence) at the specialist-report stage.
+ */
+export type ClaimVerificationClassification =
+  | "verified_fact"
+  | "supported_inference"
+  | "estimate"
+  | "assumption"
+  | "needs_information";
+
+/**
+ * One claim from a specialist report, as classified by the Critic.
+ * A SpecialistReport's "findings" text is free-form; this is the
+ * structured, per-claim classification the Critic produces over it
+ * before the report is allowed to reach Mason.
+ */
+export interface ClassifiedClaim {
+  claim: string;
+  classification: ClaimVerificationClassification;
+  /** Why this classification, or what's missing for a stronger one. */
+  rationale: string;
 }
 
 /**
