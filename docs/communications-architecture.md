@@ -1,6 +1,6 @@
 # Communications architecture — Telegram, and the Communication Adapter pattern
 
-Status: **Live as of 2026-08-06.** Telegram is the first working channel — real code, real schema, reviewed exactly like the security foundation and migrations before it — and it is now actually running: deployed to Netlify (`hurkl-platform.netlify.app`), a real `TELEGRAM_BOT_TOKEN` configured, a real webhook registered with Telegram, and the founder's own Telegram account linked to his `hurkl_admin` profile in the real `Hurkl-production` database. The founder sent a real message to `M_Hurklbot` and received Mason's (mocked) reply back through the full pipeline. See "Production incident, 2026-08-06" below for what broke on the way there and how it was fixed. Cross-referenced from `ARCHITECTURE.md` §3.
+Status: **Live as of 2026-08-06; real Mason reasoning code shipped 2026-08-10, live test pending funded billing.** Telegram is the first working channel — real code, real schema, reviewed exactly like the security foundation and migrations before it — deployed to Netlify (`hurkl-platform.netlify.app`), a real `TELEGRAM_BOT_TOKEN` configured, a real webhook registered with Telegram, and the founder's own Telegram account linked to his `hurkl_admin` profile in the real `Hurkl-production` database. The founder sent a real message to `M_Hurklbot` and received Mason's (at the time, mocked) reply back through the full pipeline. See "Production incident, 2026-08-06" below for what broke on the way there and how it was fixed, and "Real Mason reasoning" below for the current state: real Anthropic reasoning code is deployed and a real `ANTHROPIC_API_KEY` is configured, but the Anthropic account has zero funded credits as of 2026-08-10 — **no real end-to-end reasoning test has succeeded yet.** Cross-referenced from `ARCHITECTURE.md` §3.
 
 ## Why this exists
 
@@ -33,20 +33,33 @@ Adding a future channel (SMS, Email, Voice, Web, Mobile App) means: implement `C
 
 ## The pipeline (`lib/communications/inbound.ts#receiveMessage`)
 
-Every inbound message goes through the same eight steps, regardless of channel:
+Every inbound message goes through the same nine steps, regardless of channel:
 
-1. **Authenticate the sender** — `lib/communications/telegram-identity.ts#resolveTelegramSender` looks up the incoming Telegram numeric user id in `telegram_links`. Telegram has no password/OAuth flow for a bot DM, so a pre-registered allow-list *is* authentication here — trivially revocable (delete the row), and the correct, standard mechanism for a personal bot. An unrecognized sender's message is silently dropped — no reply, no company-scoped audit entry (there's no company to attach one to) — deliberately never confirming to a stranger that this bot exists or works.
+1. **Authenticate the sender** — `lib/communications/telegram-identity.ts#resolveTelegramSender` looks up the incoming Telegram numeric user id in `telegram_links`. Telegram has no password/OAuth flow for a bot DM, so a pre-registered allow-list *is* authentication here — trivially revocable (delete the row), and the correct, standard mechanism for a personal bot. An unrecognized sender's message is silently dropped — no reply, no company-scoped audit entry (there's no company to attach one to) — deliberately never confirming to a stranger that this bot exists or works. Company, role, and sender identity all come from this DB lookup, never from anything Telegram-supplied in the message payload.
 2. **Identify the company/account** — the sender's own `company_id`, or the fixed internal company id if they're `hurkl_admin` (see above).
 3. **Find or create the conversation** — one row per `(channel, external_conversation_id)` in `conversations`.
-4. **Preserve conversation history** — the inbound message is persisted in `messages` before Mason is even called.
-5. **Audit log the receipt** — `tier_1_automatic`, action `message_received` (see `lib/mason/risk.ts` — receiving and replying to a message is squarely low-risk; nothing here reaches medium/high risk categories or a HAL specialist).
-6. **Route to Mason** — `lib/mason/model-routing.ts#routeModelTier` classifies the task, then `AIModelProvider#complete` generates the response.
-7. **Preserve Mason's response** — the outbound message is persisted in `messages` too.
-8. **Respond through the channel** — `CommunicationAdapter#send()`, then a second audit log entry (`message_sent`).
+4. **Fetch recent history** — the last 10 messages in this conversation (best-effort; a lookup failure degrades to no history rather than blocking the reply), used as multi-turn context for Mason.
+5. **Preserve the inbound message** — persisted in `messages` before Mason is even called. This is also where duplicate-delivery protection lives: the channel's own message id is stored as `external_message_id`, and a unique index on `(conversation_id, direction, external_message_id)` means a redelivered update (Telegram's at-least-once webhook semantics) is dropped here — no second AI call, no second reply.
+6. **Audit log the receipt** — `tier_1_automatic`, action `message_received` (see `lib/mason/risk.ts` — receiving and replying to a message is squarely low-risk; nothing here reaches medium/high risk categories or a HAL specialist).
+7. **Route to Mason** — `lib/mason/task-classification.ts` classifies the message, `lib/mason/model-routing.ts#routeModelTier` maps that to a cost tier, then `AIModelProvider#complete` generates the response using `lib/mason/system-prompt.ts`'s centralized prompt. A reasoning failure here falls back to a safe, labeled reply rather than corrupting the conversation or throwing (see "Real Mason reasoning" below).
+8. **Preserve Mason's response** — persisted in `messages`, including which model/tier answered, real token counts, an estimated cost, and latency.
+9. **Respond through the channel** — `CommunicationAdapter#send()`, then a second audit log entry (`message_sent`) carrying the same usage metadata.
 
-## What stays deliberately mocked
+## Real Mason reasoning
 
-**Mason's actual reasoning uses `MockAIModelProvider` by default.** A real Anthropic API call costs real money and needs its own explicit approval — `ANTHROPIC_API_KEY` plus a conscious decision — per the standing cost policy (`CLAUDE.md`, `ARCHITECTURE.md` §2a). This task does not silently start spending on Claude calls as a side effect of wiring up Telegram. The loop is fully real end-to-end (Telegram ↔ HURKL ↔ audit ↔ history); only Mason's "brain" is a clearly-labeled placeholder (`[mock low_cost response] <echoed text>`) until that separate approval happens. Swapping in a real provider later requires no changes here — just constructing a real `AIModelProvider` implementation and passing it as `receiveMessage`'s `aiModel` dependency instead of relying on the default.
+**Status: code shipped 2026-08-10, founder-authorized; live end-to-end test still pending funded Anthropic billing.** `lib/mason/providers/anthropic-model-provider.ts` implements `AIModelProvider` against the real Anthropic Messages API (plain `fetch`, no new SDK dependency — matching this repo's lightweight-provider style). `lib/mason/providers/get-ai-model-provider.ts` is the one place that decides real vs. mock: `MockAIModelProvider` unless `ANTHROPIC_API_KEY` is set, the same pattern every other real provider in this repo follows. The key is now configured in Netlify's encrypted production environment — but **the Anthropic account has zero funded credits as of 2026-08-10, so no real request has succeeded yet.** Until it's funded, real requests will fail and the pipeline's failure fallback (step 7 above) will send a safe "having trouble responding" reply — not mock text, but not real reasoning either. Don't confuse a fallback reply with a successful test.
+
+**Model routing and cost controls** (see `lib/mason/model-config.ts`, `lib/mason/task-classification.ts`, `lib/mason/providers/anthropic-model-provider.ts`):
+- Model selection is entirely tier-driven — `model-config.ts` is the *only* place a tier maps to a real model ID (`low_cost` → `claude-haiku-4-5`, `advanced_reasoning` → `claude-sonnet-5`). No call site hardcodes a model.
+- `task-classification.ts` is a deliberately simple, deterministic v1 heuristic: ordinary messages default to the cheap tier; explicit complexity signal words or long messages escalate to `advanced_reasoning`. Not a trained classifier — revisit once real usage data exists.
+- Per-tier output-token caps, and input truncation (current message and each history turn, independent of the 10-message history cap above) bound both ends of the cost.
+- 20-second request timeout; at most one retry, only on network failure/429/5xx — never on 4xx.
+- Every response reports real `input_tokens`/`output_tokens` from Anthropic's own usage field and an estimated USD cost (`lib/mason/model-config.ts#estimateCostUsd` — pricing is for estimation only, not billing-accurate; see that file's header for when it needs re-verifying).
+- `supabase/migrations/00000000000007_mason_reasoning.sql` adds `model_tier`/`model_id`/`input_tokens`/`output_tokens`/`estimated_cost_usd`/`latency_ms` to `messages`, so usage is attributable per company (via the existing `company_id` column) once more than one company has a channel — no separate metering service was built for this; that's still `ARCHITECTURE.md` §3's "Usage & Cost Metering" service, not yet built.
+- Structured logging (`console.error` on failures) never includes prompt/response text or the API key — only status codes, error types, model id, and token counts.
+- There is no recursive or agentic loop in this pipeline — receiveMessage never calls itself or spawns further agent calls — so there is nothing beyond the provider's own bounded retry to protect against a runaway loop.
+
+**Mason stays one system.** `lib/mason/system-prompt.ts#buildMasonSystemPrompt` is the single system-prompt builder — the same function every channel's `receiveMessage()` call already uses, taking only channel-neutral context (company name, whether this is the internal HURKL channel, sender name/role). There is no Telegram-specific prompt anywhere; a future SMS/Email/Voice/Web channel calls the exact same function.
 
 ## Production incident, 2026-08-06
 
@@ -62,7 +75,7 @@ A secondary process note: several commits during this incident (the diagnostic l
 
 ## What isn't done yet
 
-- **`ANTHROPIC_API_KEY` is not configured.** Mason's replies are still `MockAIModelProvider`'s placeholder text, not real reasoning — see "What stays deliberately mocked" above. This is the next real step toward Phase 6.
+- **The Anthropic account has no funded credits.** `ANTHROPIC_API_KEY` is configured and the real provider code is deployed, but no real reasoning request has succeeded yet — see "Real Mason reasoning" above. This is the one remaining step to close out Phase 6.
 - **No SMS/Email/Voice/Web adapters** — the interface is built so they can plug in later; none are implemented now.
 - **No HAL specialist involvement, no autonomous actions beyond "log and reply."** Every action in this pipeline is `tier_1_automatic` — receiving and replying to a message. This is unrelated to, and does not change, the standing "no autonomous production agents" decision from Knowledge Capture Session 009.
 
@@ -70,4 +83,4 @@ A secondary process note: several commits during this incident (the diagnostic l
 
 ## Schema
 
-See `supabase/migrations/00000000000004_communications.sql` for the full definitions (`conversations`, `messages`, `telegram_links`, the seeded internal company row, and their RLS policies) and `00000000000006_grant_table_privileges.sql` for the table-privilege fix above — both reviewed with the same discipline as every prior migration this project has shipped: schema table, RLS coverage, destructive-behavior check, verified against a local disposable Postgres. **Both are applied to the real `Hurkl-production` project** as of 2026-08-06.
+See `supabase/migrations/00000000000004_communications.sql` for the full definitions (`conversations`, `messages`, `telegram_links`, the seeded internal company row, and their RLS policies), `00000000000006_grant_table_privileges.sql` for the table-privilege fix above, and `00000000000007_mason_reasoning.sql` for the usage-accounting columns and duplicate-request dedupe index — all reviewed with the same discipline as every prior migration this project has shipped: schema table, RLS coverage, destructive-behavior check, verified against a local disposable Postgres. **All three are applied to the real `Hurkl-production` project** (migrations 4 and 6 as of 2026-08-06, migration 7 as of 2026-08-10).

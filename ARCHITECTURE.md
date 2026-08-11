@@ -226,6 +226,7 @@ Distinct from tenant isolation itself: every company additionally carries an `ac
 
 ## 5. AI model routing (cost control)
 
+- **Status note (2026-08-10):** a first real implementation exists for the Telegram channel — `lib/mason/task-classification.ts` (task classification), `lib/mason/model-routing.ts` (tier routing), `lib/mason/model-config.ts` (tier → real Anthropic model ID + pricing), and `lib/mason/providers/anthropic-model-provider.ts` (the real `AIModelProvider`). This is not a claim that the full AI Router described below is complete — owner-configurable spending limits, pre-limit alerts, and per-tenant escalation toggles are not built; today there is one fixed routing policy, not a per-company configuration. See `docs/communications-architecture.md`'s "Real Mason reasoning" section.
 - Every AI task is classified before it's dispatched: routine (classification, drafting a standard reply, checking configured availability, summarization) vs. deep-reasoning (complex estimate, unusual objection, ambiguous multi-step request, escalation judgment call).
 - Routine tasks default to the lowest-cost capable model tier. Deep-reasoning tasks escalate to a higher-capability tier, and only when the router (or the routine-tier model itself) determines it's warranted.
 - Every routing decision, token count, and estimated cost is logged per tenant.
