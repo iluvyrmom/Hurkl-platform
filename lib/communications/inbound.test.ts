@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MockCommunicationAdapter } from "./adapter";
 import { receiveMessage } from "./inbound";
 import { HURKL_INTERNAL_COMPANY_ID } from "./internal-company";
@@ -25,8 +25,10 @@ function createFakeAdmin(seed: { telegramLinks?: FakeRow[]; profiles?: FakeRow[]
     audit_log: [],
   };
 
-  function matches(row: FakeRow, filters: [string, unknown][]) {
-    return filters.every(([col, val]) => row[col] === val);
+  function matches(row: FakeRow, filters: ["eq" | "gte", string, unknown][]) {
+    return filters.every(([kind, col, val]) =>
+      kind === "eq" ? row[col] === val : String(row[col] ?? "") >= String(val),
+    );
   }
 
   function from(table: string) {
@@ -34,12 +36,16 @@ function createFakeAdmin(seed: { telegramLinks?: FakeRow[]; profiles?: FakeRow[]
 
     return {
       select() {
-        const filters: [string, unknown][] = [];
+        const filters: ["eq" | "gte", string, unknown][] = [];
         let limitCount: number | undefined;
         let descending = false;
         const builder = {
           eq(col: string, val: unknown) {
-            filters.push([col, val]);
+            filters.push(["eq", col, val]);
+            return builder;
+          },
+          gte(col: string, val: unknown) {
+            filters.push(["gte", col, val]);
             return builder;
           },
           order(_col: string, opts?: { ascending?: boolean }) {
@@ -95,7 +101,11 @@ function createFakeAdmin(seed: { telegramLinks?: FakeRow[]; profiles?: FakeRow[]
           };
         }
 
-        const withId = { id: `${table}-${rows.length + 1}`, ...row };
+        const withId = {
+          id: `${table}-${rows.length + 1}`,
+          created_at: new Date().toISOString(),
+          ...row,
+        };
         rows.push(withId);
         return {
           select() {
@@ -129,6 +139,17 @@ const HURKL_ADMIN_PROFILE = { id: "profile-1", company_id: null, role: "hurkl_ad
 const LINKED_TELEGRAM_ID = "555000111";
 
 describe("receiveMessage", () => {
+  // Every call now checks the hard spend guard (lib/mason/spend-guard.ts),
+  // which reads getServerEnv() — stub the one required var so tests that
+  // aren't specifically about budget behavior don't have to know that.
+  beforeEach(() => {
+    vi.stubEnv("NEXT_PUBLIC_APP_ENV", "test");
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
   it("authenticates the sender, persists history, audit-logs both legs, and replies once", async () => {
     const { admin, tables } = createFakeAdmin({
       telegramLinks: [{ profile_id: "profile-1", telegram_user_id: LINKED_TELEGRAM_ID }],
@@ -307,5 +328,109 @@ describe("receiveMessage", () => {
       { role: "user", text: "first" },
       { role: "assistant", text: "ok" },
     ]);
+  });
+
+  describe("hard spend guard", () => {
+    it("blocks the Anthropic call and returns the fallback once a spend ceiling is already met", async () => {
+      vi.stubEnv("ANTHROPIC_COMPANY_DAILY_SPEND_CEILING_USD", "1");
+
+      const { admin, tables } = createFakeAdmin({
+        telegramLinks: [{ profile_id: "profile-1", telegram_user_id: LINKED_TELEGRAM_ID }],
+        profiles: [HURKL_ADMIN_PROFILE],
+      });
+      // Already spent the full $1 company-daily ceiling today.
+      tables.messages.push({
+        id: "seed-1",
+        conversation_id: "unrelated-conversation",
+        company_id: HURKL_INTERNAL_COMPANY_ID,
+        direction: "outbound",
+        estimated_cost_usd: 1,
+        created_at: new Date().toISOString(),
+      });
+
+      const adapter = new MockCommunicationAdapter("telegram");
+      const seenRequests: unknown[] = [];
+      const recordingAiModel = {
+        complete: async (request: unknown) => {
+          seenRequests.push(request);
+          throw new Error("should never be called once the budget is exhausted");
+        },
+      };
+
+      const result = await receiveMessage(
+        { admin, adapter, aiModel: recordingAiModel },
+        {
+          channel: "telegram",
+          externalUserId: LINKED_TELEGRAM_ID,
+          externalConversationId: "chat-budget-1",
+          text: "hi",
+          receivedAt: new Date().toISOString(),
+        },
+      );
+
+      expect(result.handled).toBe(true);
+      expect(seenRequests).toHaveLength(0); // no Anthropic request attempted at all
+      expect(adapter.sentMessages).toHaveLength(1);
+      expect(adapter.sentMessages[0].text).toMatch(/trouble responding/i);
+
+      const outbound = tables.messages.find(
+        (row) => row.direction === "outbound" && row.conversation_id !== "unrelated-conversation",
+      );
+      expect(outbound).toMatchObject({ model_id: "budget_limit" });
+
+      // Recorded as a budget refusal, distinct from a provider failure —
+      // never counted as one.
+      const auditActions = tables.audit_log.map((row) => row.action);
+      expect(auditActions).toContain("message_budget_blocked");
+    });
+
+    it("downgrades an advanced_reasoning task to low_cost rather than blocking, when the projected cost would tip a ceiling", async () => {
+      // Tiny ceiling with no prior spend: Gate A (already over budget)
+      // passes, but Gate B (this specific call's projected cost) does
+      // not — the call should be downgraded, not blocked.
+      vi.stubEnv("ANTHROPIC_COMPANY_DAILY_SPEND_CEILING_USD", "0.0001");
+
+      const { admin, tables } = createFakeAdmin({
+        telegramLinks: [{ profile_id: "profile-1", telegram_user_id: LINKED_TELEGRAM_ID }],
+        profiles: [HURKL_ADMIN_PROFILE],
+      });
+
+      const adapter = new MockCommunicationAdapter("telegram");
+      const seenRequests: { tier: string }[] = [];
+      const recordingAiModel = {
+        complete: async (request: { tier: string }) => {
+          seenRequests.push(request);
+          return {
+            text: "ok",
+            tier: request.tier as "low_cost" | "advanced_reasoning",
+            modelId: "test",
+            inputTokens: 0,
+            outputTokens: 0,
+            estimatedCostUsd: 0,
+            latencyMs: 0,
+          };
+        },
+      };
+
+      const result = await receiveMessage(
+        { admin, adapter, aiModel: recordingAiModel },
+        {
+          channel: "telegram",
+          externalUserId: LINKED_TELEGRAM_ID,
+          externalConversationId: "chat-budget-2",
+          // Contains a complexity signal word — routeModelTier would
+          // normally pick advanced_reasoning for this.
+          text: "what's your recommendation on pricing strategy?",
+          receivedAt: new Date().toISOString(),
+        },
+      );
+
+      expect(result.handled).toBe(true);
+      expect(seenRequests).toHaveLength(1);
+      expect(seenRequests[0].tier).toBe("low_cost"); // downgraded, not blocked
+
+      const auditActions = tables.audit_log.map((row) => row.action);
+      expect(auditActions).not.toContain("message_budget_blocked");
+    });
   });
 });

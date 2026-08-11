@@ -76,6 +76,15 @@ export interface ServerEnv {
   // until then.
   TELEGRAM_BOT_TOKEN?: string;
   TELEGRAM_WEBHOOK_SECRET?: string;
+
+  // Real Mason reasoning — hard server-side Anthropic spend ceilings
+  // (lib/mason/budget-config.ts, lib/mason/spend-guard.ts). Optional:
+  // sane conservative defaults apply when unset. Server-side only —
+  // there is no client-reachable way to change these.
+  ANTHROPIC_DAILY_SPEND_CEILING_USD?: string;
+  ANTHROPIC_MONTHLY_SPEND_CEILING_USD?: string;
+  ANTHROPIC_COMPANY_DAILY_SPEND_CEILING_USD?: string;
+  ANTHROPIC_COMPANY_MONTHLY_SPEND_CEILING_USD?: string;
 }
 
 export interface ClientEnv {
@@ -121,6 +130,12 @@ export function getServerEnv(): ServerEnv {
     RESEND_API_KEY: process.env.RESEND_API_KEY,
     TELEGRAM_BOT_TOKEN: process.env.TELEGRAM_BOT_TOKEN,
     TELEGRAM_WEBHOOK_SECRET: process.env.TELEGRAM_WEBHOOK_SECRET,
+    ANTHROPIC_DAILY_SPEND_CEILING_USD: process.env.ANTHROPIC_DAILY_SPEND_CEILING_USD,
+    ANTHROPIC_MONTHLY_SPEND_CEILING_USD: process.env.ANTHROPIC_MONTHLY_SPEND_CEILING_USD,
+    ANTHROPIC_COMPANY_DAILY_SPEND_CEILING_USD:
+      process.env.ANTHROPIC_COMPANY_DAILY_SPEND_CEILING_USD,
+    ANTHROPIC_COMPANY_MONTHLY_SPEND_CEILING_USD:
+      process.env.ANTHROPIC_COMPANY_MONTHLY_SPEND_CEILING_USD,
   };
 }
 

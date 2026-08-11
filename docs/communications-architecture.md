@@ -41,7 +41,7 @@ Every inbound message goes through the same nine steps, regardless of channel:
 4. **Fetch recent history** — the last 10 messages in this conversation (best-effort; a lookup failure degrades to no history rather than blocking the reply), used as multi-turn context for Mason.
 5. **Preserve the inbound message** — persisted in `messages` before Mason is even called. This is also where duplicate-delivery protection lives: the channel's own message id is stored as `external_message_id`, and a unique index on `(conversation_id, direction, external_message_id)` means a redelivered update (Telegram's at-least-once webhook semantics) is dropped here — no second AI call, no second reply.
 6. **Audit log the receipt** — `tier_1_automatic`, action `message_received` (see `lib/mason/risk.ts` — receiving and replying to a message is squarely low-risk; nothing here reaches medium/high risk categories or a HAL specialist).
-7. **Route to Mason** — `lib/mason/task-classification.ts` classifies the message, `lib/mason/model-routing.ts#routeModelTier` maps that to a cost tier, then `AIModelProvider#complete` generates the response using `lib/mason/system-prompt.ts`'s centralized prompt. A reasoning failure here falls back to a safe, labeled reply rather than corrupting the conversation or throwing (see "Real Mason reasoning" below).
+7. **Route to Mason** — `lib/mason/task-classification.ts` classifies the message, `lib/mason/model-routing.ts#routeModelTier` maps that to a cost tier, then the hard spend guard (`lib/mason/spend-guard.ts`) is checked before any Anthropic request is made — see "Hard Anthropic spend guard" below. If it passes, `AIModelProvider#complete` generates the response using `lib/mason/system-prompt.ts`'s centralized prompt. A reasoning failure here falls back to a safe, labeled reply rather than corrupting the conversation or throwing (see "Real Mason reasoning" below).
 8. **Preserve Mason's response** — persisted in `messages`, including which model/tier answered, real token counts, an estimated cost, and latency.
 9. **Respond through the channel** — `CommunicationAdapter#send()`, then a second audit log entry (`message_sent`) carrying the same usage metadata.
 
@@ -51,7 +51,7 @@ Every inbound message goes through the same nine steps, regardless of channel:
 
 **Model routing and cost controls** (see `lib/mason/model-config.ts`, `lib/mason/task-classification.ts`, `lib/mason/providers/anthropic-model-provider.ts`):
 - Model selection is entirely tier-driven — `model-config.ts` is the *only* place a tier maps to a real model ID (`low_cost` → `claude-haiku-4-5`, `advanced_reasoning` → `claude-sonnet-5`). No call site hardcodes a model.
-- `task-classification.ts` is a deliberately simple, deterministic v1 heuristic: ordinary messages default to the cheap tier; explicit complexity signal words or long messages escalate to `advanced_reasoning`. Not a trained classifier — revisit once real usage data exists.
+- `task-classification.ts` is a deliberately simple, deterministic v1 heuristic: ordinary messages default to the cheap tier; only an explicit complexity signal word (e.g. "strategy", "recommend", "compare") escalates to `advanced_reasoning`. Message length alone is deliberately **not** a trigger — a long but ordinary customer message (e.g. someone typing out full job details) stays on the cheap tier; only genuine complexity escalates. Not a trained classifier — revisit once real usage data exists.
 - Per-tier output-token caps, and input truncation (current message and each history turn, independent of the 10-message history cap above) bound both ends of the cost.
 - 20-second request timeout; at most one retry, only on network failure/429/5xx — never on 4xx.
 - Every response reports real `input_tokens`/`output_tokens` from Anthropic's own usage field and an estimated USD cost (`lib/mason/model-config.ts#estimateCostUsd` — pricing is for estimation only, not billing-accurate; see that file's header for when it needs re-verifying).
@@ -60,6 +60,33 @@ Every inbound message goes through the same nine steps, regardless of channel:
 - There is no recursive or agentic loop in this pipeline — receiveMessage never calls itself or spawns further agent calls — so there is nothing beyond the provider's own bounded retry to protect against a runaway loop.
 
 **Mason stays one system.** `lib/mason/system-prompt.ts#buildMasonSystemPrompt` is the single system-prompt builder — the same function every channel's `receiveMessage()` call already uses, taking only channel-neutral context (company name, whether this is the internal HURKL channel, sender name/role). There is no Telegram-specific prompt anywhere; a future SMS/Email/Voice/Web channel calls the exact same function.
+
+## Hard Anthropic spend guard
+
+**Status: shipped 2026-08-11, checked before every real Anthropic request, any tier, any sender.** Real reasoning being wired up (above) means an unexpected traffic spike, routing bug, retry issue, abusive sender, or classifier mistake could otherwise create an unlimited API bill. `lib/mason/spend-guard.ts` and `lib/mason/budget-config.ts` add one hard server-side ceiling on top of the per-tier/per-request cost controls already described above.
+
+**Configuration** (`lib/mason/budget-config.ts#getSpendCeilings`) — four independent, server-side-only environment variables, each with a conservative default if unset:
+
+| Variable | Default | Scope |
+|---|---|---|
+| `ANTHROPIC_DAILY_SPEND_CEILING_USD` | $5/day | HURKL-wide |
+| `ANTHROPIC_MONTHLY_SPEND_CEILING_USD` | $50/month | HURKL-wide |
+| `ANTHROPIC_COMPANY_DAILY_SPEND_CEILING_USD` | $2/day | per company |
+| `ANTHROPIC_COMPANY_MONTHLY_SPEND_CEILING_USD` | $20/month | per company |
+
+There is no client-reachable way to read or change any of these — they're plain server environment variables, validated the same way as every other field in `lib/env.ts`, and any future override requires a conscious, server-side config change (not a runtime toggle), which is itself audited the same way any other deploy is.
+
+**Two gates, checked in `lib/communications/inbound.ts#receiveMessage` (step 7 above), before any Anthropic call is attempted:**
+1. **Gate A — `evaluateBudget`.** Sums actual `messages.estimated_cost_usd` since the start of the current UTC day and UTC month (`lib/mason/spend-guard.ts#getBudgetStatus`), both HURKL-wide (every company) and for the message's own company, and compares against all four ceilings. If **any** ceiling is already met (`>=`, not just exceeded — a ceiling is a hard cap, not a target), the request is blocked outright: no Anthropic call is made, the pipeline returns the existing controlled fallback reply (the same "having trouble responding" text used for a real provider failure), the outbound message row is tagged `model_id: "budget_limit"`, and an `audit_log` entry with action `message_budget_blocked` is recorded (metadata includes which ceiling tripped). This is recorded as a budget *refusal*, and is never counted as a provider failure in logs or audit history — the two are deliberately distinguishable.
+2. **Gate B — `wouldExceedBudgetForAdvancedReasoning`.** Only reached once Gate A passes. For an `advanced_reasoning`-tier message specifically, estimates the projected cost of *this one call* (a rough 4-characters-per-token heuristic over the assembled system prompt + message + history, priced via the same `model-config.ts#estimateCostUsd` used for real usage accounting) and, if that projected cost would newly tip any ceiling, downgrades just this call to `low_cost` rather than blocking it — advanced reasoning stays available for the next message once there's headroom again, and the sender still gets an answer instead of a refusal.
+
+No sender identity is exempt from either gate, including `hurkl_admin`/the founder's own messages on the internal channel — there is no bypass path in the code, silent or otherwise; the pipeline runs both gates unconditionally regardless of who sent the message.
+
+**Sanitized operational status** — `GET /api/mason/budget-status` (`hurkl_admin`-only; a manual role check, since `requireCompanyProfile` would incorrectly reject `hurkl_admin` callers who have `company_id = null` by design) returns only aggregate numbers: spent/ceiling for each of the four buckets, whether a limit is currently reached, and which one — never message content, never secrets, nothing that could be used to change a limit.
+
+**Tests:** `lib/mason/budget-config.test.ts` and `lib/mason/spend-guard.test.ts` cover the pure decision logic (`evaluateBudget`, `wouldExceedBudgetForAdvancedReasoning`) and the real aggregation logic (`getBudgetStatus` — including a regression test proving the HURKL-wide sums are genuinely distinct from, not aliased to, one company's sums). `lib/communications/inbound.test.ts` covers both gates end-to-end against the full pipeline: a blocked call producing the fallback reply with no Anthropic request attempted, and a downgraded `advanced_reasoning` call actually reaching the AI model at the cheaper tier.
+
+No new migration was needed — the guard reads the `estimated_cost_usd`/`created_at`/`company_id` columns `00000000000007_mason_reasoning.sql` already added to `messages`.
 
 ## Production incident, 2026-08-06
 

@@ -12,7 +12,17 @@ describe("classifyMessageTaskType", () => {
     );
   });
 
-  it("escalates a long message even without a signal word", () => {
-    expect(classifyMessageTaskType("x".repeat(300))).toBe("complex_business_strategy");
+  it("does not escalate a long but ordinary message that has no complexity signal", () => {
+    const longOrdinaryMessage =
+      "Hi Mason, just wanted to give you the full details for our move: we're a family of four moving from a 3-bedroom house " +
+      "to a townhouse across town, we have a piano, a washer and dryer, several large bookshelves, and about 40 boxes already " +
+      "packed. We'd like to schedule for a weekend if at all possible and would appreciate a call back to confirm the time.";
+    expect(longOrdinaryMessage.length).toBeGreaterThan(280);
+    expect(classifyMessageTaskType(longOrdinaryMessage)).toBe("faq_answer");
+  });
+
+  it("still escalates a long message that also contains a complexity signal word", () => {
+    const longComplexMessage = "x".repeat(300) + " can you recommend a strategy for this?";
+    expect(classifyMessageTaskType(longComplexMessage)).toBe("complex_business_strategy");
   });
 });
