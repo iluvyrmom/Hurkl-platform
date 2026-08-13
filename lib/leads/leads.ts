@@ -131,6 +131,9 @@ export interface CompanyPublicProfile {
   phone: string | null;
   email: string | null;
   slogan: string | null;
+  logo_url: string | null;
+  hero_eyebrow: string | null;
+  hero_headline: string | null;
 }
 
 export interface CompanyProfileReader {

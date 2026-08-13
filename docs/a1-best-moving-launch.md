@@ -44,6 +44,17 @@ Real auth/RBAC/tenant isolation, `customers`/`audit_log`, the Telegram pipeline 
 2. **A-1's real owner needs an account.** The company row exists, but no one is attached to it as `owner` yet (this was deliberately not automated — creating a real login is not something to do without knowing who's actually running A-1's day-to-day). Once the migration above is live: have A-1's owner sign up at `/sign-up` with their real email, then tell me that email address — attaching them to the seeded A-1 company (rather than the normal "create a brand-new company" onboarding flow, which doesn't apply here since A-1 already exists) is a one-time manual step on my end once I have production access again.
 3. **A-1's real pricing** (hourly rate, minimum hours, travel charge, any flat rates) — needed before quoting can be anything but manual. Send it whenever convenient; no rush tonight.
 
+## 2026-08-13 update: A-1's existing site source, and a branded `/book/a1-best-moving`
+
+The founder provided the actual source of A-1's existing customer-facing site (`a-1bestmoving.netlify.app`) — the "separate, non-git-linked deployment with no repo this codebase can reach" note above is now out of date for the *source*, though that site is still a distinct, separately-deployed Netlify project this repo doesn't build or redeploy.
+
+What changed here as a result:
+- `supabase/migrations/00000000000009_company_branding.sql` adds optional `logo_url`/`hero_eyebrow`/`hero_headline` columns to `companies` (additive, generic — any company can set these, not just A-1) and seeds A-1's with its real logo path and hero copy, matching the existing site's look.
+- `public/companies/a1-best-moving/logo.png` and `public/mason/avatar.jpg` — A-1's real logo and Mason's portrait, sourced from that site's assets. Mason's portrait is treated as one consistent, shared HURKL brand asset across all companies' pages, not per-tenant.
+- `app/book/[slug]/page.tsx` + `app/globals.css` — the public booking page now uses a navy/gold hero layout (masthead logo, eyebrow/headline, Mason portrait, trust badges) matching A-1's existing site's design language, while staying slug-generic: a company with no logo/hero copy set still renders the same layout with plain-text fallbacks.
+- The "Talk to Mason" and "Schedule Your Move" buttons on this page are anchors to the real lead form below (`#estimate`), not a live AI chat — this platform's public page still has no AI chat wired (see "Deliberately NOT built tonight" above; still true), unlike A-1's *existing* site, whose `mason-chat.js`/`mason-speak.js` Netlify functions call Anthropic directly with their own embedded prompt and pricing. That's a separate, standalone implementation outside this platform's `AIModelProvider` — worth a conscious decision later (retire it in favor of one integration point, or leave the two systems coexisting deliberately) but not resolved in this session.
+- That existing site's `mason-chat.js` prompt also contains A-1's real, working rate card (not previously known to this system): $50/hr 1 mover, $100/hr 2 movers, $130/hr 3 movers, flat 8-hour-day options, and a discount schedule (25th–5th of the month is a no-discount premium window; Fri–Sun outside that window saves $50; Mon–Thu saves $75). Noted here as a verified fact sourced from that live prompt, not yet wired into `calculateInvoice()` or any quoting flow.
+
 ## Cross-references
 
 - `ARCHITECTURE.md` §4 — one-paragraph architectural summary of the public-intake pattern.

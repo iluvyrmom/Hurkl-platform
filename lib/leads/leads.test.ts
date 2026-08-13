@@ -102,6 +102,9 @@ describe("getCompanyPublicProfile", () => {
       phone: "971-777-6660",
       email: null,
       slogan: null,
+      logo_url: null,
+      hero_eyebrow: null,
+      hero_headline: null,
     };
     const client: CompanyProfileReader = {
       rpc: async () => ({ data: [profile], error: null }),

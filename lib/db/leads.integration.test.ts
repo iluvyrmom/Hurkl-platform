@@ -90,6 +90,9 @@ describe("leads and company-profile schema", () => {
         phone: "971-777-6660",
         email: "A1BESTMOVING@gmail.com",
         slogan: "The best move you'll make.",
+        logo_url: "/companies/a1-best-moving/logo.png",
+        hero_eyebrow: "Serving Greater Portland",
+        hero_headline: "Talk to Mason. Get your price now.",
       },
     ]);
   });
