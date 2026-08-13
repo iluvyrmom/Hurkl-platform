@@ -16,7 +16,7 @@ Do not delete, rewrite, or bypass existing work without explicit instruction. If
 
 ## Do not duplicate systems
 
-Before adding a new provider integration, service, table, or abstraction, check whether one already exists (in `ARCHITECTURE.md`'s provider interfaces, in the codebase once it exists, in prior commits). Mason's provider-independence depends on there being exactly one `AIModelProvider`, one `TelephonyProvider`, one `TTSProvider`, etc. — not a second implementation living next to the first.
+Before adding a new provider integration, service, table, or abstraction, check whether one already exists (in `ARCHITECTURE.md`'s provider interfaces, in the codebase once it exists, in prior commits). Mason's provider-independence depends on there being exactly one `AIModelProvider`, one `TelephonyProvider`, one `TTSProvider`, etc. — not a second implementation living next to the first. This same rule applies at the company/repository level, not just within this repo — see "Company boundaries and Mason ownership" below: there is exactly one Mason Core and one HAL, both in HURKL, never a second copy built inside a customer company's own application.
 
 ## Do not claim untested work is complete
 
@@ -86,6 +86,42 @@ Mason's behavior is governed by three tiers — Automatic, Approval Required, Ne
 - The owner-facing surface remains **exactly one employee: Mason.** Never expose specialist identity, coordination, or department structure to the owner.
 - HAL does not introduce a fourth autonomy tier — every specialist's output still resolves to Automatic / Approval Required / Never Autonomous (`SECURITY.md` §4) once it reaches Mason's decision process.
 - Do not build autonomous production agents on top of these contracts without a specific, explicit milestone authorizing it — architecture and contracts come first.
+
+## Company boundaries and Mason ownership (multi-company architecture)
+
+**Founder-directed, permanent.** This extends "Respect Mason's executive architecture (HAL)" above and "Do not duplicate systems" from a within-repo rule to a cross-repo/cross-company one. HURKL is being built to serve many independent companies — the architecture below must stay valid whether HURKL serves 1 company or 100,000.
+
+**HURKL is the platform company and the technical home of Mason.** Mason Office Manager Core, HAL's specialist workforce, the Critical Review Specialist/Critic, specialist routing/orchestration, the Company Package framework, shared memory architecture, shared business capabilities, cross-company platform infrastructure, shared APIs, and platform administration are all built, maintained, improved, and versioned in HURKL. **Do not implement an independent copy of Mason Core or HAL inside a customer company's own application or repository** — Mason is built once, in HURKL, and works for every company from there.
+
+**A customer company (e.g. A-1 Best Moving) is operationally separate from HURKL.** Mason can work *for* a customer company while his core implementation stays in HURKL — the same pattern as `AIModelProvider`/`TelephonyProvider` etc. having exactly one implementation that every tenant uses, applied to Mason himself. Each company supplies its own Company Package: identity/brand, services, prices, policies, employees, territory, owner rules, approval authority, company memory/data, company users, integrations, and industry configuration. **Company-specific information must never be converted into global Mason behavior** — a rule, price, or policy that's true for one company is tenant configuration, not a change to Mason Core.
+
+**A-1 Best Moving specifically:** it is an operating company using HURKL/Mason, not the HURKL platform itself. Its customer-facing website currently exists separately in Netlify. Do not move Mason Core into the A-1 website; the target architecture is:
+
+```
+A-1 Website → HURKL → Mason Core → A-1 Company Package → appropriate HAL specialists → Critic (where required) → Mason → customer/action
+```
+
+Target account association (**the goal, not yet the current state** — as of Knowledge Capture Session 011, the only real login in this project is `forgestarter@gmail.com` as `hurkl_admin`, and no `A1BESTMOVING@gmail.com` account exists yet; see `docs/business-intelligence/JOURNAL.md` for the verified current state before assuming either mapping below is already true):
+- `A1BESTMOVING@gmail.com` → A-1 Best Moving company owner/admin.
+- `josh@hurkl.com` → HURKL platform/admin.
+
+HURKL admins may have authorized cross-company access (see `ARCHITECTURE.md` §4's `hurkl_admin` exception) — that does not eliminate company data boundaries for anyone else.
+
+**`A1-Dump-Runs` (`iluvyrmom/A-1-Dump-Runs`) is a separate, developing capability for dump-run estimating/related work, NOT the A-1 Best Moving website's source repository.** A-1 receives dump-run inquiries, so this may eventually plug into A-1/HURKL through the correct architecture (Company Package/integration, not a merge) — but do not use it to reconstruct or modify the A-1 Best Moving website just because both names contain "A-1." **As verified in Session 011, this repository is currently empty** — treat that as the real current state, not as evidence something is broken or missing that needs recreating from HURKL.
+
+**Multi-company data isolation applies to Mason's own reasoning context, not just the database.** RLS (`ARCHITECTURE.md` §4) already prevents one tenant's rows from being queried by another; this rule is the same principle one level up — Mason must never carry Company A's private data, prices, policies, permissions, or owner rules into a Company B conversation, request, or prompt. When extending Mason, improvements to Mason Core belong in HURKL; company-specific behavior belongs in that company's Company Package/configuration, never hardcoded alongside Mason's own logic (this is the same discipline `PRODUCT.md`'s "A-1 validates the platform end-to-end... never at the cost of baking moving-specific assumptions into Mason's core" already requires).
+
+**Required pre-work check, before modifying any company-related code:**
+1. Which legal/operating company does this work belong to?
+2. Which repository/deployment actually owns the affected code?
+3. Is this HURKL platform functionality, or company-specific functionality?
+4. Which Company Package/context should Mason use here?
+5. Could this change leak or hard-code one company's behavior into another?
+6. Am I modifying the actual source, or merely a similarly named project? **Never infer repository identity from a similar name — verify it** (this is exactly the mistake this rule exists to prevent: `A1-Dump-Runs` sharing "A-1" with A-1 Best Moving does not make it that project's source).
+
+If the company/repository relationship is uncertain, investigate it before modifying code — do not guess, and do not silently proceed on an assumed mapping.
+
+**Core rule:** HURKL builds Mason. Mason works for customer companies. Customer companies remain separate from HURKL and from each other. Company websites connect to Mason/HURKL; they do not each contain their own independent Mason.
 
 ## Keep proprietary methods out of public-facing docs and code comments
 

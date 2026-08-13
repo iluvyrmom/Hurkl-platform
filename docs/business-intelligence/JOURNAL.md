@@ -241,4 +241,12 @@ Founder directed a "two-repository system" correction (HURKL as the Mason/HAL ho
 
 No new numbered principle. No destructive action was taken on any account, repository, or credential — every gap above was investigated and reported, not guessed around.
 
+### 2026-08-13 — Knowledge Capture Session 012: multi-company architecture made a permanent CLAUDE.md rule
+
+Founder directed a permanent architectural rule, added directly to `CLAUDE.md` (its own designated home for "standing operating rules for future sessions") as a new "Company boundaries and Mason ownership (multi-company architecture)" section, cross-referenced from the existing "Do not duplicate systems" rule: HURKL is the sole technical home of Mason Core/HAL — never a second copy inside a customer company's own app/repo; a customer company (A-1 Best Moving is the first) supplies its own Company Package (identity, prices, policies, employees, owner rules, etc.) and company-specific information must never become global Mason behavior; the target architecture is `A-1 Website → HURKL → Mason Core → A-1 Company Package → HAL specialists → Critic → Mason → action`; `A1-Dump-Runs` is a separate, currently-empty developing capability, not the A-1 website's source, despite the shared "A-1" name; and a six-point pre-work check (which company, which repo, platform-vs-company code, which Company Package, leak risk, source-vs-similarly-named-project) is now required before touching company-related code.
+
+Two factual corrections were added alongside the founder's directive rather than silently accepted as already true, per this file's own "uncertain claims labeled as such" guardrail: the target account mapping (`A1BESTMOVING@gmail.com` → A-1 owner, `josh@hurkl.com` → HURKL admin) is recorded as the goal, explicitly flagged as not yet the current state (Session 011 found the only real login is `forgestarter@gmail.com`); and `A1-Dump-Runs` is noted as verified empty as of Session 011, not merely undocumented.
+
+No new numbered principle — this is a standing operating rule (`CLAUDE.md`'s own category), not business philosophy.
+
 <!-- Next entry: ### YYYY-MM-DD — ... -->
