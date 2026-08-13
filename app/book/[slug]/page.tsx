@@ -1,8 +1,10 @@
 import Image from "next/image";
 import { notFound } from "next/navigation";
+import { getServerEnv } from "../../../lib/env";
 import { getCompanyPublicProfile } from "../../../lib/leads/leads";
 import { createSupabaseServerClient } from "../../../lib/supabase/server";
 import { LeadForm } from "./lead-form";
+import { MasonChat } from "./mason-chat";
 
 // Reads live company data on every request — never statically cached.
 export const dynamic = "force-dynamic";
@@ -40,6 +42,15 @@ export default async function CompanyBookingPage({
 
   const telHref = profile.phone ? `tel:${profile.phone.replace(/[^0-9+]/g, "")}` : null;
 
+  // Mason only replaces the structured form with a real conversation
+  // when a real AIModelProvider is actually wired up (ANTHROPIC_API_KEY
+  // — see lib/mason/providers/get-ai-model-provider.ts). Never show a
+  // chat widget that would just echo mock replies at a real customer —
+  // same reasoning as docs/a1-best-moving-launch.md's original decision
+  // to ship the form instead of a fake chat.
+  const masonChatAvailable = Boolean(getServerEnv().ANTHROPIC_API_KEY);
+  const primaryCtaHref = masonChatAvailable ? "#mason-chat" : "#estimate";
+
   return (
     <main className="company-page">
       <div className="company-masthead">
@@ -69,11 +80,11 @@ export default async function CompanyBookingPage({
         </div>
 
         <div className="hero-ctas">
-          <a href="#estimate" className="btn-accent tap-target">
+          <a href={primaryCtaHref} className="btn-accent tap-target">
             Talk to Mason
           </a>
           <p className="hero-cta-note">Get a fast, accurate quote.</p>
-          <a href="#estimate" className="btn-outline tap-target">
+          <a href={primaryCtaHref} className="btn-outline tap-target">
             <span className="btn-outline-title">Schedule Your Move</span>
             <span className="btn-outline-sub">Pick a date that works for you.</span>
           </a>
@@ -95,14 +106,22 @@ export default async function CompanyBookingPage({
         </ul>
       </section>
 
-      <section className="company-estimate" id="estimate">
-        <h2>Request a free estimate</h2>
-        <p>
-          Tell us about your move and we&apos;ll follow up with a quote — or call us directly for
-          the fastest response.
-        </p>
-        <LeadForm companySlug={slug} companyPhone={profile.phone} />
-      </section>
+      {masonChatAvailable ? (
+        <section className="company-estimate" id="mason-chat">
+          <h2>Talk to Mason</h2>
+          <p>Tell Mason about your move — he&apos;ll get you a real quote and get you booked.</p>
+          <MasonChat companySlug={slug} companyPhone={profile.phone} />
+        </section>
+      ) : (
+        <section className="company-estimate" id="estimate">
+          <h2>Request a free estimate</h2>
+          <p>
+            Tell us about your move and we&apos;ll follow up with a quote — or call us directly
+            for the fastest response.
+          </p>
+          <LeadForm companySlug={slug} companyPhone={profile.phone} />
+        </section>
+      )}
     </main>
   );
 }

@@ -93,6 +93,13 @@ describe("leads and company-profile schema", () => {
         logo_url: "/companies/a1-best-moving/logo.png",
         hero_eyebrow: "Serving Greater Portland",
         hero_headline: "Talk to Mason. Get your price now.",
+        known_facts: [
+          "Pricing is flat, hourly, with no hidden fees: 1 mover is $50/hour or $350 flat for an 8-hour day; 2 movers is $100/hour or $700 flat for an 8-hour day; 3 movers is $130/hour or $1,000 flat for an 8-hour day.",
+          "Discounts apply to full-day bookings only: the 25th through the 5th of each month is a premium window with no discount; outside that window, Friday, Saturday, or Sunday saves $50, and Monday through Thursday saves $75.",
+          "A-1 Best Moving is labor-only and does not own or provide moving trucks — customers pair the crew with their own rental truck (Penske, U-Haul, Budget, or similar).",
+          "A-1 Best Moving serves the Portland, OR metro area only (including Beaverton, Hillsboro, Lake Oswego, Gresham, and Vancouver WA) — no long-distance or interstate moves.",
+          "Services offered: residential moving, apartment moving, office and commercial moving, packing services, loading and unloading, furniture assembly and disassembly, same-day moves when available, and clean-outs/dump runs.",
+        ],
       },
     ]);
   });

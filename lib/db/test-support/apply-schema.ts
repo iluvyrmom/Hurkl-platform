@@ -16,6 +16,7 @@ const MIGRATION_FILES = [
   "00000000000007_mason_reasoning.sql",
   "00000000000008_leads_and_company_profile.sql",
   "00000000000009_company_branding.sql",
+  "00000000000010_web_public_chat.sql",
 ];
 
 /**

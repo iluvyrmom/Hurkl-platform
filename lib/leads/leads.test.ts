@@ -105,6 +105,7 @@ describe("getCompanyPublicProfile", () => {
       logo_url: null,
       hero_eyebrow: null,
       hero_headline: null,
+      known_facts: null,
     };
     const client: CompanyProfileReader = {
       rpc: async () => ({ data: [profile], error: null }),

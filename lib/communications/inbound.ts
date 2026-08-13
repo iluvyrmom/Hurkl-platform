@@ -1,12 +1,14 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { recordAuditLogEntry } from "../audit/log";
+import { parseLeadReadyMarker } from "../mason/lead-intake";
+import { submitLead, type LeadSubmission } from "../leads/leads";
 import {
   MockAIModelProvider,
   type AIModelProvider,
   type ConversationTurn,
 } from "../mason/providers/ai-model-provider";
 import { routeModelTier } from "../mason/model-routing";
-import { buildMasonSystemPrompt } from "../mason/system-prompt";
+import { buildMasonSystemPrompt, type LeadIntakeGoal } from "../mason/system-prompt";
 import { classifyMessageTaskType } from "../mason/task-classification";
 import {
   evaluateBudget,
@@ -17,6 +19,38 @@ import {
 import type { Channel, CommunicationAdapter, InboundMessage } from "./adapter";
 import { HURKL_INTERNAL_COMPANY_ID, HURKL_INTERNAL_COMPANY_NAME } from "./internal-company";
 import { resolveTelegramSender, UnrecognizedSenderError } from "./telegram-identity";
+
+// The full set of details Mason's public web-chat lead intake asks
+// for — mirrors LeadSubmission's fields (see lib/leads/leads.ts and
+// lib/mason/lead-intake.ts). "phone or email" (not a literal JSON key)
+// is intentional: the prompt text just needs to convey the real
+// requirement, which validateLeadSubmission enforces regardless.
+const WEB_PUBLIC_LEAD_INTAKE: LeadIntakeGoal = {
+  requiredFields: ["name", "phone or email"],
+  optionalFields: [
+    "pickupAddress",
+    "destinationAddress",
+    "moveDate",
+    "preferredTime",
+    "propertyType",
+    "accessNotes",
+    "inventoryNotes",
+    "specialItems",
+    "packingNeeds",
+    "notes",
+  ],
+};
+
+// Hard cap on total messages (inbound + outbound) in one anonymous
+// web_public conversation — independent of the rolling spend
+// ceilings, this bounds a single unauthenticated visitor's worst-case
+// cost/abuse from an unbounded back-and-forth. Telegram's senders are
+// pre-authenticated (telegram_links), so this only applies to
+// web_public.
+const MAX_WEB_PUBLIC_CONVERSATION_MESSAGES = 40;
+
+const TURN_LIMIT_REPLY_TEXT =
+  "We've covered a lot here — let's wrap this up so a coordinator can follow up directly with the details we've got.";
 
 export interface ReceiveMessageDeps {
   /** Service-role client — required for the telegram_links lookup, and to write conversations/messages/audit_log rows on the internal company's behalf (a hurkl_admin's own RLS bypass covers reads/writes, but the service-role client keeps this pipeline's data access uniform regardless of channel/sender role). */
@@ -29,10 +63,23 @@ export interface ReceiveMessageDeps {
 export interface ReceiveMessageResult {
   /** false when the sender was unrecognized, or the message was a duplicate delivery of one already processed — either way, dropped with no reply and no new audit entry. */
   handled: boolean;
+  /** Set only when this turn caused a new lead to be submitted (web_public's LEAD_READY marker) — see lib/mason/lead-intake.ts. */
+  leadId?: string;
 }
 
 interface ConversationRow {
   id: string;
+  lead_id?: string | null;
+}
+
+interface ResolvedSender {
+  profileId: string | null;
+  companyId: string | null;
+  companyName: string;
+  role: string;
+  fullName: string | null;
+  /** Only ever set for web_public — Telegram's internal channel has no per-company published facts today. */
+  knownFacts?: string[] | null;
 }
 
 // Cost/history bound: how many prior messages are sent to the model as
@@ -49,7 +96,7 @@ async function findOrCreateConversation(
 ): Promise<ConversationRow> {
   const { data: existing, error: selectError } = await admin
     .from("conversations")
-    .select("id")
+    .select("id, lead_id")
     .eq("channel", input.channel)
     .eq("external_conversation_id", input.externalConversationId)
     .maybeSingle();
@@ -108,6 +155,16 @@ async function fetchRecentHistory(
       role: row.direction === "inbound" ? ("user" as const) : ("assistant" as const),
       text: row.body as string,
     }));
+}
+
+/** Total message count so far for a conversation — used only by web_public's hard per-conversation turn cap (see MAX_WEB_PUBLIC_CONVERSATION_MESSAGES); unbounded query is fine since that same cap keeps this small. */
+async function countMessages(admin: SupabaseClient, conversationId: string): Promise<number> {
+  const { data, error } = await admin
+    .from("messages")
+    .select("id")
+    .eq("conversation_id", conversationId);
+  if (error || !data) return 0;
+  return data.length;
 }
 
 interface InsertMessageInput {
@@ -205,14 +262,49 @@ export async function receiveMessage(
 ): Promise<ReceiveMessageResult> {
   const { admin, adapter, aiModel = new MockAIModelProvider() } = deps;
 
-  let sender;
-  try {
-    sender = await resolveTelegramSender(admin, inbound.externalUserId);
-  } catch (error) {
-    if (error instanceof UnrecognizedSenderError) {
-      return { handled: false };
+  let sender: ResolvedSender;
+  if (inbound.channel === "web_public") {
+    // Anonymous channel: no linked identity to resolve, the caller
+    // already knows the company (by public slug) before this pipeline
+    // runs — see app/api/mason/chat/[slug]/route.ts.
+    if (!inbound.companyId) {
+      throw new Error("web_public inbound messages require companyId");
     }
-    throw error;
+    const { data: companyRow } = await admin
+      .from("companies")
+      .select("name, known_facts")
+      .eq("id", inbound.companyId)
+      .maybeSingle();
+    const resolvedCompany = companyRow as { name?: string; known_facts?: string[] | null } | null;
+    sender = {
+      profileId: null,
+      companyId: inbound.companyId,
+      companyName: resolvedCompany?.name ?? HURKL_INTERNAL_COMPANY_NAME,
+      role: "public_visitor",
+      fullName: null,
+      knownFacts: resolvedCompany?.known_facts ?? null,
+    };
+  } else {
+    try {
+      const telegramSender = await resolveTelegramSender(admin, inbound.externalUserId);
+      sender = {
+        profileId: telegramSender.profileId,
+        companyId: telegramSender.companyId,
+        // Every Telegram sender today is either hurkl_admin (null
+        // company_id) or linked to the internal pseudo-company — the
+        // internal-channel branch below never actually reads
+        // companyName for this case, so the internal name is a safe
+        // placeholder until a real tenant-linked Telegram sender exists.
+        companyName: HURKL_INTERNAL_COMPANY_NAME,
+        role: telegramSender.role,
+        fullName: telegramSender.fullName,
+      };
+    } catch (error) {
+      if (error instanceof UnrecognizedSenderError) {
+        return { handled: false };
+      }
+      throw error;
+    }
   }
 
   // hurkl_admin profiles have a null company_id by design (they're not
@@ -229,6 +321,10 @@ export async function receiveMessage(
   });
 
   const history = await fetchRecentHistory(admin, conversation.id);
+
+  const turnLimitReached =
+    inbound.channel === "web_public" &&
+    (await countMessages(admin, conversation.id)) >= MAX_WEB_PUBLIC_CONVERSATION_MESSAGES;
 
   try {
     await insertMessage(admin, {
@@ -251,7 +347,7 @@ export async function receiveMessage(
 
   await recordAuditLogEntry(admin, {
     companyId,
-    actorUserId: sender.profileId,
+    actorUserId: sender.profileId ?? undefined,
     action: "message_received",
     autonomyTier: "tier_1_automatic",
     policyReference: "communications.receive",
@@ -262,10 +358,12 @@ export async function receiveMessage(
 
   const tier = routeModelTier(classifyMessageTaskType(inbound.text));
   const systemPrompt = buildMasonSystemPrompt({
-    companyName: HURKL_INTERNAL_COMPANY_NAME,
+    companyName: sender.companyName,
     isInternalHurklChannel,
     senderName: sender.fullName,
     senderRole: sender.role,
+    businessFacts: inbound.channel === "web_public" ? (sender.knownFacts ?? undefined) : undefined,
+    leadIntake: inbound.channel === "web_public" ? WEB_PUBLIC_LEAD_INTAKE : undefined,
   });
 
   // Hard server-side spend guard — checked before every real Anthropic
@@ -286,7 +384,31 @@ export async function receiveMessage(
   const budgetDecision = evaluateBudget(budgetStatus);
 
   let aiResponse;
-  if (!budgetDecision.allowed) {
+  if (turnLimitReached) {
+    console.warn("web_public conversation turn limit reached — using fallback reply, no request sent", {
+      conversationId: conversation.id,
+      tier,
+    });
+    await recordAuditLogEntry(admin, {
+      companyId,
+      actorUserId: sender.profileId ?? undefined,
+      action: "message_turn_limit_blocked",
+      autonomyTier: "tier_1_automatic",
+      policyReference: "communications.respond",
+      subjectType: "conversation",
+      subjectId: conversation.id,
+      metadata: { channel: inbound.channel, tier },
+    });
+    aiResponse = {
+      text: TURN_LIMIT_REPLY_TEXT,
+      tier,
+      modelId: "turn_limit",
+      inputTokens: 0,
+      outputTokens: 0,
+      estimatedCostUsd: 0,
+      latencyMs: 0,
+    };
+  } else if (!budgetDecision.allowed) {
     console.warn("Anthropic spend ceiling reached — using fallback reply, no request sent", {
       conversationId: conversation.id,
       tier,
@@ -294,7 +416,7 @@ export async function receiveMessage(
     });
     await recordAuditLogEntry(admin, {
       companyId,
-      actorUserId: sender.profileId,
+      actorUserId: sender.profileId ?? undefined,
       action: "message_budget_blocked",
       autonomyTier: "tier_1_automatic",
       policyReference: "communications.respond",
@@ -352,6 +474,50 @@ export async function receiveMessage(
         estimatedCostUsd: 0,
         latencyMs: 0,
       };
+    }
+  }
+
+  // Public web-chat lead extraction: strip Mason's LEAD_READY marker
+  // from what the customer sees regardless of whether it parsed, and —
+  // only the first time, for this conversation — submit a real lead
+  // through the same submit_lead() RPC the structured form uses (see
+  // lib/leads/leads.ts). conversation.lead_id guards against
+  // double-submitting if the chat continues afterward.
+  let leadId: string | undefined;
+  if (inbound.channel === "web_public" && !conversation.lead_id) {
+    const extracted = parseLeadReadyMarker(aiResponse.text);
+    if (extracted) {
+      aiResponse = { ...aiResponse, text: extracted.visibleText };
+      if (Object.keys(extracted.fields).length > 0 && inbound.companySlug) {
+        try {
+          const submission: LeadSubmission = {
+            companySlug: inbound.companySlug,
+            source: "mason_chat",
+            name: extracted.fields.name ?? "",
+            ...extracted.fields,
+          };
+          leadId = await submitLead(admin, submission);
+          await admin.from("conversations").update({ lead_id: leadId }).eq("id", conversation.id);
+          await recordAuditLogEntry(admin, {
+            companyId,
+            action: "lead_submitted",
+            autonomyTier: "tier_1_automatic",
+            policyReference: "communications.respond",
+            subjectType: "conversation",
+            subjectId: conversation.id,
+            metadata: { channel: inbound.channel, leadId },
+          });
+        } catch (error) {
+          // A validation error just means Mason emitted the marker
+          // before really having enough — not ready yet, not a bug.
+          // Anything else is a real failure. Either way, the customer
+          // still gets Mason's (marker-stripped) reply below.
+          console.warn("Mason chat: lead not submitted from LEAD_READY marker", {
+            conversationId: conversation.id,
+            error: error instanceof Error ? error.message : String(error),
+          });
+        }
+      }
     }
   }
 
@@ -413,5 +579,5 @@ export async function receiveMessage(
     });
   }
 
-  return { handled: true };
+  return { handled: true, leadId };
 }

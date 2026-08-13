@@ -134,6 +134,7 @@ export interface CompanyPublicProfile {
   logo_url: string | null;
   hero_eyebrow: string | null;
   hero_headline: string | null;
+  known_facts: string[] | null;
 }
 
 export interface CompanyProfileReader {

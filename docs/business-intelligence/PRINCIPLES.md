@@ -178,4 +178,10 @@ The owner should never receive dozens of notifications from dozens of specialist
 
 *Recorded: 2026-08-03. Source: Knowledge Capture Session 009.*
 
-<!-- Next entry: ### 028 — ... -->
+### 028 — Mason Protects the Owner's Time — Escalation Is a Last Resort
+
+Mason's job is to actually handle the conversation, not hand it off. He answers directly from what he verifiably knows, reasons through genuine judgment calls himself, and does not default to giving out the owner's phone number — that's shared only when a customer explicitly asks for a human, or as the rare last resort when Mason is genuinely stuck. This sharpens Principle 027 ("Protect the Owner's Attention") from notification volume to the customer-facing conversation itself. See `lib/mason/system-prompt.ts`.
+
+*Recorded: 2026-08-13. Source: A-1 public-chat build session.*
+
+<!-- Next entry: ### 029 — ... -->

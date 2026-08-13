@@ -319,3 +319,84 @@ a {
   border: 1px solid currentColor;
   border-radius: 0.75rem;
 }
+
+.mason-chat {
+  margin-top: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.mason-chat-log {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  max-height: 60vh;
+  overflow-y: auto;
+  padding-right: 0.25rem;
+}
+
+.mason-chat-bubble {
+  max-width: 85%;
+  padding: 0.65rem 0.9rem;
+  border-radius: 0.9rem;
+  font-size: 0.95rem;
+  line-height: 1.4;
+  white-space: pre-wrap;
+}
+
+.mason-chat-bubble-assistant {
+  align-self: flex-start;
+  background: var(--company-navy);
+  border: 1px solid rgba(201, 162, 39, 0.3);
+  color: var(--company-cream);
+  border-bottom-left-radius: 0.2rem;
+}
+
+.mason-chat-bubble-user {
+  align-self: flex-end;
+  background: linear-gradient(180deg, var(--company-accent-light), var(--company-accent));
+  color: #1a1408;
+  border-bottom-right-radius: 0.2rem;
+}
+
+.mason-chat-typing {
+  opacity: 0.7;
+  font-style: italic;
+}
+
+.mason-chat-confirmation {
+  padding: 0.75rem 0.9rem;
+  border-radius: 0.6rem;
+  background: rgba(201, 162, 39, 0.12);
+  border: 1px solid rgba(201, 162, 39, 0.35);
+  color: var(--company-cream);
+  font-size: 0.9rem;
+}
+
+.mason-chat-form {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.mason-chat-input {
+  flex: 1;
+  font-size: 1rem;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid currentColor;
+  border-radius: 0.5rem;
+  background: transparent;
+  color: inherit;
+  font-family: inherit;
+  min-width: 0;
+}
+
+.mason-chat-form .btn-accent {
+  width: auto;
+  flex-shrink: 0;
+}
+
+.mason-chat-phone-fallback {
+  text-align: center;
+  font-size: 0.85rem;
+}

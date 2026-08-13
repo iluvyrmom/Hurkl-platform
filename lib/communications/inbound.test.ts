@@ -16,13 +16,17 @@ interface FakeRow {
  * reuses the same conversation row" are proven by real state, not by
  * asserting call counts.
  */
-function createFakeAdmin(seed: { telegramLinks?: FakeRow[]; profiles?: FakeRow[] } = {}) {
+function createFakeAdmin(
+  seed: { telegramLinks?: FakeRow[]; profiles?: FakeRow[]; companies?: FakeRow[] } = {},
+) {
   const tables: Record<string, FakeRow[]> = {
     telegram_links: seed.telegramLinks ?? [],
     profiles: seed.profiles ?? [],
+    companies: seed.companies ?? [],
     conversations: [],
     messages: [],
     audit_log: [],
+    leads: [],
   };
 
   function matches(row: FakeRow, filters: ["eq" | "gte", string, unknown][]) {
@@ -132,7 +136,19 @@ function createFakeAdmin(seed: { telegramLinks?: FakeRow[]; profiles?: FakeRow[]
     };
   }
 
-  return { admin: { from } as unknown as SupabaseClient, tables };
+  // Minimal stand-in for submit_lead()'s RPC — real validation already
+  // happened client-side in lib/leads/leads.ts#submitLead before this
+  // is ever called, so this just records the lead and hands back an id.
+  async function rpc(fn: string, args: Record<string, unknown>) {
+    if (fn === "submit_lead") {
+      const id = `lead-${tables.leads.length + 1}`;
+      tables.leads.push({ id, ...args });
+      return { data: id, error: null };
+    }
+    return { data: null, error: { message: `unhandled rpc in test fake: ${fn}` } };
+  }
+
+  return { admin: { from, rpc } as unknown as SupabaseClient, tables };
 }
 
 const HURKL_ADMIN_PROFILE = { id: "profile-1", company_id: null, role: "hurkl_admin" };
@@ -431,6 +447,174 @@ describe("receiveMessage", () => {
 
       const auditActions = tables.audit_log.map((row) => row.action);
       expect(auditActions).not.toContain("message_budget_blocked");
+    });
+  });
+
+  describe("web_public channel (Mason's public chat)", () => {
+    const A1_COMPANY = {
+      id: "company-a1",
+      name: "A-1 Best Moving LLC",
+      known_facts: ["1 mover is $50/hour."],
+    };
+
+    it("resolves the company directly (no linked identity) and uses its real name and facts in the system prompt", async () => {
+      const { admin, tables } = createFakeAdmin({ companies: [A1_COMPANY] });
+      const adapter = new MockCommunicationAdapter("web_public");
+      const seenRequests: { systemPrompt: string }[] = [];
+      const recordingAiModel = {
+        complete: async (request: { systemPrompt: string }) => {
+          seenRequests.push(request);
+          return {
+            text: "Sure, happy to help!",
+            tier: "low_cost" as const,
+            modelId: "test",
+            inputTokens: 0,
+            outputTokens: 0,
+            estimatedCostUsd: 0,
+            latencyMs: 0,
+          };
+        },
+      };
+
+      const result = await receiveMessage(
+        { admin, adapter, aiModel: recordingAiModel },
+        {
+          channel: "web_public",
+          externalUserId: "session-1",
+          externalConversationId: "session-1",
+          text: "how much for 2 movers?",
+          receivedAt: new Date().toISOString(),
+          companyId: A1_COMPANY.id,
+          companySlug: "a1-best-moving",
+        },
+      );
+
+      expect(result.handled).toBe(true);
+      expect(tables.conversations[0]).toMatchObject({ company_id: A1_COMPANY.id, channel: "web_public" });
+      expect(seenRequests[0].systemPrompt).toContain("A-1 Best Moving LLC");
+      expect(seenRequests[0].systemPrompt).toContain("1 mover is $50/hour.");
+      expect(seenRequests[0].systemPrompt).toContain("LEAD_READY:");
+      expect(seenRequests[0].systemPrompt).not.toContain("HURKL's own AI Office Manager");
+    });
+
+    it("extracts a LEAD_READY marker, submits a real lead, links it to the conversation, and hides the marker from the customer", async () => {
+      const { admin, tables } = createFakeAdmin({ companies: [A1_COMPANY] });
+      const adapter = new MockCommunicationAdapter("web_public");
+      const aiModel = {
+        complete: async () => ({
+          text: 'Great, I have everything I need!\nLEAD_READY: {"name":"Jane Doe","phone":"555-1234"}',
+          tier: "low_cost" as const,
+          modelId: "test",
+          inputTokens: 0,
+          outputTokens: 0,
+          estimatedCostUsd: 0,
+          latencyMs: 0,
+        }),
+      };
+
+      const result = await receiveMessage(
+        { admin, adapter, aiModel },
+        {
+          channel: "web_public",
+          externalUserId: "session-2",
+          externalConversationId: "session-2",
+          text: "I'm Jane, 555-1234, moving next month",
+          receivedAt: new Date().toISOString(),
+          companyId: A1_COMPANY.id,
+          companySlug: "a1-best-moving",
+        },
+      );
+
+      expect(result.handled).toBe(true);
+      expect(result.leadId).toBeDefined();
+      expect(tables.leads).toHaveLength(1);
+      expect(tables.leads[0]).toMatchObject({ p_company_slug: "a1-best-moving", p_name: "Jane Doe" });
+      expect(tables.conversations[0].lead_id).toBe(result.leadId);
+
+      // The marker line never reaches the customer.
+      expect(adapter.sentMessages[0].text).toBe("Great, I have everything I need!");
+      expect(adapter.sentMessages[0].text).not.toContain("LEAD_READY");
+
+      const auditActions = tables.audit_log.map((row) => row.action);
+      expect(auditActions).toContain("lead_submitted");
+    });
+
+    it("never submits a second lead for the same conversation once one is already linked", async () => {
+      const { admin, tables } = createFakeAdmin({ companies: [A1_COMPANY] });
+      const adapter = new MockCommunicationAdapter("web_public");
+      const aiModel = {
+        complete: async () => ({
+          text: 'ok\nLEAD_READY: {"name":"Jane Doe","phone":"555-1234"}',
+          tier: "low_cost" as const,
+          modelId: "test",
+          inputTokens: 0,
+          outputTokens: 0,
+          estimatedCostUsd: 0,
+          latencyMs: 0,
+        }),
+      };
+
+      const inbound = {
+        channel: "web_public" as const,
+        externalUserId: "session-3",
+        externalConversationId: "session-3",
+        receivedAt: new Date().toISOString(),
+        companyId: A1_COMPANY.id,
+        companySlug: "a1-best-moving",
+      };
+
+      const first = await receiveMessage({ admin, adapter, aiModel }, { ...inbound, text: "first" });
+      const second = await receiveMessage({ admin, adapter, aiModel }, { ...inbound, text: "second" });
+
+      expect(first.leadId).toBeDefined();
+      expect(second.leadId).toBeUndefined();
+      expect(tables.leads).toHaveLength(1);
+    });
+
+    it("caps a public conversation's total turns and stops calling the AI model once the cap is hit", async () => {
+      const { admin, tables } = createFakeAdmin({ companies: [A1_COMPANY] });
+      const adapter = new MockCommunicationAdapter("web_public");
+      let callCount = 0;
+      const aiModel = {
+        complete: async () => {
+          callCount += 1;
+          return {
+            text: "ok",
+            tier: "low_cost" as const,
+            modelId: "test",
+            inputTokens: 0,
+            outputTokens: 0,
+            estimatedCostUsd: 0,
+            latencyMs: 0,
+          };
+        },
+      };
+
+      const inbound = {
+        channel: "web_public" as const,
+        externalUserId: "session-4",
+        externalConversationId: "session-4",
+        receivedAt: new Date().toISOString(),
+        companyId: A1_COMPANY.id,
+        companySlug: "a1-best-moving",
+      };
+
+      // 40 is the hard cap (see MAX_WEB_PUBLIC_CONVERSATION_MESSAGES) —
+      // 20 exchanges (inbound+outbound each) reaches it exactly.
+      for (let i = 0; i < 20; i++) {
+        await receiveMessage({ admin, adapter, aiModel }, { ...inbound, text: `turn ${i}` });
+      }
+      expect(callCount).toBe(20);
+
+      const result = await receiveMessage({ admin, adapter, aiModel }, { ...inbound, text: "one more" });
+
+      expect(result.handled).toBe(true);
+      expect(callCount).toBe(20); // no new AI call once the cap is hit
+      const lastSent = adapter.sentMessages.at(-1);
+      expect(lastSent?.text).toMatch(/wrap this up/i);
+
+      const auditActions = tables.audit_log.map((row) => row.action);
+      expect(auditActions).toContain("message_turn_limit_blocked");
     });
   });
 });

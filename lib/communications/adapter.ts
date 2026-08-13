@@ -13,11 +13,11 @@
  * Telegram is the first, not a special case.
  */
 
-export type Channel = "telegram";
+export type Channel = "telegram" | "web_public";
 
 export interface InboundMessage {
   channel: Channel;
-  /** The sending user's identity in the channel's own namespace — e.g. a Telegram numeric user id, as a string. */
+  /** The sending user's identity in the channel's own namespace — e.g. a Telegram numeric user id, as a string. For web_public (anonymous, no linked identity) this is the same client-generated conversation id as externalConversationId. */
   externalUserId: string;
   /** The channel's own conversation/thread identifier — e.g. a Telegram chat id. */
   externalConversationId: string;
@@ -27,6 +27,15 @@ export interface InboundMessage {
   receivedAt: string;
   /** The original channel payload, kept only for audit-log metadata — never parsed by shared pipeline code. */
   raw?: unknown;
+  /**
+   * Required for anonymous channels (web_public) that resolve their
+   * company directly (by public slug, already known to the caller)
+   * rather than via a linked sender identity like Telegram's
+   * telegram_links. Ignored for identity-linked channels.
+   */
+  companyId?: string;
+  /** Required alongside companyId for web_public — used only to submit a lead via submit_lead()'s existing slug-based contract once Mason has gathered enough (see lib/communications/inbound.ts). */
+  companySlug?: string;
 }
 
 export interface OutboundMessage {
