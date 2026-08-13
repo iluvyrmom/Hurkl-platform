@@ -73,11 +73,11 @@ export function CustomersPanel() {
   }
 
   return (
-    <section>
+    <section className="dashboard-panel">
       <h2>Customers</h2>
 
       <form onSubmit={handleSubmit}>
-        <div>
+        <div className="hurkl-field">
           <label htmlFor="customerName">Name</label>
           <input
             id="customerName"
@@ -86,11 +86,11 @@ export function CustomersPanel() {
             onChange={(e) => setName(e.target.value)}
           />
         </div>
-        <div>
+        <div className="hurkl-field">
           <label htmlFor="customerPhone">Phone</label>
           <input id="customerPhone" value={phone} onChange={(e) => setPhone(e.target.value)} />
         </div>
-        <div>
+        <div className="hurkl-field">
           <label htmlFor="customerEmail">Email</label>
           <input
             id="customerEmail"
@@ -99,8 +99,12 @@ export function CustomersPanel() {
             onChange={(e) => setEmail(e.target.value)}
           />
         </div>
-        {error && <p role="alert">{error}</p>}
-        <button type="submit" disabled={submitting}>
+        {error && (
+          <p role="alert" className="hurkl-form-error">
+            {error}
+          </p>
+        )}
+        <button type="submit" className="hurkl-btn" disabled={submitting}>
           {submitting ? "Adding…" : "Add customer"}
         </button>
       </form>

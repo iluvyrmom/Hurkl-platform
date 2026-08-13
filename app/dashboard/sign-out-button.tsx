@@ -13,5 +13,9 @@ export function SignOutButton() {
     router.refresh();
   }
 
-  return <button onClick={handleSignOut}>Sign out</button>;
+  return (
+    <button onClick={handleSignOut} className="hurkl-signout-btn">
+      Sign out
+    </button>
+  );
 }

@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "../../lib/supabase/server";
 import { CustomersPanel } from "./customers-panel";
@@ -32,11 +33,24 @@ export default async function DashboardPage() {
   }
 
   return (
-    <main>
-      <h1>HURKL</h1>
-      <SignOutButton />
-      <LeadsPanel />
-      <CustomersPanel />
-    </main>
+    <div className="hurkl-page">
+      <header className="hurkl-header">
+        <div className="hurkl-header-brand">
+          <Image src="/hurkl/icon.png" alt="" width={36} height={36} className="hurkl-icon" />
+          <Image
+            src="/hurkl/wordmark-compact.png"
+            alt="HURKL"
+            width={152}
+            height={32}
+            className="hurkl-wordmark"
+          />
+        </div>
+        <SignOutButton />
+      </header>
+      <main className="dashboard-content">
+        <LeadsPanel />
+        <CustomersPanel />
+      </main>
+    </div>
   );
 }

@@ -31,7 +31,7 @@ export function SignInForm() {
 
   return (
     <form onSubmit={handleSubmit}>
-      <div>
+      <div className="hurkl-field">
         <label htmlFor="email">Email</label>
         <input
           id="email"
@@ -41,7 +41,7 @@ export function SignInForm() {
           onChange={(e) => setEmail(e.target.value)}
         />
       </div>
-      <div>
+      <div className="hurkl-field">
         <label htmlFor="password">Password</label>
         <input
           id="password"
@@ -51,8 +51,12 @@ export function SignInForm() {
           onChange={(e) => setPassword(e.target.value)}
         />
       </div>
-      {error && <p role="alert">{error}</p>}
-      <button type="submit" disabled={submitting}>
+      {error && (
+        <p role="alert" className="hurkl-form-error">
+          {error}
+        </p>
+      )}
+      <button type="submit" className="hurkl-btn" disabled={submitting}>
         {submitting ? "Signing in…" : "Sign in"}
       </button>
     </form>

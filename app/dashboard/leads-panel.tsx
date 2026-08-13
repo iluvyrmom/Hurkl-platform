@@ -44,9 +44,13 @@ export function LeadsPanel() {
   }, []);
 
   return (
-    <section>
+    <section className="dashboard-panel">
       <h2>Leads</h2>
-      {error && <p role="alert">{error}</p>}
+      {error && (
+        <p role="alert" className="hurkl-form-error">
+          {error}
+        </p>
+      )}
       {leads === null ? (
         <p>Loading…</p>
       ) : leads.length === 0 ? (
