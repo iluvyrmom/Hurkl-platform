@@ -8,6 +8,13 @@ import {
 import { routeModelTier } from "../mason/model-routing";
 import { buildMasonSystemPrompt } from "../mason/system-prompt";
 import { classifyMessageTaskType } from "../mason/task-classification";
+import { resolveDiscountAuthority } from "../mason/discount-authority";
+import { CRITICAL_REVIEW_FALLBACK_REPLY, reviewMasonReply } from "../mason/critical-review";
+import {
+  customerExplicitlyRequestedOwnerContact,
+  recordOwnerEscalation,
+  requiresOwnerApproval,
+} from "../mason/escalation";
 import {
   evaluateBudget,
   getBudgetStatus,
@@ -108,6 +115,37 @@ async function fetchRecentHistory(
       role: row.direction === "inbound" ? ("user" as const) : ("assistant" as const),
       text: row.body as string,
     }));
+}
+
+interface CompanyContextRow {
+  name: string;
+  phone: string | null;
+  email: string | null;
+  discretionary_discount_max_percent: number | null;
+}
+
+/**
+ * Real, per-company data Mason's prompt and the critical-review guard
+ * both need: verified owner contact info and the owner-configured
+ * discretionary discount ceiling (see
+ * supabase/migrations/00000000000009_mason_discount_authority_and_escalations.sql).
+ * Best-effort — a lookup failure degrades to "no verified contact info,
+ * no discount authority" (the safe defaults), matching
+ * fetchRecentHistory's resilience pattern, rather than blocking the
+ * reply.
+ */
+async function fetchCompanyContext(
+  admin: SupabaseClient,
+  companyId: string,
+): Promise<CompanyContextRow | null> {
+  const { data, error } = await admin
+    .from("companies")
+    .select("name, phone, email, discretionary_discount_max_percent")
+    .eq("id", companyId)
+    .maybeSingle();
+
+  if (error || !data) return null;
+  return data as CompanyContextRow;
 }
 
 interface InsertMessageInput {
@@ -260,12 +298,40 @@ export async function receiveMessage(
     metadata: { channel: inbound.channel },
   });
 
+  // A genuine owner-approval scenario (damage, refund, legal, etc.) is
+  // recorded as a real owner-action item independent of how Mason ends
+  // up wording its reply — Mason still replies and keeps helping (see
+  // system-prompt.ts's escalation framing); this just guarantees a
+  // durable record exists for the owner too, per the founder's "bring
+  // the issue to the owner rather than sending the customer away"
+  // instruction.
+  if (requiresOwnerApproval(inbound.text)) {
+    await recordOwnerEscalation(admin, {
+      companyId,
+      conversationId: conversation.id,
+      reason: "owner_review_requested",
+      customerSummary: inbound.text,
+    });
+  }
+
+  const companyContext = isInternalHurklChannel
+    ? null
+    : await fetchCompanyContext(admin, companyId);
+  const discountAuthority = resolveDiscountAuthority(
+    companyContext?.discretionary_discount_max_percent,
+  );
+  const customerRequestedOwnerContact = customerExplicitlyRequestedOwnerContact(inbound.text);
+
   const tier = routeModelTier(classifyMessageTaskType(inbound.text));
   const systemPrompt = buildMasonSystemPrompt({
-    companyName: HURKL_INTERNAL_COMPANY_NAME,
+    companyName: companyContext?.name ?? HURKL_INTERNAL_COMPANY_NAME,
     isInternalHurklChannel,
     senderName: sender.fullName,
     senderRole: sender.role,
+    ownerPhone: companyContext?.phone ?? null,
+    ownerEmail: companyContext?.email ?? null,
+    discountAuthority,
+    customerRequestedOwnerContact,
   });
 
   // Hard server-side spend guard — checked before every real Anthropic
@@ -331,6 +397,36 @@ export async function receiveMessage(
         userMessage: inbound.text,
         history,
       });
+
+      // The one deterministic safety check every real model reply
+      // passes through before a customer ever sees it — see
+      // lib/mason/critical-review.ts. Catches exactly the reported
+      // production failure (an invented flat-dollar discount) and any
+      // reply that claims more discount than this company's owner has
+      // actually authorized.
+      const review = reviewMasonReply(aiResponse.text, discountAuthority);
+      if (!review.ok) {
+        console.warn("Mason reply blocked by critical review", {
+          conversationId: conversation.id,
+          violations: review.violations,
+        });
+        await recordOwnerEscalation(admin, {
+          companyId,
+          conversationId: conversation.id,
+          reason: "unsupported_pricing_claim_blocked",
+          customerSummary: `Mason's draft reply was blocked before sending (${review.violations.join(", ")}). Customer's message: ${inbound.text}`,
+        });
+        await recordAuditLogEntry(admin, {
+          companyId,
+          action: "reply_blocked_by_critical_review",
+          autonomyTier: "tier_1_automatic",
+          policyReference: "mason.critical-review",
+          subjectType: "conversation",
+          subjectId: conversation.id,
+          metadata: { violations: review.violations },
+        });
+        aiResponse = { ...aiResponse, text: CRITICAL_REVIEW_FALLBACK_REPLY };
+      }
     } catch (error) {
       // A reasoning failure must not corrupt the conversation or leave
       // the sender with silence — fall back to a safe, clearly-labeled

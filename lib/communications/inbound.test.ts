@@ -16,13 +16,17 @@ interface FakeRow {
  * reuses the same conversation row" are proven by real state, not by
  * asserting call counts.
  */
-function createFakeAdmin(seed: { telegramLinks?: FakeRow[]; profiles?: FakeRow[] } = {}) {
+function createFakeAdmin(
+  seed: { telegramLinks?: FakeRow[]; profiles?: FakeRow[]; companies?: FakeRow[] } = {},
+) {
   const tables: Record<string, FakeRow[]> = {
     telegram_links: seed.telegramLinks ?? [],
     profiles: seed.profiles ?? [],
+    companies: seed.companies ?? [],
     conversations: [],
     messages: [],
     audit_log: [],
+    owner_escalations: [],
   };
 
   function matches(row: FakeRow, filters: ["eq" | "gte", string, unknown][]) {
@@ -431,6 +435,277 @@ describe("receiveMessage", () => {
 
       const auditActions = tables.audit_log.map((row) => row.action);
       expect(auditActions).not.toContain("message_budget_blocked");
+    });
+  });
+
+  describe("discount authority and owner escalation", () => {
+    const A1_COMPANY_ID = "company-a1";
+    const A1_TELEGRAM_ID = "555999888";
+    const A1_OWNER_PROFILE = { id: "profile-a1-owner", company_id: A1_COMPANY_ID, role: "owner" };
+    const A1_COMPANY_ROW = {
+      id: A1_COMPANY_ID,
+      name: "A-1 Best Moving",
+      phone: "971-777-6660",
+      email: "A1BESTMOVING@gmail.com",
+      discretionary_discount_max_percent: 5,
+    };
+
+    function seedA1() {
+      return createFakeAdmin({
+        telegramLinks: [{ profile_id: A1_OWNER_PROFILE.id, telegram_user_id: A1_TELEGRAM_ID }],
+        profiles: [A1_OWNER_PROFILE],
+        companies: [A1_COMPANY_ROW],
+      });
+    }
+
+    function recordingAiModel(replyText: string) {
+      const seenRequests: { systemPrompt: string }[] = [];
+      return {
+        aiModel: {
+          complete: async (request: { systemPrompt: string }) => {
+            seenRequests.push(request);
+            return {
+              text: replyText,
+              tier: "low_cost" as const,
+              modelId: "test",
+              inputTokens: 0,
+              outputTokens: 0,
+              estimatedCostUsd: 0,
+              latencyMs: 0,
+            };
+          },
+        },
+        seenRequests,
+      };
+    }
+
+    it("gives Mason the company's real configured discount ceiling, wired end-to-end from the companies table", async () => {
+      const { admin } = seedA1();
+      const adapter = new MockCommunicationAdapter("telegram");
+      const { aiModel, seenRequests } = recordingAiModel("Sure, happy to help.");
+
+      await receiveMessage(
+        { admin, adapter, aiModel },
+        {
+          channel: "telegram",
+          externalUserId: A1_TELEGRAM_ID,
+          externalConversationId: "chat-discount-1",
+          text: "How much for a 2-bedroom move?",
+          receivedAt: new Date().toISOString(),
+        },
+      );
+
+      expect(seenRequests[0].systemPrompt).toContain("up to 5% off");
+      expect(seenRequests[0].systemPrompt).toContain("the preferred outcome is no discount");
+    });
+
+    it("a company with no configured discount authority gets none, even though the pipeline ran a real lookup", async () => {
+      const { admin } = createFakeAdmin({
+        telegramLinks: [{ profile_id: A1_OWNER_PROFILE.id, telegram_user_id: A1_TELEGRAM_ID }],
+        profiles: [A1_OWNER_PROFILE],
+        companies: [{ ...A1_COMPANY_ROW, discretionary_discount_max_percent: 0 }],
+      });
+      const adapter = new MockCommunicationAdapter("telegram");
+      const { aiModel, seenRequests } = recordingAiModel("Sure, happy to help.");
+
+      await receiveMessage(
+        { admin, adapter, aiModel },
+        {
+          channel: "telegram",
+          externalUserId: A1_TELEGRAM_ID,
+          externalConversationId: "chat-discount-2",
+          text: "Any discounts available?",
+          receivedAt: new Date().toISOString(),
+        },
+      );
+
+      expect(seenRequests[0].systemPrompt).toContain("You have no discretionary pricing authority");
+    });
+
+    it("blocks the exact reported production failure — an invented flat-dollar discount — before it reaches the customer, and records an owner escalation", async () => {
+      const { admin, tables } = seedA1();
+      const adapter = new MockCommunicationAdapter("telegram");
+      const { aiModel } = recordingAiModel(
+        "I don't have information on a veteran discount, but I can offer a $75 discount off the flat rate.",
+      );
+
+      await receiveMessage(
+        { admin, adapter, aiModel },
+        {
+          channel: "telegram",
+          externalUserId: A1_TELEGRAM_ID,
+          externalConversationId: "chat-discount-3",
+          text: "Do you have a veteran discount?",
+          receivedAt: new Date().toISOString(),
+        },
+      );
+
+      expect(adapter.sentMessages).toHaveLength(1);
+      expect(adapter.sentMessages[0].text).not.toContain("$75");
+      expect(tables.audit_log.map((row) => row.action)).toContain(
+        "reply_blocked_by_critical_review",
+      );
+      expect(tables.owner_escalations).toHaveLength(1);
+      expect(tables.owner_escalations[0]).toMatchObject({
+        company_id: A1_COMPANY_ID,
+        reason: "unsupported_pricing_claim_blocked",
+      });
+    });
+
+    it("blocks a percentage discount claim that exceeds the company's authorized ceiling", async () => {
+      const { admin, tables } = seedA1();
+      const adapter = new MockCommunicationAdapter("telegram");
+      const { aiModel } = recordingAiModel("I can offer you a 10% discount on this booking.");
+
+      await receiveMessage(
+        { admin, adapter, aiModel },
+        {
+          channel: "telegram",
+          externalUserId: A1_TELEGRAM_ID,
+          externalConversationId: "chat-discount-4",
+          text: "This is a big job, can you do better on price?",
+          receivedAt: new Date().toISOString(),
+        },
+      );
+
+      expect(adapter.sentMessages[0].text).not.toContain("10%");
+      expect(tables.owner_escalations).toHaveLength(1);
+    });
+
+    it("allows a percentage discount claim within the company's authorized ceiling to reach the customer unchanged — a larger job where 3% reasonably helps close the sale", async () => {
+      const { admin, tables } = seedA1();
+      const adapter = new MockCommunicationAdapter("telegram");
+      const { aiModel } = recordingAiModel(
+        "I can offer a 3% discount on this booking to help close it today.",
+      );
+
+      await receiveMessage(
+        { admin, adapter, aiModel },
+        {
+          channel: "telegram",
+          externalUserId: A1_TELEGRAM_ID,
+          externalConversationId: "chat-discount-5",
+          text: "I'm hesitant on the price, is there any flexibility?",
+          receivedAt: new Date().toISOString(),
+        },
+      );
+
+      expect(adapter.sentMessages[0].text).toContain("3%");
+      expect(tables.owner_escalations).toHaveLength(0);
+      expect(tables.audit_log.map((row) => row.action)).not.toContain(
+        "reply_blocked_by_critical_review",
+      );
+    });
+
+    it("does not volunteer owner contact info in the prompt when the customer hasn't asked for it", async () => {
+      const { admin } = seedA1();
+      const adapter = new MockCommunicationAdapter("telegram");
+      const { aiModel, seenRequests } = recordingAiModel("Sure, happy to help.");
+
+      await receiveMessage(
+        { admin, adapter, aiModel },
+        {
+          channel: "telegram",
+          externalUserId: A1_TELEGRAM_ID,
+          externalConversationId: "chat-owner-1",
+          text: "What areas do you service?",
+          receivedAt: new Date().toISOString(),
+        },
+      );
+
+      expect(seenRequests[0].systemPrompt).not.toContain(
+        "it's appropriate to share the owner's direct contact now",
+      );
+    });
+
+    it("tells Mason it may share owner contact when the customer explicitly asks for it", async () => {
+      const { admin } = seedA1();
+      const adapter = new MockCommunicationAdapter("telegram");
+      const { aiModel, seenRequests } = recordingAiModel("Sure, happy to help.");
+
+      await receiveMessage(
+        { admin, adapter, aiModel },
+        {
+          channel: "telegram",
+          externalUserId: A1_TELEGRAM_ID,
+          externalConversationId: "chat-owner-2",
+          text: "Can I just get the owner's phone number?",
+          receivedAt: new Date().toISOString(),
+        },
+      );
+
+      expect(seenRequests[0].systemPrompt).toContain(
+        "it's appropriate to share the owner's direct contact now",
+      );
+    });
+
+    it("records a genuine owner-approval escalation (e.g. a damage complaint) while Mason still replies instead of sending the customer away", async () => {
+      const { admin, tables } = seedA1();
+      const adapter = new MockCommunicationAdapter("telegram");
+      const { aiModel } = recordingAiModel(
+        "I'm really sorry to hear that — let me get this reviewed for you.",
+      );
+
+      await receiveMessage(
+        { admin, adapter, aiModel },
+        {
+          channel: "telegram",
+          externalUserId: A1_TELEGRAM_ID,
+          externalConversationId: "chat-owner-3",
+          text: "Your movers damaged my dresser and I want a refund.",
+          receivedAt: new Date().toISOString(),
+        },
+      );
+
+      expect(tables.owner_escalations).toHaveLength(1);
+      expect(tables.owner_escalations[0]).toMatchObject({
+        company_id: A1_COMPANY_ID,
+        reason: "owner_review_requested",
+      });
+      // Mason still replies — the customer isn't just sent away.
+      expect(adapter.sentMessages).toHaveLength(1);
+    });
+
+    it("does not escalate on an ordinary routine question", async () => {
+      const { admin, tables } = seedA1();
+      const adapter = new MockCommunicationAdapter("telegram");
+      const { aiModel } = recordingAiModel("We can be there at 9am on Tuesday.");
+
+      await receiveMessage(
+        { admin, adapter, aiModel },
+        {
+          channel: "telegram",
+          externalUserId: A1_TELEGRAM_ID,
+          externalConversationId: "chat-owner-4",
+          text: "What time can you arrive on Tuesday?",
+          receivedAt: new Date().toISOString(),
+        },
+      );
+
+      expect(tables.owner_escalations).toHaveLength(0);
+    });
+
+    it("is especially conservative about discounting a one-hour/minimum job, per the prompt instruction reaching the model", async () => {
+      const { admin } = seedA1();
+      const adapter = new MockCommunicationAdapter("telegram");
+      const { aiModel, seenRequests } = recordingAiModel(
+        "A one-hour minimum job is already priced tightly, so I'll keep this at the normal rate.",
+      );
+
+      await receiveMessage(
+        { admin, adapter, aiModel },
+        {
+          channel: "telegram",
+          externalUserId: A1_TELEGRAM_ID,
+          externalConversationId: "chat-small-job-1",
+          text: "It's just a one-hour minimum job, can I get a discount?",
+          receivedAt: new Date().toISOString(),
+        },
+      );
+
+      expect(seenRequests[0].systemPrompt).toContain(
+        "especially conservative on a small or minimum-size job",
+      );
     });
   });
 });
