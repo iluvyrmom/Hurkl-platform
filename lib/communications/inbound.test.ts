@@ -495,8 +495,8 @@ describe("receiveMessage", () => {
         },
       );
 
-      expect(seenRequests[0].systemPrompt).toContain("up to 5% off");
-      expect(seenRequests[0].systemPrompt).toContain("the preferred outcome is no discount");
+      expect(seenRequests[0].systemPrompt).toContain("never more than 5% under any circumstance");
+      expect(seenRequests[0].systemPrompt).toContain("Your default is 0% — no discount");
     });
 
     it("a company with no configured discount authority gets none, even though the pipeline ran a real lookup", async () => {

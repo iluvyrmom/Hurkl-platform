@@ -95,10 +95,28 @@ describe("buildMasonSystemPrompt", () => {
       discountAuthority: resolveDiscountAuthority(5),
       customerRequestedOwnerContact: false,
     });
-    expect(prompt).toContain("up to 5% off");
+    expect(prompt).toContain("Your default is 0% — no discount");
+    expect(prompt).toContain(
+      "typically up to 3% when it's genuinely useful to close a qualified job",
+    );
     expect(prompt).toContain("never more than 5% under any circumstance");
-    expect(prompt).toContain("the preferred outcome is no discount");
-    expect(prompt).toContain("should not automatically offer the maximum");
+    expect(prompt).toContain("you should not automatically offer it");
+    expect(prompt).toContain("Do not stack multiple reasons together");
+  });
+
+  it("a company configured below the hard ceiling never sees language claiming more than its own configured max", () => {
+    const prompt = buildMasonSystemPrompt({
+      companyName: "A-1 Best Moving",
+      isInternalHurklChannel: false,
+      senderRole: "customer",
+      discountAuthority: resolveDiscountAuthority(2),
+      customerRequestedOwnerContact: false,
+    });
+    expect(prompt).toContain("never more than 2% under any circumstance");
+    // The typical 3% figure is clamped down to the company's own 2% ceiling.
+    expect(prompt).toContain(
+      "typically up to 2% when it's genuinely useful to close a qualified job",
+    );
   });
 
   it("instructs conservatism on small/minimum-size jobs", () => {

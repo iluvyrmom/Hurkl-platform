@@ -23,6 +23,15 @@
  */
 export const DISCRETIONARY_DISCOUNT_HARD_CEILING_PERCENT = 5;
 
+/**
+ * The normal, expected level of discretion for closing a genuinely
+ * qualified job — not a separate authority ceiling, just where Mason
+ * should usually land before ever reaching for the hard ceiling above.
+ * Per the founder's refinement: "up to 3% when useful to close a
+ * qualified job; up to 5% absolute maximum."
+ */
+export const DISCRETIONARY_DISCOUNT_TYPICAL_PERCENT = 3;
+
 export interface DiscountAuthority {
   /** 0 means Mason has no standing discretion at all for this company — the safe default for any company that hasn't configured one. */
   maxDiscretionaryPercent: number;

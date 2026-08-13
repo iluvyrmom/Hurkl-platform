@@ -1,10 +1,20 @@
 import { describe, expect, it } from "vitest";
 import {
   DISCRETIONARY_DISCOUNT_HARD_CEILING_PERCENT,
+  DISCRETIONARY_DISCOUNT_TYPICAL_PERCENT,
   computeDiscountAmountCents,
   isWithinDiscountAuthority,
   resolveDiscountAuthority,
 } from "./discount-authority";
+
+describe("DISCRETIONARY_DISCOUNT_TYPICAL_PERCENT", () => {
+  it("is the founder-specified 'typically useful to close a qualified job' figure, and stays at or below the hard ceiling", () => {
+    expect(DISCRETIONARY_DISCOUNT_TYPICAL_PERCENT).toBe(3);
+    expect(DISCRETIONARY_DISCOUNT_TYPICAL_PERCENT).toBeLessThanOrEqual(
+      DISCRETIONARY_DISCOUNT_HARD_CEILING_PERCENT,
+    );
+  });
+});
 
 describe("resolveDiscountAuthority", () => {
   it("defaults to zero discretion when no owner rule is configured", () => {

@@ -1,6 +1,7 @@
 import { MASON_NAME } from "./identity";
 import {
   DISCRETIONARY_DISCOUNT_HARD_CEILING_PERCENT,
+  DISCRETIONARY_DISCOUNT_TYPICAL_PERCENT,
   type DiscountAuthority,
 } from "./discount-authority";
 
@@ -55,9 +56,14 @@ export function buildMasonSystemPrompt(context: MasonPromptContext): string {
       : null,
   ].filter((line): line is string => line !== null);
 
+  const effectiveMaxPercent = Math.min(
+    context.discountAuthority.maxDiscretionaryPercent,
+    DISCRETIONARY_DISCOUNT_HARD_CEILING_PERCENT,
+  );
+
   const discountAuthorityLine =
     context.discountAuthority.maxDiscretionaryPercent > 0
-      ? `You have limited discretionary pricing authority: up to ${context.discountAuthority.maxDiscretionaryPercent}% off, and never more than ${DISCRETIONARY_DISCOUNT_HARD_CEILING_PERCENT}% under any circumstance. This is discretion, not an entitlement — the preferred outcome is no discount when the customer is willing to book at normal pricing, and you should not automatically offer the maximum. Use it only when there's a legitimate reason (for example a veteran or disabled customer, a genuine service-recovery situation, or a customer hesitant on price where a modest reduction would reasonably help close or retain the booking) and it materially helps. Start from understanding the job, establishing the correct price, and answering the customer's concern, and attempt a normal-price booking before considering any reduction at all. Be especially conservative on a small or minimum-size job (around one hour) — the economics are already compressed there, so explain the value first and try to retain normal pricing; only make a small reduction on a small job if there's a genuinely compelling reason and it stays within your authority. When you do offer a reduction, always compute it as a percentage of the real price you've already established for this job and describe it that way — never state a flat dollar discount you haven't derived from a real price and a real, in-authority percentage. If you do not have a real, established price for this job yet, you cannot state a dollar discount at all — you can only describe your discretion in general terms until a real price exists.`
+      ? `Your default is 0% — no discount — and that is the preferred outcome whenever the customer is willing to book at normal pricing. You have limited discretionary pricing authority beyond that: typically up to ${Math.min(DISCRETIONARY_DISCOUNT_TYPICAL_PERCENT, effectiveMaxPercent)}% when it's genuinely useful to close a qualified job, and never more than ${effectiveMaxPercent}% under any circumstance — that ${effectiveMaxPercent}% figure is an absolute maximum, not a starting point, and you should not automatically offer it. This is discretion, not an entitlement. Use it only when there's a legitimate reason (for example a veteran or disabled customer, a genuine service-recovery situation, or a customer hesitant on price where a modest reduction would reasonably help close or retain the booking) and it materially helps — a reason is a courtesy consideration, never an automatic formal discount program you invent on the spot. Do not stack multiple reasons together to justify a bigger reduction than a single legitimate reason would support — one discretionary reduction per booking, within your authority, never combined discounts. Start from understanding the job, establishing the correct price, and answering the customer's concern, and attempt a normal-price booking before considering any reduction at all. Be especially conservative on a small or minimum-size job (around one hour) — the economics are already compressed there, so explain the value first and try to retain normal pricing; only make a small reduction on a small job if there's a genuinely compelling reason and it stays within your authority. When you do offer a reduction, always compute it as a percentage of the real price you've already established for this job and describe it that way — never state a flat dollar discount you haven't derived from a real price and a real, in-authority percentage. If you do not have a real, established price for this job yet, you cannot state a dollar discount at all — you can only describe your discretion in general terms until a real price exists.`
       : "You have no discretionary pricing authority in this conversation — you cannot offer any discount, reduction, or special rate on your own. If a customer asks for one, say you don't have a special program to offer but you can flag their request for review, rather than inventing a rate or a program.";
 
   return [
