@@ -27,6 +27,7 @@ function createFakeAdmin(
     messages: [],
     audit_log: [],
     leads: [],
+    owner_escalations: [],
   };
 
   function matches(row: FakeRow, filters: ["eq" | "gte", string, unknown][]) {
