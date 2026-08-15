@@ -10,6 +10,13 @@ import {
 import { routeModelTier } from "../mason/model-routing";
 import { buildMasonSystemPrompt, type LeadIntakeGoal } from "../mason/system-prompt";
 import { classifyMessageTaskType } from "../mason/task-classification";
+import { resolveDiscountAuthority } from "../mason/discount-authority";
+import { CRITICAL_REVIEW_FALLBACK_REPLY, reviewMasonReply } from "../mason/critical-review";
+import {
+  customerExplicitlyRequestedOwnerContact,
+  recordOwnerEscalation,
+  requiresOwnerApproval,
+} from "../mason/escalation";
 import {
   evaluateBudget,
   getBudgetStatus,
@@ -75,11 +82,8 @@ interface ConversationRow {
 interface ResolvedSender {
   profileId: string | null;
   companyId: string | null;
-  companyName: string;
   role: string;
   fullName: string | null;
-  /** Only ever set for web_public — Telegram's internal channel has no per-company published facts today. */
-  knownFacts?: string[] | null;
 }
 
 // Cost/history bound: how many prior messages are sent to the model as
@@ -165,6 +169,40 @@ async function countMessages(admin: SupabaseClient, conversationId: string): Pro
     .eq("conversation_id", conversationId);
   if (error || !data) return 0;
   return data.length;
+}
+
+interface CompanyContextRow {
+  name: string;
+  phone: string | null;
+  email: string | null;
+  discretionary_discount_max_percent: number | null;
+  /** Verified, owner-published facts (see migration 00000000000010_company_branding.sql) — only ever populated for a real, non-internal company; Mason's businessFacts context, never fabricated. */
+  known_facts: string[] | null;
+}
+
+/**
+ * Real, per-company data Mason's prompt and the critical-review guard
+ * both need: verified owner contact info, the owner-configured
+ * discretionary discount ceiling (see
+ * supabase/migrations/00000000000009_mason_discount_authority_and_escalations.sql),
+ * and any verified business facts (migration
+ * 00000000000010_company_branding.sql). Best-effort — a lookup failure
+ * degrades to "no verified contact info, no discount authority, no
+ * known facts" (the safe defaults), matching fetchRecentHistory's
+ * resilience pattern, rather than blocking the reply.
+ */
+async function fetchCompanyContext(
+  admin: SupabaseClient,
+  companyId: string,
+): Promise<CompanyContextRow | null> {
+  const { data, error } = await admin
+    .from("companies")
+    .select("name, phone, email, discretionary_discount_max_percent, known_facts")
+    .eq("id", companyId)
+    .maybeSingle();
+
+  if (error || !data) return null;
+  return data as CompanyContextRow;
 }
 
 interface InsertMessageInput {
@@ -270,19 +308,11 @@ export async function receiveMessage(
     if (!inbound.companyId) {
       throw new Error("web_public inbound messages require companyId");
     }
-    const { data: companyRow } = await admin
-      .from("companies")
-      .select("name, known_facts")
-      .eq("id", inbound.companyId)
-      .maybeSingle();
-    const resolvedCompany = companyRow as { name?: string; known_facts?: string[] | null } | null;
     sender = {
       profileId: null,
       companyId: inbound.companyId,
-      companyName: resolvedCompany?.name ?? HURKL_INTERNAL_COMPANY_NAME,
       role: "public_visitor",
       fullName: null,
-      knownFacts: resolvedCompany?.known_facts ?? null,
     };
   } else {
     try {
@@ -290,12 +320,6 @@ export async function receiveMessage(
       sender = {
         profileId: telegramSender.profileId,
         companyId: telegramSender.companyId,
-        // Every Telegram sender today is either hurkl_admin (null
-        // company_id) or linked to the internal pseudo-company — the
-        // internal-channel branch below never actually reads
-        // companyName for this case, so the internal name is a safe
-        // placeholder until a real tenant-linked Telegram sender exists.
-        companyName: HURKL_INTERNAL_COMPANY_NAME,
         role: telegramSender.role,
         fullName: telegramSender.fullName,
       };
@@ -356,13 +380,42 @@ export async function receiveMessage(
     metadata: { channel: inbound.channel },
   });
 
+  // A genuine owner-approval scenario (damage, refund, legal, etc.) is
+  // recorded as a real owner-action item independent of how Mason ends
+  // up wording its reply — Mason still replies and keeps helping (see
+  // system-prompt.ts's escalation framing); this just guarantees a
+  // durable record exists for the owner too, per the founder's "bring
+  // the issue to the owner rather than sending the customer away"
+  // instruction.
+  if (requiresOwnerApproval(inbound.text)) {
+    await recordOwnerEscalation(admin, {
+      companyId,
+      conversationId: conversation.id,
+      reason: "owner_review_requested",
+      customerSummary: inbound.text,
+    });
+  }
+
+  const companyContext = isInternalHurklChannel
+    ? null
+    : await fetchCompanyContext(admin, companyId);
+  const discountAuthority = resolveDiscountAuthority(
+    companyContext?.discretionary_discount_max_percent,
+  );
+  const customerRequestedOwnerContact = customerExplicitlyRequestedOwnerContact(inbound.text);
+
   const tier = routeModelTier(classifyMessageTaskType(inbound.text));
   const systemPrompt = buildMasonSystemPrompt({
-    companyName: sender.companyName,
+    companyName: companyContext?.name ?? HURKL_INTERNAL_COMPANY_NAME,
     isInternalHurklChannel,
     senderName: sender.fullName,
     senderRole: sender.role,
-    businessFacts: inbound.channel === "web_public" ? (sender.knownFacts ?? undefined) : undefined,
+    ownerPhone: companyContext?.phone ?? null,
+    ownerEmail: companyContext?.email ?? null,
+    discountAuthority,
+    customerRequestedOwnerContact,
+    businessFacts:
+      inbound.channel === "web_public" ? (companyContext?.known_facts ?? undefined) : undefined,
     leadIntake: inbound.channel === "web_public" ? WEB_PUBLIC_LEAD_INTAKE : undefined,
   });
 
@@ -453,6 +506,36 @@ export async function receiveMessage(
         userMessage: inbound.text,
         history,
       });
+
+      // The one deterministic safety check every real model reply
+      // passes through before a customer ever sees it — see
+      // lib/mason/critical-review.ts. Catches exactly the reported
+      // production failure (an invented flat-dollar discount) and any
+      // reply that claims more discount than this company's owner has
+      // actually authorized.
+      const review = reviewMasonReply(aiResponse.text, discountAuthority);
+      if (!review.ok) {
+        console.warn("Mason reply blocked by critical review", {
+          conversationId: conversation.id,
+          violations: review.violations,
+        });
+        await recordOwnerEscalation(admin, {
+          companyId,
+          conversationId: conversation.id,
+          reason: "unsupported_pricing_claim_blocked",
+          customerSummary: `Mason's draft reply was blocked before sending (${review.violations.join(", ")}). Customer's message: ${inbound.text}`,
+        });
+        await recordAuditLogEntry(admin, {
+          companyId,
+          action: "reply_blocked_by_critical_review",
+          autonomyTier: "tier_1_automatic",
+          policyReference: "mason.critical-review",
+          subjectType: "conversation",
+          subjectId: conversation.id,
+          metadata: { violations: review.violations },
+        });
+        aiResponse = { ...aiResponse, text: CRITICAL_REVIEW_FALLBACK_REPLY };
+      }
     } catch (error) {
       // A reasoning failure must not corrupt the conversation or leave
       // the sender with silence — fall back to a safe, clearly-labeled

@@ -63,7 +63,7 @@ Mason's actions are classified into three tiers. This classification is a securi
 
 **Tier 2 — Approval required** (Mason proposes, a human confirms before it executes):
 - Unusual customer commitments
-- Discounts
+- Discounts — unless a narrowly defined, pre-approved workflow has been explicitly configured by the owner, in which case it may run as Tier 1. **First concrete implementation, Knowledge Capture Session 010:** a bounded, owner-configured discretionary discount ceiling (`companies.discretionary_discount_max_percent`, hard-capped at 5% in code regardless of configuration — see `lib/mason/discount-authority.ts`), enforced by a deterministic pre-send review (`lib/mason/critical-review.ts`) that blocks any reply claiming a dollar-figure discount or a percentage above the configured ceiling before it ever reaches a customer, and records an owner-escalation row when it does. See `docs/communications-architecture.md`'s "Discretionary discount authority and owner escalation" section for the full design.
 - Refunds
 - High-value estimates or jobs
 - Pricing exceptions
