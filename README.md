@@ -22,6 +22,10 @@ Read these before making any product or engineering decision:
 - [`ROADMAP.md`](./ROADMAP.md) — phased build order from documentation through multi-company commercial release.
 - [`CLAUDE.md`](./CLAUDE.md) — permanent operating rules for any Claude Code session working in this repository.
 
+## Other applications in this repository
+
+`apps/a1-dump-estimator/` is an isolated, standalone A-1 pilot application (its own build, database, and README) — it is not part of Mason's industry-neutral core and does not describe HURKL's platform architecture.
+
 ## Development setup
 
 Not yet applicable — no application has been scaffolded. Setup instructions will be added in Phase 1 of `ROADMAP.md`, once a stack is confirmed and the project is initialized.
