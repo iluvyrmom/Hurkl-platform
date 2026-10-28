@@ -124,3 +124,5 @@ The founder's permanent-product-philosophy list (see `PRODUCT.md`) names "Compan
 ## Implementation note
 
 Per Knowledge Capture Session 009: build the executive architecture (this documentation, the domain contracts, the reporting hierarchy) first. Do **not** build autonomous production agents yet — no specialist executes anything for real until a specific milestone explicitly authorizes it.
+
+**Status update, 2026-10-27 (Session 013):** the founder authorized the first real build, starting with the Critic. `lib/mason/critic.ts` (Critic v1, deterministic, not yet wired into the live pipeline) is the first piece; the Designer and Builder follow, then the remaining roster. Each is built one at a time on its own branch, and nothing deploys without the founder's approval. See `JOURNAL.md`, Session 013, for the roster and the Designer/Builder sign-off rule.

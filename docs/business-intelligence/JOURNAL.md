@@ -261,6 +261,20 @@ Founder provided A-1's existing live site's source directly (resolving Session 0
 
 No new numbered principle beyond **028** (already promoted in the prior, now-superseded entry — see `PRINCIPLES.md`; its substance stands, just folded into Session 010's fuller escalation framing in the actual prompt code).
 
+### 2026-10-27 — Knowledge Capture Session 013: founder authorizes the first real HAL build (Critic first); agent roster approved; repo-vs-live drift verified
+
+**Authorization.** The founder directly instructed that the agent team under Mason be built. That is the "specific, explicit milestone" `CLAUDE.md` and `HAL_SPECIALIST_WORKFORCE.md` required before any real specialist is built. Scope as directed: the Critic first, then the Designer and Builder, then the rest — one at a time, each on its own branch, deterministic and zero-cost where possible, nothing deployed without the founder's approval. The owner still deals only with Mason.
+
+**Roster approved.** Marketing, Support, Sales, Receptionist, Inbox, Finance, Research, Review, Hiring, Designer, Builder, and the Critic. Marketing, Research and (for Finance) the accounting/payroll/receivables types already exist in `SpecialistType`; the others need new values, to be added with each agent's own commit rather than all at once. The earlier-planned Estimate Builder, Pricing & Discounts and Scheduling specialists fold into Sales and Receptionist.
+
+**Designer/Builder rule (founder-directed).** The Builder cannot ship anything until the Designer signs it off. Order: Builder builds → Designer reviews (changes go back to the Builder until sign-off) → Critic checks → Mason presents → founder approves. The Builder may publish only to a private preview. Any "done" requires attached evidence (screenshot, test result, or preview link), not a bare claim. Open point, not decided here: Designer and Builder produce website/software work rather than answering a customer company's request, so they are being modeled as HAL specialists with the strictest permissions (no production deploy) unless the founder says otherwise.
+
+**Built: Critic v1** (`lib/mason/critic.ts`, `critic.test.ts`). A pure, deterministic review gate — no AI call, no database, no cost. It reuses the live `reviewMasonReply()` for customer replies (so discount and identity rules still exist in one place) and adds: exposed internals, unverified completion claims, unverified prices, unauthorized promises, placeholder text, and work handoffs with no evidence. A check that lacks the facts it needs is reported in `checksSkipped`, never counted as a pass. Verdicts are PASS / FIX / BLOCK. **Not yet wired into `lib/communications/inbound.ts`** — that changes what real customers see and is a separate, deliberate step. Verified here: full suite 247/247 tests, typecheck, and lint clean. Not verified: behavior in a live conversation.
+
+**Verified current state, 2026-10-27 (do not assume this repo is the full source of truth).** The live Netlify deploy of `hurkl-platform` was created 2026-09-11 by direct upload (no commit reference); this repo's `main` was last updated 2026-08-15. The production `Hurkl-production` database has five migrations dated 2026-08-22 that are not in `supabase/migrations/`: `a1_booking_discount_policy`, `a1_conversation_calendar`, `a1_conversation_follow_through`, `a1_stripe_booking_deposits`, `a1_booking_advisor_fixes`. The repo has no Stripe code. So newer work exists that was built outside this repository. Not yet known: where that code lives, and whether the live site matches it. Until reconciled, do not assume the next migration number is free (Session 011's near-miss applies), and treat additive, unwired changes as the safe path.
+
+No new numbered principle. Standing rules honored: branch, no push to `main`, no secrets, no proprietary methods.
+
 <!-- Next entry: ### YYYY-MM-DD — ... -->
 
 
