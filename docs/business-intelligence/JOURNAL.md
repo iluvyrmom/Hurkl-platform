@@ -300,3 +300,11 @@ No new numbered principle. Standing rules honored: branch, no push to `main`, no
 - **Database change written, NOT applied:** `supabase/migrations/00000000000012_owner_only_and_time_off.sql` (locks `profiles`, owner-only policies, new `time_off_requests` table). Needs founder approval before it touches production. Until it is applied, the app code protects the pages but the database itself still allows the old access.
 - **Verified:** unit tests (321), type check, lint, and 16 new database tests run against a disposable local Postgres (61/61 integration tests pass). Not verified: the pages in a browser, or the migration against the live database.
 - **Knowledge Capture:** the decision above is recorded in SECURITY.md §3 and §14.
+
+### Session 013 addendum — Marketing specialist built (not switched on)
+
+- **Built (branch `hal/marketing-v1`, stacked on `dashboard/calendar`):** `lib/mason/specialists/marketing.ts` (definition) and `lib/mason/marketing-pipeline.ts` (draft -> checks + Critic -> owner decision). Marketing can only draft. It has no permission to publish, send, contact anyone, or spend money; there is no cold text/email/DM channel; claims such as licensed, insured, guarantee or best are blocked unless the company's own verified list contains them; prices and discounts go through the Critic's existing rules; new promotion is refused when the company is marked full (review requests still allowed); wording is never aimed at or away from people by who they are.
+- **Founder instruction:** do not switch Marketing on until it is finished. It is deliberately not wired into anything live; owner approval of wording does not publish anything, and a real publishing channel needs its own platform-rules and legal check first (CLAUDE.md).
+- **Verified:** 15 new tests, full suite 336/336, type check, lint. No AI call is made, so it costs nothing.
+- **Not built:** AI-written drafts (needs cost caps), where drafts are stored, and any publishing integration.
+- **Knowledge Capture:** no new business principle beyond the above.
