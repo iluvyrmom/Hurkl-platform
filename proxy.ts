@@ -66,5 +66,7 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
+  // The install manifest and its icons must load without a session (a browser
+  // fetches them before anyone signs in), so they bypass the sign-in redirect.
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|manifest.webmanifest|pwa/).*)"],
 };

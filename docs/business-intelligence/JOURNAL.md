@@ -300,3 +300,11 @@ No new numbered principle. Standing rules honored: branch, no push to `main`, no
 - **Database change written, NOT applied:** `supabase/migrations/00000000000012_owner_only_and_time_off.sql` (locks `profiles`, owner-only policies, new `time_off_requests` table). Needs founder approval before it touches production. Until it is applied, the app code protects the pages but the database itself still allows the old access.
 - **Verified:** unit tests (321), type check, lint, and 16 new database tests run against a disposable local Postgres (61/61 integration tests pass). Not verified: the pages in a browser, or the migration against the live database.
 - **Knowledge Capture:** the decision above is recorded in SECURITY.md §3 and §14.
+
+### Session 013 addendum — dashboard installable on the phone's home screen
+
+- **Request (stated):** the dashboard should be able to live on the founder's phone home screen.
+- **Built (branch `dashboard/home-screen`, stacked on `dashboard/calendar`):** a web app manifest (`app/manifest.ts`, opens full-screen at `/dashboard/overview`), icons in `public/pwa/`, home-screen metadata in `app/layout.tsx`, and the sign-in redirect in `proxy.ts` now lets the manifest and icons load before sign-in.
+- **Deliberate limit:** no service worker and no offline mode — the dashboard shows live private customer data and nothing private is stored on the phone.
+- **Verified:** tests, type check, lint, and a real production server run: the manifest and icons are served correctly and the install tags appear on the sign-in page. Not verified: the actual "Add to Home screen" on a phone — it needs the dashboard online at an HTTPS address first.
+- **Knowledge Capture:** no new business principle.
