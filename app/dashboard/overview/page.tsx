@@ -53,6 +53,10 @@ export default async function OverviewPage({ searchParams }: PageProps) {
     .maybeSingle();
 
   const isAdmin = profile?.role === "hurkl_admin";
+
+  // Customer, booking and money information is for the owner only. Everyone
+  // else goes to the calendar, where they can ask for days off.
+  if (!isAdmin && profile?.role !== "owner") redirect("/dashboard/calendar");
   let companyId: string | null = profile?.company_id ?? null;
 
   // HURKL admins have no company of their own; they pick one by its website

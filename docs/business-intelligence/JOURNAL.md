@@ -291,3 +291,12 @@ No new numbered principle. Standing rules honored: branch, no push to `main`, no
 - **Verified:** unit tests, type check, lint, production build; the upsert statement was run inside a rolled-back transaction on the production database (nothing persisted, confirmed).
 - **Not verified:** the page and the form have not been exercised in a browser against live data; and nothing in this repository reads `company_calendar_blocks` for the public booking flow (`/book/[slug]`), so whether the live site honors these blocks must be confirmed before relying on them.
 - **Knowledge Capture:** no new business principle beyond the rules above.
+
+### Session 013 addendum — owner-only customer data; employees request days off
+
+- **Founder decision (stated):** for now only the owner sees customer information and changes the calendar. Employees can only request a day off, or take it off the calendar if they want to work that day. Managers get the same limits for now. The owner can widen this later.
+- **Found while checking (real hole, not exploited — only one account exists):** on the live database any signed-in person could change their own `role` and `company_id` on `profiles`. Confirmed with a rolled-back test. The same live policies also let any company member read leads, customers, conversations, messages and bookings, and let employees write calendar blocks.
+- **Built (branch `dashboard/calendar`):** owner-only gating on the Overview, the dashboard customer panels, `/api/leads` and `/api/customers` reads, and the calendar write actions; employee view of the calendar (days blocked, no customer data) with request / cancel; owner view of requests with approve / turn down; `request_time_off` permission, with customer data and scheduling removed from the manager and employee roles.
+- **Database change written, NOT applied:** `supabase/migrations/00000000000012_owner_only_and_time_off.sql` (locks `profiles`, owner-only policies, new `time_off_requests` table). Needs founder approval before it touches production. Until it is applied, the app code protects the pages but the database itself still allows the old access.
+- **Verified:** unit tests (321), type check, lint, and 16 new database tests run against a disposable local Postgres (61/61 integration tests pass). Not verified: the pages in a browser, or the migration against the live database.
+- **Knowledge Capture:** the decision above is recorded in SECURITY.md §3 and §14.

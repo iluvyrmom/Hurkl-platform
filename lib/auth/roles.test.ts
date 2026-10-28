@@ -53,7 +53,9 @@ describe("roleHasPermission", () => {
   it("manager has no payroll or private-owner-notes access by default", () => {
     expect(roleHasPermission({ role: "manager" }, "view_payroll")).toBe(false);
     expect(roleHasPermission({ role: "manager" }, "access_private_owner_notes")).toBe(false);
-    expect(roleHasPermission({ role: "manager" }, "manage_scheduling")).toBe(true);
+    // Superseded by the Session 013 founder decision: managers can no longer
+    // manage scheduling for now (see the test at the bottom of this file).
+    expect(roleHasPermission({ role: "manager" }, "manage_scheduling")).toBe(false);
   });
 });
 
@@ -66,5 +68,22 @@ describe("assertPermission", () => {
     expect(() => assertPermission({ role: "employee" }, "change_pricing")).toThrow(
       PermissionDeniedError,
     );
+  });
+});
+
+describe("founder decision: only the owner sees customer data (Session 013)", () => {
+  it("lets employees and managers do nothing except ask for time off", () => {
+    for (const role of ["employee", "manager"] as const) {
+      expect(roleHasPermission({ role }, "request_time_off")).toBe(true);
+      expect(roleHasPermission({ role }, "view_customer_data")).toBe(false);
+      expect(roleHasPermission({ role }, "edit_customer_data")).toBe(false);
+      expect(roleHasPermission({ role }, "manage_scheduling")).toBe(false);
+      expect(roleHasPermission({ role }, "view_payments")).toBe(false);
+      expect(roleHasPermission({ role }, "view_pricing")).toBe(false);
+    }
+  });
+  it("keeps customers with no permissions at all", () => {
+    expect(roleHasPermission({ role: "customer" }, "request_time_off")).toBe(false);
+    expect(roleHasPermission({ role: "customer" }, "view_customer_data")).toBe(false);
   });
 });

@@ -25,7 +25,7 @@ export default async function DashboardPage() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("company_id")
+    .select("company_id, role")
     .eq("id", user.id)
     .maybeSingle();
 
@@ -49,9 +49,17 @@ export default async function DashboardPage() {
         <SignOutButton />
       </header>
       <main className="dashboard-content">
-        <Link href="/dashboard/overview">Open the full Overview →</Link>
-        <LeadsPanel />
-        <CustomersPanel />
+        {profile.role === "owner" ? (
+          <>
+            <Link href="/dashboard/overview">Open the full Overview →</Link>
+            <Link href="/dashboard/calendar">Open the calendar →</Link>
+            <LeadsPanel />
+            <CustomersPanel />
+          </>
+        ) : (
+          // Customer information is for the owner only.
+          <Link href="/dashboard/calendar">Open the calendar and ask for a day off →</Link>
+        )}
       </main>
     </div>
   );

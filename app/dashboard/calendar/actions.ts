@@ -18,6 +18,10 @@ export interface CalendarActionState {
 
 const SIGNED_OUT: CalendarActionState = { ok: false, message: "Please sign in again." };
 const NO_COMPANY: CalendarActionState = { ok: false, message: "We couldn't find your company." };
+const NOT_OWNER: CalendarActionState = {
+  ok: false,
+  message: "Only the owner can change the calendar.",
+};
 const FAILED: CalendarActionState = {
   ok: false,
   message: "Something went wrong and nothing was changed. Please try again.",
@@ -43,6 +47,7 @@ export async function blockDaysAction(
     const access = await resolveCompanyAccess(supabase, text(formData, "company") || undefined);
     if (access.kind === "signed_out") return SIGNED_OUT;
     if (access.kind === "no_company") return NO_COMPANY;
+    if (!access.isOwnerLevel) return NOT_OWNER;
 
     const now = new Date();
     const today = calendarToday(now);
@@ -118,6 +123,7 @@ export async function unblockDayAction(
     const access = await resolveCompanyAccess(supabase, text(formData, "company") || undefined);
     if (access.kind === "signed_out") return SIGNED_OUT;
     if (access.kind === "no_company") return NO_COMPANY;
+    if (!access.isOwnerLevel) return NOT_OWNER;
 
     const { error } = await supabase
       .from("company_calendar_blocks")

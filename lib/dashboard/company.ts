@@ -3,7 +3,16 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 export type CompanyAccess =
   | { kind: "signed_out" }
   | { kind: "no_company"; isAdmin: boolean }
-  | { kind: "ok"; userId: string; isAdmin: boolean; companyId: string; slug: string | null };
+  | {
+      kind: "ok";
+      userId: string;
+      role: string | null;
+      isAdmin: boolean;
+      /** Owner (or HURKL admin): the only people who may see customer data or change the calendar. */
+      isOwnerLevel: boolean;
+      companyId: string;
+      slug: string | null;
+    };
 
 /**
  * Work out which company the signed-in person may see, using their own
@@ -43,5 +52,14 @@ export async function resolveCompanyAccess(
   }
 
   if (!companyId) return { kind: "no_company", isAdmin };
-  return { kind: "ok", userId: user.id, isAdmin, companyId, slug };
+  const role: string | null = profile?.role ?? null;
+  return {
+    kind: "ok",
+    userId: user.id,
+    role,
+    isAdmin,
+    isOwnerLevel: isAdmin || role === "owner",
+    companyId,
+    slug,
+  };
 }

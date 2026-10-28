@@ -38,7 +38,8 @@ export type Permission =
   | "change_employee_assignments"
   | "view_payroll"
   | "access_private_owner_notes"
-  | "approve_high_risk_action";
+  | "approve_high_risk_action"
+  | "request_time_off";
 
 /**
  * Default-least-privilege base grant per role. Deliberately does NOT
@@ -66,26 +67,15 @@ const BASE_ROLE_PERMISSIONS: Readonly<Record<UserRole, ReadonlySet<Permission>>>
     "view_payroll",
     "access_private_owner_notes",
     "approve_high_risk_action",
+    "request_time_off",
   ]),
-  // Owner-delegated subset. No payroll and no private owner notes by
-  // default — those require an explicit owner grant, same discipline
-  // as employee financial permissions below.
-  manager: new Set<Permission>([
-    "view_customer_data",
-    "edit_customer_data",
-    "view_pricing",
-    "create_invoice",
-    "send_invoice",
-    "view_payments",
-    "manage_scheduling",
-    "change_employee_assignments",
-  ]),
-  // Narrow, job-scoped: schedule, assigned job/customer details, status
-  // updates — no payroll, no other employees' data, no financial
-  // controls (SECURITY.md §3; matches the master prompt's foreman
-  // restriction: "Foremen report job facts, foremen do not handle
-  // money").
-  employee: new Set<Permission>(["view_customer_data", "manage_scheduling"]),
+  // FOUNDER DECISION (Session 013): for now only the owner sees customer
+  // information, money, or changes the company calendar. Managers and
+  // employees can do exactly one thing: ask for a day off, or take their
+  // own request back. The owner can widen this later, deliberately, by
+  // adding permissions here (and in the matching database policies).
+  manager: new Set<Permission>(["request_time_off"]),
+  employee: new Set<Permission>(["request_time_off"]),
   customer: new Set([]),
 };
 

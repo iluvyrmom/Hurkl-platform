@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { authErrorResponse } from "../../../lib/auth/http-errors";
+import { assertPermission } from "../../../lib/auth/roles";
 import { requireAuthedProfile } from "../../../lib/auth/session";
 import { RateLimiter } from "../../../lib/http/rate-limit";
 import { LeadValidationError, submitLead, type LeadSubmission } from "../../../lib/leads/leads";
@@ -46,7 +47,8 @@ function clientIp(request: Request): string {
 export async function GET() {
   try {
     const supabase = await createSupabaseServerClient();
-    await requireAuthedProfile(supabase);
+    const { profile } = await requireAuthedProfile(supabase);
+    assertPermission(profile, "view_customer_data");
 
     const { data, error } = await supabase
       .from("leads")

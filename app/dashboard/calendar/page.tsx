@@ -9,8 +9,21 @@ import {
   type CalendarCell,
 } from "../../../lib/dashboard/calendar";
 import { resolveCompanyAccess } from "../../../lib/dashboard/company";
+import {
+  TIME_OFF_STATUS_LABEL,
+  canCancelTimeOff,
+  canDecideTimeOff,
+  type TimeOffRow,
+  type TimeOffStatus,
+} from "../../../lib/dashboard/time-off";
 import { createSupabaseServerClient } from "../../../lib/supabase/server";
-import { BlockDaysForm, UnblockButton } from "./block-forms";
+import {
+  BlockDaysForm,
+  CancelTimeOffButton,
+  DecideTimeOffButtons,
+  RequestTimeOffForm,
+  UnblockButton,
+} from "./block-forms";
 
 // Per-request auth state and live data — never statically prerendered.
 export const dynamic = "force-dynamic";
@@ -58,52 +71,97 @@ export default async function CalendarPage({ searchParams }: PageProps) {
   const monthStart = `${month}-01`;
   const companyQuery = access.slug ? `&company=${encodeURIComponent(access.slug)}` : "";
 
-  const [blockResult, bookingResult, leadResult, upcomingBlockResult] = await Promise.all([
-    supabase
-      .from("company_calendar_blocks")
-      .select("service_date,status,reason")
-      .eq("company_id", company.id)
-      // Include the grid's leading/trailing days from neighbouring months.
-      .gte("service_date", shiftDays(monthStart, -7))
-      .lte("service_date", shiftDays(monthStart, 38))
-      .limit(100),
-    supabase
-      .from("booking_reservations")
-      .select("lead_id,requested_dates,status,expires_at")
-      .eq("company_id", company.id)
-      .in("status", ["paid", "payment_pending"])
-      .limit(1000),
-    supabase.from("leads").select("id,name").eq("company_id", company.id).limit(1000),
-    supabase
-      .from("company_calendar_blocks")
-      .select("service_date,status,reason")
-      .eq("company_id", company.id)
-      .gte("service_date", today)
-      .order("service_date", { ascending: true })
-      .limit(60),
-  ]);
+  // Only the owner sees customer information. Everyone else gets the
+  // calendar days and their own time-off requests — customer queries are
+  // never even made for them.
+  const owner = access.isOwnerLevel;
+  const EMPTY = { data: [] as never[], error: null };
+
+  const [blockResult, bookingResult, leadResult, upcomingBlockResult, timeOffResult, peopleResult] =
+    await Promise.all([
+      supabase
+        .from("company_calendar_blocks")
+        .select(owner ? "service_date,status,reason" : "service_date,status")
+        .eq("company_id", company.id)
+        // Include the grid's leading/trailing days from neighbouring months.
+        .gte("service_date", shiftDays(monthStart, -7))
+        .lte("service_date", shiftDays(monthStart, 38))
+        .limit(100),
+      owner
+        ? supabase
+            .from("booking_reservations")
+            .select("lead_id,requested_dates,status,expires_at")
+            .eq("company_id", company.id)
+            .in("status", ["paid", "payment_pending"])
+            .limit(1000)
+        : Promise.resolve(EMPTY),
+      owner
+        ? supabase.from("leads").select("id,name").eq("company_id", company.id).limit(1000)
+        : Promise.resolve(EMPTY),
+      owner
+        ? supabase
+            .from("company_calendar_blocks")
+            .select("service_date,status,reason")
+            .eq("company_id", company.id)
+            .gte("service_date", today)
+            .order("service_date", { ascending: true })
+            .limit(60)
+        : Promise.resolve(EMPTY),
+      (owner
+        ? supabase
+            .from("time_off_requests")
+            .select("id,profile_id,service_date,status,note")
+            .eq("company_id", company.id)
+        : supabase
+            .from("time_off_requests")
+            .select("id,profile_id,service_date,status,note")
+            .eq("company_id", company.id)
+            .eq("profile_id", access.userId)
+      )
+        .in("status", ["requested", "approved"])
+        .gte("service_date", today)
+        .order("service_date", { ascending: true })
+        .limit(200),
+      owner
+        ? supabase.from("profiles").select("id,full_name").eq("company_id", company.id).limit(200)
+        : Promise.resolve(EMPTY),
+    ]);
 
   const loadFailed = Boolean(
     blockResult.error || bookingResult.error || leadResult.error || upcomingBlockResult.error,
   );
-  if (loadFailed) {
+  // The time-off table may not exist yet until its database change is applied.
+  const timeOffUnavailable = Boolean(timeOffResult.error);
+  if (loadFailed || timeOffUnavailable) {
     console.error(
       "calendar: load failed",
       blockResult.error?.message ??
         bookingResult.error?.message ??
         leadResult.error?.message ??
-        upcomingBlockResult.error?.message,
+        upcomingBlockResult.error?.message ??
+        timeOffResult.error?.message,
     );
   }
 
   const names = new Map((leadResult.data ?? []).map((l) => [l.id as string, l.name as string]));
-  const blocks: BlockInput[] = (blockResult.data ?? []) as BlockInput[];
+  const blocks: BlockInput[] = ((blockResult.data ?? []) as unknown as BlockInput[]).map((b) => ({
+    service_date: b.service_date,
+    status: b.status,
+    reason: owner ? (b.reason ?? null) : null,
+  }));
   const bookings: BookingInput[] = (bookingResult.data ?? []).map((row) => ({
     status: row.status as string,
     requested_dates: row.requested_dates as string[],
     expires_at: row.expires_at as string,
     customerName: names.get(row.lead_id as string) ?? "Customer",
   }));
+  const timeOff = ((timeOffResult.data ?? []) as unknown as TimeOffRow[]) ?? [];
+  const personName = new Map(
+    (peopleResult.data ?? []).map((p) => [
+      p.id as string,
+      (p.full_name as string) || "Team member",
+    ]),
+  );
 
   const view = buildMonth(month, blocks, bookings, now);
   const selectedDay = params.day;
@@ -114,12 +172,18 @@ export default async function CalendarPage({ searchParams }: PageProps) {
     <div className="ov-page">
       <main className="ov-main">
         <header className="ov-header">
-          <Link
-            className="ov-link"
-            href={`/dashboard/overview${access.slug ? `?company=${access.slug}` : ""}`}
-          >
-            ← Overview
-          </Link>
+          {owner ? (
+            <Link
+              className="ov-link"
+              href={`/dashboard/overview${access.slug ? `?company=${access.slug}` : ""}`}
+            >
+              ← Overview
+            </Link>
+          ) : (
+            <Link className="ov-link" href="/dashboard">
+              ← Back
+            </Link>
+          )}
           <h1 className="ov-title">{company.name} calendar</h1>
           <p className="ov-muted">Live numbers. Reload the page to refresh.</p>
         </header>
@@ -192,12 +256,16 @@ export default async function CalendarPage({ searchParams }: PageProps) {
             <li>
               <span className="cal-tag">LTD</span> limited
             </li>
-            <li>
-              <span className="cal-dot cal-dot-paid">2</span> paid bookings
-            </li>
-            <li>
-              <span className="cal-dot cal-dot-held">1</span> waiting on deposit
-            </li>
+            {owner && (
+              <>
+                <li>
+                  <span className="cal-dot cal-dot-paid">2</span> paid bookings
+                </li>
+                <li>
+                  <span className="cal-dot cal-dot-held">1</span> waiting on deposit
+                </li>
+              </>
+            )}
           </ul>
         </section>
 
@@ -212,7 +280,7 @@ export default async function CalendarPage({ searchParams }: PageProps) {
                   : "Open"}
               {selected.reason ? ` · ${selected.reason}` : ""}
             </p>
-            {selected.bookings.length === 0 ? (
+            {!owner ? null : selected.bookings.length === 0 ? (
               <p className="ov-muted">No customer bookings this day.</p>
             ) : (
               <ul className="ov-list">
@@ -226,40 +294,109 @@ export default async function CalendarPage({ searchParams }: PageProps) {
                 ))}
               </ul>
             )}
-            {selected.state !== "open" && !selected.isPast && (
+            {owner && selected.state !== "open" && !selected.isPast && (
               <UnblockButton companySlug={access.slug} date={selected.date} />
             )}
           </section>
         )}
 
-        <section className="ov-card" aria-labelledby="cal-block-h">
-          <h2 id="cal-block-h">Block days off</h2>
-          <BlockDaysForm
-            companySlug={access.slug}
-            defaultDate={selected && !selected.isPast ? selected.date : today}
-          />
-          <p className="ov-fine">Days a customer has already booked can&apos;t be blocked here.</p>
-        </section>
+        {timeOffUnavailable && (
+          <p role="alert" className="ov-warn">
+            Days-off requests aren&apos;t switched on yet.
+          </p>
+        )}
 
-        <section className="ov-card" aria-labelledby="cal-upcoming-h">
-          <h2 id="cal-upcoming-h">Your blocked days</h2>
-          {upcomingBlocks.length === 0 ? (
-            <p className="ov-muted">No blocked or limited days coming up.</p>
-          ) : (
-            <ul className="ov-list">
-              {upcomingBlocks.map((b) => (
-                <li key={b.service_date}>
-                  <strong>{b.service_date}</strong>
-                  <span className="ov-muted">
-                    {b.status === "unavailable" ? "Day off" : "Limited"}
-                    {b.reason ? ` · ${b.reason}` : ""}
-                  </span>
-                  <UnblockButton companySlug={access.slug} date={b.service_date} />
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
+        {owner && !timeOffUnavailable && (
+          <section className="ov-card" aria-labelledby="cal-req-h">
+            <h2 id="cal-req-h">Days-off requests</h2>
+            {timeOff.length === 0 ? (
+              <p className="ov-muted">No requests right now.</p>
+            ) : (
+              <ul className="ov-list">
+                {timeOff.map((r) => (
+                  <li key={r.id}>
+                    <strong>{r.service_date}</strong>
+                    <span className="ov-muted">
+                      {personName.get(r.profile_id) ?? "Team member"} ·{" "}
+                      {TIME_OFF_STATUS_LABEL[r.status as TimeOffStatus] ?? r.status}
+                      {r.note ? ` · ${r.note}` : ""}
+                    </span>
+                    {canDecideTimeOff(r, today) && (
+                      <DecideTimeOffButtons id={r.id} companySlug={access.slug} />
+                    )}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        )}
+
+        {!owner && !timeOffUnavailable && (
+          <>
+            <section className="ov-card" aria-labelledby="cal-ask-h">
+              <h2 id="cal-ask-h">Ask for a day off</h2>
+              <RequestTimeOffForm
+                defaultDate={selected && !selected.isPast ? selected.date : today}
+              />
+            </section>
+            <section className="ov-card" aria-labelledby="cal-mine-h">
+              <h2 id="cal-mine-h">Your days off</h2>
+              {timeOff.length === 0 ? (
+                <p className="ov-muted">You haven&apos;t asked for any days off.</p>
+              ) : (
+                <ul className="ov-list">
+                  {timeOff.map((r) => (
+                    <li key={r.id}>
+                      <strong>{r.service_date}</strong>
+                      <span className="ov-muted">
+                        {TIME_OFF_STATUS_LABEL[r.status as TimeOffStatus] ?? r.status}
+                        {r.note ? ` · ${r.note}` : ""}
+                      </span>
+                      {canCancelTimeOff(r, access.userId, today) && (
+                        <CancelTimeOffButton id={r.id} />
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
+          </>
+        )}
+
+        {owner && (
+          <>
+            <section className="ov-card" aria-labelledby="cal-block-h">
+              <h2 id="cal-block-h">Block days off</h2>
+              <BlockDaysForm
+                companySlug={access.slug}
+                defaultDate={selected && !selected.isPast ? selected.date : today}
+              />
+              <p className="ov-fine">
+                Days a customer has already booked can&apos;t be blocked here.
+              </p>
+            </section>
+
+            <section className="ov-card" aria-labelledby="cal-upcoming-h">
+              <h2 id="cal-upcoming-h">Your blocked days</h2>
+              {upcomingBlocks.length === 0 ? (
+                <p className="ov-muted">No blocked or limited days coming up.</p>
+              ) : (
+                <ul className="ov-list">
+                  {upcomingBlocks.map((b) => (
+                    <li key={b.service_date}>
+                      <strong>{b.service_date}</strong>
+                      <span className="ov-muted">
+                        {b.status === "unavailable" ? "Day off" : "Limited"}
+                        {b.reason ? ` · ${b.reason}` : ""}
+                      </span>
+                      <UnblockButton companySlug={access.slug} date={b.service_date} />
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
+          </>
+        )}
       </main>
     </div>
   );

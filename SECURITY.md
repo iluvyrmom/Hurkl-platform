@@ -42,6 +42,8 @@ Roles map directly to `PRODUCT.md`'s user roles:
 | Employee / Technician | Only what's needed for assigned work: schedule, relevant job/customer details, status updates — no payroll, no other employees' data, no business-wide financials |
 | Customer | No standing account by default; access is the conversation itself plus any narrow customer-facing views (e.g., appointment confirmation) |
 
+**Current restriction (founder decision, Session 013): until the owner widens it, only the Business Owner sees customer information, bookings, money, or changes the company calendar.** Managers and employees can do exactly one thing: ask for a day off, or take their own request back; the owner approves or turns down requests. The table above describes the intended long-term model; the restriction is enforced in `lib/auth/roles.ts`, the dashboard pages and server actions, and (once applied) `supabase/migrations/00000000000012_owner_only_and_time_off.sql`, and is covered by `lib/db/owner-only-time-off.integration.test.ts`. Employees may still see which days are blocked, but never customer names. (The private note on a blocked day is hidden in the app but not at the database level.)
+
 Authorization checks are enforced server-side, never trusted from client input, and layered on top of (not instead of) RLS.
 
 ### Internal company classification (billing authorization)
@@ -159,4 +161,5 @@ Because Mason maintains shared customer history across phone, website, text, and
 |---|---|---|
 | Data retention defaults | Set per §10 table; configurable per tenant | Founder approval, this session |
 | MFA policy | Mandatory before production launch for HURKL admins, client owners/admins, and anyone with billing/data-export/security-config/broad admin permissions; recommended (not mandatory) for narrowly-scoped employees | Founder approval, this session |
+| Employees/managers: days-off requests only; customer data owner-only | Founder decision (Session 013); also closes the self-promotion gap on `profiles.role`/`company_id`; migration 12 written, not yet applied to production | Session 013 |
 | Internal company classification | `companies.account_type` (production_customer/internal_hurkl/demo/development/partner), admin-only, database-enforced; one centralized billing-authorization layer, not scattered exceptions. `partner` billing terms left as an open question — see `docs/internal-ownership-system.md` | Founder request, this session |

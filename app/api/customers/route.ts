@@ -21,7 +21,8 @@ import { createSupabaseServerClient } from "../../../lib/supabase/server";
 export async function GET() {
   try {
     const supabase = await createSupabaseServerClient();
-    await requireAuthedProfile(supabase);
+    const { profile } = await requireAuthedProfile(supabase);
+    assertPermission(profile, "view_customer_data");
 
     // No .eq("company_id", ...) needed or wanted here — RLS already
     // guarantees this only ever returns the caller's own company's

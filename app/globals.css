@@ -945,3 +945,8 @@ a {
 .cal-unblock {
   margin-top: 8px;
 }
+.cal-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
