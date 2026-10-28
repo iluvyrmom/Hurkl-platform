@@ -210,6 +210,12 @@ export default async function OverviewPage({ searchParams }: PageProps) {
 
         <section className="ov-card" aria-labelledby="ov-calendar-h">
           <h2 id="ov-calendar-h">Days you&apos;ve blocked (next 60 days)</h2>
+          <Link
+            className="ov-link"
+            href={`/dashboard/calendar${company.id === profile?.company_id ? "" : `?company=${encodeURIComponent(params.company ?? "")}`}`}
+          >
+            Open the full calendar and block days →
+          </Link>
           <View section={calendar}>
             {(items) =>
               items.length === 0 ? (

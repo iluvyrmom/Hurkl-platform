@@ -282,3 +282,12 @@ No new numbered principle. Standing rules honored: branch, no push to `main`, no
 <!-- Next entry: ### YYYY-MM-DD — ... -->
 
 
+
+### Session 013 addendum — owner calendar with day-blocking
+
+- **Request:** a real calendar showing all needed info, plus a way to block days off.
+- **Built (branch `dashboard/calendar`, stacked on `dashboard/owner-overview`):** `/dashboard/calendar` — month grid (swipe-free Prev/Next links), today and past days marked, blocked days (OFF / LTD), paid bookings and live deposit holds per day, tap a day for details, a "Block days off" form (one day or a range, day off or limited, optional note), and an "Open this day" action. Logic lives in `lib/dashboard/calendar.ts`; writes are server actions (`app/dashboard/calendar/actions.ts`) running as the signed-in person, so existing `company_calendar_blocks` row-level-security policies (owner/manager/employee of the company, or `hurkl_admin`) are the final authority.
+- **Rules recorded:** a day with a paid booking or an unexpired deposit hold can never be blocked from this page; ranges are capped at 60 days and one year ahead; notes at 120 characters; no past days. Blocking does not cancel or refund anyone.
+- **Verified:** unit tests, type check, lint, production build; the upsert statement was run inside a rolled-back transaction on the production database (nothing persisted, confirmed).
+- **Not verified:** the page and the form have not been exercised in a browser against live data; and nothing in this repository reads `company_calendar_blocks` for the public booking flow (`/book/[slug]`), so whether the live site honors these blocks must be confirmed before relying on them.
+- **Knowledge Capture:** no new business principle beyond the rules above.
