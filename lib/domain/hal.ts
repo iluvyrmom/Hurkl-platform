@@ -44,7 +44,9 @@ export type SpecialistType =
   | "building_code_specialist"
   | "financial_exposure_specialist"
   | "strategic_intelligence_specialist"
-  | "memory_specialist";
+  | "memory_specialist"
+  | "designer_specialist"
+  | "builder_specialist";
 
 /**
  * The Quality Assurance Layer a specialist report passes through
