@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "../../lib/supabase/server";
 import { CustomersPanel } from "./customers-panel";
@@ -48,6 +49,7 @@ export default async function DashboardPage() {
         <SignOutButton />
       </header>
       <main className="dashboard-content">
+        <Link href="/dashboard/overview">Open the full Overview →</Link>
         <LeadsPanel />
         <CustomersPanel />
       </main>
