@@ -316,3 +316,10 @@ No new numbered principle. Standing rules honored: branch, no push to `main`, no
 - **Verified:** 15 new tests, full suite 336/336, type check, lint. No AI call is made, so it costs nothing.
 - **Not built:** AI-written drafts (needs cost caps), where drafts are stored, and any publishing integration.
 - **Knowledge Capture:** no new business principle beyond the above.
+
+## Addendum — Agents tab (Marketing drafts saved, owner approves)
+
+- Founder approved "go" on saving agent work and an owner-only Agents screen. Marketing drafts are saved in `agent_drafts` (migration 13, additive, owner/admin-only RLS). The owner hands in wording; Marketing's checks and the Critic both run; the owner approves or turns down.
+- Approving means the owner likes the wording. Nothing is published or sent anywhere, and no AI model is called yet (cost caps come first).
+- Company-verified claims (licensed, insured, etc.) are not configured anywhere yet, so none are treated as verified; such claims are sent back for changes.
+- Knowledge Capture: no new business rule beyond the above; the owner-only rule is the existing Session 013 decision.

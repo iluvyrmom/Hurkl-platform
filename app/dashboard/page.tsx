@@ -53,6 +53,7 @@ export default async function DashboardPage() {
           <>
             <Link href="/dashboard/overview">Open the full Overview →</Link>
             <Link href="/dashboard/calendar">Open the calendar →</Link>
+            <Link href="/dashboard/agents">Open the agents →</Link>
             <LeadsPanel />
             <CustomersPanel />
           </>

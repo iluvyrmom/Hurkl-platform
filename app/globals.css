@@ -950,3 +950,15 @@ a {
   flex-wrap: wrap;
   gap: 8px;
 }
+
+.cal-field textarea,
+.cal-field select {
+  min-height: 44px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(231, 221, 196, 0.3);
+  background: var(--company-navy);
+  color: var(--company-ink);
+  font-size: 1rem;
+  font-family: inherit;
+}
