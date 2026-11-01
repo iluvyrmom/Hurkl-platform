@@ -37,19 +37,19 @@ Status: **logic written and tested; not deployed.** The glue that talks to Strip
 11. **Reports read only the latest 1,000 transactions**, so totals go wrong after 1,000. To fix with a
     database summary when reports are rebuilt.
 
-## Open questions for the founder (not decided by the code)
+## Founder decisions (Nov 1, 2026)
 
-- **Shipping and tax are typed by the customer.** They are "passed through at cost," but a customer can
-  enter $0 and the protection reserve is the only cushion. Needs a rule: a server-side estimate, a
-  minimum, or a true-up at purchase time.
-- **Campaign service-fee minimum applies even with no gift cards** (a $2.99 minimum on a 0% base), as in
-  the old app. Keep or remove?
-- **Promo codes** have no usage limit or expiry, one code for everyone. Add limits?
-- **Pricing numbers** ($5 campaign, $0.10 per recipient, 5% and $2.99 to $14.99 consumer fee, $0.50 per
-  gift card) are the old placeholders, not confirmed.
-- **Gift card face value** is now charged up front. Confirm that is the business model (it is the only
-  way DEFERRD is not fronting the money).
+- **Customers pay for the gift cards up front.** Confirmed. DEFERRD never fronts gift card money.
+- **Shipping and tax are worked out by the system from the customer's information (delivery address), not typed by the customer.** Needs a tax/shipping source: Stripe Tax is the planned tax source once DEFERRD has its own Stripe account; shipping needs a server-side estimate rule (to design). Until built, the checkout must not trust customer-typed shipping or tax.
+- **No public promo codes.** Codes only for the founder personally and for family members the founder chooses. To build as admin-created, limited-use codes (use limit, optional expiry, note on who it is for), not one shared code in settings.
+- **DEFERRD gets its own Stripe account.** The old Base44 app was using the A-1 Best Moving Stripe account; DEFERRD money must not flow through A-1's account. Account to be created by the founder (test mode first).
+
+## Still open
+
+- **Pricing numbers** ($5 campaign, $0.10 per recipient, 5% and $2.99 to $14.99 consumer fee, $0.50 per gift card) are the old placeholders, not confirmed.
+- **Campaign service-fee minimum applies even with no gift cards** (a $2.99 minimum on a 0% base), as in the old app. Keep or remove?
 - **AI stock checks** (order monitoring) should be shown to staff as estimates only, with call limits.
+- Which legal entity owns the DEFERRD Stripe account (needed for Stripe business verification before going live; not needed for test mode).
 
 ## What is tested
 
