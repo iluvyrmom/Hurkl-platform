@@ -2,7 +2,7 @@
 // for Supabase's auth, then checks who can see/do what. Usage: node tests/rls.test.mjs
 import { PGlite } from '@electric-sql/pglite';
 import { pgcrypto } from '@electric-sql/pglite/contrib/pgcrypto';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 
 const db = new PGlite({ extensions: { pgcrypto } });
 await db.exec(`
@@ -14,7 +14,9 @@ await db.exec(`
   grant usage on schema public, auth to anon, authenticated, service_role;
   grant execute on function auth.uid() to anon, authenticated, service_role;
 `);
-await db.exec(readFileSync(new URL('../migrations/0001_deferrd_core.sql', import.meta.url), 'utf8'));
+for (const f of readdirSync(new URL('../migrations/', import.meta.url)).filter((x) => x.endsWith('.sql')).sort()) {
+  await db.exec(readFileSync(new URL('../migrations/' + f, import.meta.url), 'utf8'));
+}
 await db.exec(`grant all on all tables in schema public to service_role;
   grant execute on all functions in schema public to service_role;`);
 
@@ -146,6 +148,28 @@ r = await as('service_role', '', `insert into stripe_events(id,type) values ('ev
 check('same Stripe event cannot be recorded twice', !r.ok);
 r = await as('service_role', '', `update gift_requests set status='Delivered', payment_status='paid' where id='${myGift}'`);
 check('server (service role) can update protected fields', r.ok);
+
+// --- checkout lock + Stripe event claims
+await db.exec(`update gift_requests set status='Awaiting Payment', payment_status='pending', order_id='o1', total_due_today=10 where id='${myGift}'`);
+r = await as('authenticated', A, `update gift_requests set original_product_price=0.01, gift_message='x' where id='${myGift}'`);
+check('customer cannot change price once checkout has started', !r.ok || r.n === 0);
+r = await as('authenticated', A, `update gift_requests set status='Draft' where id='${myGift}'`);
+check('customer cannot reopen a request that is awaiting payment', !r.ok || r.n === 0);
+r = await as('authenticated', A, `select claim_stripe_event('evt_x','checkout.session.completed')`);
+check('browser cannot claim Stripe events', !r.ok);
+r = await as('service_role', '', `select claim_stripe_event('evt_1','t') as c`);
+check('first delivery of a Stripe event is claimed', r.ok && r.rows[0].c === true, show(r));
+r = await as('service_role', '', `select claim_stripe_event('evt_1','t') as c`);
+check('duplicate delivery while processing is refused', r.ok && r.rows[0].c === false);
+await db.exec(`select finish_stripe_event('evt_1', true)`);
+r = await as('service_role', '', `select claim_stripe_event('evt_1','t') as c`);
+check('finished event is never processed again', r.ok && r.rows[0].c === false);
+await db.exec(`select claim_stripe_event('evt_2','t'); select finish_stripe_event('evt_2', false, 'boom')`);
+r = await as('service_role', '', `select claim_stripe_event('evt_2','t') as c`);
+check('failed event can be retried', r.ok && r.rows[0].c === true);
+await db.exec(`select claim_stripe_event('evt_3','t'); update stripe_events set received_at = now() - interval '10 minutes' where id='evt_3'`);
+r = await as('service_role', '', `select claim_stripe_event('evt_3','t') as c`);
+check('event stuck after a crash can be taken over', r.ok && r.rows[0].c === true);
 
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

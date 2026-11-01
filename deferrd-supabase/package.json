@@ -2,6 +2,6 @@
   "name": "deferrd-supabase",
   "private": true,
   "type": "module",
-  "scripts": { "test": "node tests/rls.test.mjs" },
+  "scripts": { "test": "node tests/rls.test.mjs && node --test tests/pricing.test.mjs tests/money.test.mjs" },
   "devDependencies": { "@electric-sql/pglite": "^0.3.0" }
 }
