@@ -5,6 +5,7 @@ import {
   decideDraftAction,
   resubmitDraftAction,
   submitNewDraftAction,
+  submitSupportDraftAction,
   type AgentActionState,
 } from "./actions";
 
@@ -108,6 +109,27 @@ export function DecideButtons({ id, companySlug }: { id: string; companySlug: st
           Turn down
         </button>
       </div>
+      <Message state={state} />
+    </form>
+  );
+}
+
+export function NewSupportForm({ companySlug }: { companySlug: string | null }) {
+  const [state, action, pending] = useActionState(submitSupportDraftAction, INITIAL);
+  return (
+    <form action={action} className="cal-form">
+      {companySlug && <input type="hidden" name="company" value={companySlug} />}
+      <label className="cal-field">
+        <span>What the customer wrote</span>
+        <textarea name="customer_message" rows={4} maxLength={4000} required />
+      </label>
+      <label className="cal-field">
+        <span>Your reply (optional — I&apos;ll check it)</span>
+        <textarea name="reply" rows={4} maxLength={4000} />
+      </label>
+      <button type="submit" className="cal-button" disabled={pending}>
+        {pending ? "Checking…" : "Check it"}
+      </button>
       <Message state={state} />
     </form>
   );

@@ -39,6 +39,7 @@ export type SpecialistType =
   | "accounting_specialist"
   | "relationship_specialist"
   | "marketing_specialist"
+  | "support_specialist"
   | "deferrd_specialist"
   | "research_specialist"
   | "building_code_specialist"

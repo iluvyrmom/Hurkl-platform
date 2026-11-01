@@ -10,7 +10,7 @@ import { resolveCompanyAccess } from "../../../lib/dashboard/company";
 import { MARKETING_CHANNELS } from "../../../lib/mason/specialists/marketing";
 import type { DraftStage } from "../../../lib/mason/marketing-pipeline";
 import { createSupabaseServerClient } from "../../../lib/supabase/server";
-import { DecideButtons, NewDraftForm, ResubmitForm } from "./agent-forms";
+import { DecideButtons, NewDraftForm, NewSupportForm, ResubmitForm } from "./agent-forms";
 
 // Per-request auth state and live data — never statically prerendered.
 export const dynamic = "force-dynamic";
@@ -21,10 +21,20 @@ interface PageProps {
   searchParams: Promise<{ company?: string }>;
 }
 
-type Row = DraftRow & { created_at: string };
+type Row = DraftRow & { created_at: string; specialist: string; context: string | null };
 
-function channelLabel(channel: string): string {
-  return isMarketingChannel(channel) ? CHANNEL_LABELS[channel] : channel;
+function channelLabel(row: Row): string {
+  if (row.specialist === "support_specialist") return "Support reply";
+  return isMarketingChannel(row.channel) ? CHANNEL_LABELS[row.channel] : row.channel;
+}
+
+function CustomerSaid({ row }: { row: Row }) {
+  if (!row.context) return null;
+  return (
+    <p className="ov-muted" style={{ whiteSpace: "pre-wrap" }}>
+      Customer wrote: {row.context}
+    </p>
+  );
 }
 
 export default async function AgentsPage({ searchParams }: PageProps) {
@@ -41,7 +51,9 @@ export default async function AgentsPage({ searchParams }: PageProps) {
 
   const { data, error } = await supabase
     .from("agent_drafts")
-    .select("id,company_id,channel,stage,body,round,open_fixes,history,created_at")
+    .select(
+      "id,company_id,specialist,channel,stage,body,context,round,open_fixes,history,created_at",
+    )
     .eq("company_id", access.companyId)
     .order("created_at", { ascending: false })
     .limit(50);
@@ -76,6 +88,15 @@ export default async function AgentsPage({ searchParams }: PageProps) {
           <NewDraftForm companySlug={slug} channels={channels} />
         </section>
 
+        <section className="ov-card" aria-labelledby="ag-support">
+          <h2 id="ag-support">Answer a customer</h2>
+          <p className="ov-muted">
+            Anything about damage, injury, refunds, legal or a complaint is handed straight back to
+            you. Nothing is sent.
+          </p>
+          <NewSupportForm companySlug={slug} />
+        </section>
+
         <section className="ov-card ov-attention" aria-labelledby="ag-wait">
           <h2 id="ag-wait">{STAGE_LABELS.awaiting_owner}</h2>
           {by("awaiting_owner").length === 0 && (
@@ -83,7 +104,8 @@ export default async function AgentsPage({ searchParams }: PageProps) {
           )}
           {by("awaiting_owner").map((r) => (
             <article key={r.id}>
-              <strong>{channelLabel(r.channel)}</strong>
+              <strong>{channelLabel(r)}</strong>
+              <CustomerSaid row={r} />
               <p style={{ whiteSpace: "pre-wrap" }}>{r.body}</p>
               <DecideButtons id={r.id} companySlug={slug} />
             </article>
@@ -95,7 +117,8 @@ export default async function AgentsPage({ searchParams }: PageProps) {
             <h2 id="ag-fix">{STAGE_LABELS.needs_changes}</h2>
             {by("needs_changes").map((r) => (
               <article key={r.id}>
-                <strong>{channelLabel(r.channel)}</strong>
+                <strong>{channelLabel(r)}</strong>
+                <CustomerSaid row={r} />
                 <ul className="ov-list">
                   {(Array.isArray(r.open_fixes) ? (r.open_fixes as string[]) : []).map((fix) => (
                     <li key={fix}>
@@ -116,7 +139,11 @@ export default async function AgentsPage({ searchParams }: PageProps) {
               <ul className="ov-list">
                 {by(stage).map((r) => (
                   <li key={r.id}>
-                    <strong>{channelLabel(r.channel)}</strong>
+                    <strong>{channelLabel(r)}</strong>
+                    <CustomerSaid row={r} />
+                    {Array.isArray(r.open_fixes) && stage === "stalled" && (
+                      <span className="ov-warn">{(r.open_fixes as string[]).join(" ")}</span>
+                    )}
                     <span className="ov-muted" style={{ whiteSpace: "pre-wrap" }}>
                       {r.body}
                     </span>
