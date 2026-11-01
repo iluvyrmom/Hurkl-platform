@@ -30,7 +30,7 @@ An animated digital holiday card (Christmas, Thanksgiving) that a company pays D
 
 ## Open items
 
-- **Confirm the license** of the sleigh-bell file ("dragon-studio-christmas-sleigh-bells-jingling") allows commercial use before DEFERRD sells cards with it. Confirm the plan/terms for any other audio.
+- Sleigh-bell audio: founder states it was free and nothing else is needed (Nov 1, 2026). Founder-stated; the license text itself was not checked.
 - Wire the real gift card amount and claim link; only show the gift drop for a confirmed purchase.
 - Check how DEFERRD stores recipient names (today a name is required per contact) so "name optional" works end to end.
 - Test long company names against the card layout.

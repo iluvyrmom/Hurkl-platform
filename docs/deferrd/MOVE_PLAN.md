@@ -1,6 +1,6 @@
 # DEFERRD: Move Off Base44 (Plan)
 
-Status: **plan only. Nothing has been moved or changed.** Founder decision (Nov 1, 2026): DEFERRD should eventually leave Base44. This document is based on reading the app's actual code (read-only) on Nov 1, 2026. Items marked **Not checked** have not been read yet.
+Status: **plan approved by founder Nov 1, 2026. Step 2 database design written and tested on a throwaway in-memory database (`deferrd-supabase/`). Nothing has been applied to any real project, and no data has been moved.** Founder decision (Nov 1, 2026): DEFERRD should eventually leave Base44. This document is based on reading the app's actual code (read-only) on Nov 1, 2026. Items marked **Not checked** have not been read yet.
 
 ## Goal
 
@@ -66,7 +66,7 @@ Current data: zero campaigns. Live gift-request count **not checked**.
 - Which email provider, and the sending domain.
 - Final pricing for card campaigns (RevenueSettings values are unconfirmed).
 - Is the Tremendous account approved for production yet?
-- Sleigh-bell audio license must be confirmed for commercial use before cards are sold.
+- Sleigh-bell audio: founder says it was free and nothing else is needed (settled; license text not checked).
 - Any live customer gift requests that must carry over?
 
 ## Not checked yet
