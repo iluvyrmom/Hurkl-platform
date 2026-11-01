@@ -25,6 +25,7 @@ An animated digital holiday card (Christmas, Thanksgiving) that a company pays D
 - Founder decision (Nov 1, 2026): DEFERRD should eventually move out of Base44.
 - Until then, keep the card pages and card files self-contained and portable (plain HTML/JS plus audio files), so they can move without a rewrite.
 - Do not buy a Base44 plan upgrade just to unlock backend functions, unless the founder decides to. The secure card lookup (`/card/:token`) is locked on the current plan, so real recipient links cannot work yet; sample-data preview (`/card/preview`) does.
+- See `docs/deferrd/MOVE_PLAN.md` for the move plan.
 - Moving off Base44 needs its own plan first (data export, payments, auth, and email), not a rushed copy.
 
 ## Open items
