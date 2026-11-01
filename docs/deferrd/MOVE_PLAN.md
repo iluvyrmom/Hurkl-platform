@@ -1,6 +1,6 @@
 # DEFERRD: Move Off Base44 (Plan)
 
-Status: **plan approved by founder Nov 1, 2026. Step 2 database design written and tested on a throwaway in-memory database (`deferrd-supabase/`). Nothing has been applied to any real project, and no data has been moved.** Founder decision (Nov 1, 2026): DEFERRD should eventually leave Base44. This document is based on reading the app's actual code (read-only) on Nov 1, 2026. Items marked **Not checked** have not been read yet.
+Status: **plan approved by founder Nov 1, 2026. Step 2 done: database design (`deferrd-supabase/`) tested in memory (50 checks) and applied to a new empty free-plan Supabase project `deferrd` (16 spot checks passed there). No real data has been moved.** Founder decision (Nov 1, 2026): DEFERRD should eventually leave Base44. This document is based on reading the app's actual code (read-only) on Nov 1, 2026. Items marked **Not checked** have not been read yet.
 
 ## Goal
 
