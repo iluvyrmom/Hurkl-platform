@@ -20,6 +20,13 @@ An animated digital holiday card (Christmas, Thanksgiving) that a company pays D
 - Christmas and Thanksgiving cards exist as **samples only** (private Claude artifacts in the founder's account). They are **not in DEFERRD yet**.
 - Putting them into DEFERRD uses Base44 credits; show the founder the exact changes first.
 
+## Direction: DEFERRD leaves Base44 eventually
+
+- Founder decision (Nov 1, 2026): DEFERRD should eventually move out of Base44.
+- Until then, keep the card pages and card files self-contained and portable (plain HTML/JS plus audio files), so they can move without a rewrite.
+- Do not buy a Base44 plan upgrade just to unlock backend functions, unless the founder decides to. The secure card lookup (`/card/:token`) is locked on the current plan, so real recipient links cannot work yet; sample-data preview (`/card/preview`) does.
+- Moving off Base44 needs its own plan first (data export, payments, auth, and email), not a rushed copy.
+
 ## Open items
 
 - **Confirm the license** of the sleigh-bell file ("dragon-studio-christmas-sleigh-bells-jingling") allows commercial use before DEFERRD sells cards with it. Confirm the plan/terms for any other audio.
