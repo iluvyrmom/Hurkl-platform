@@ -261,6 +261,10 @@ Founder provided A-1's existing live site's source directly (resolving Session 0
 
 No new numbered principle beyond **028** (already promoted in the prior, now-superseded entry — see `PRINCIPLES.md`; its substance stands, just folded into Session 010's fuller escalation framing in the actual prompt code).
 
+### 2026-11-09 — Account & asset ownership inventory recorded
+
+Founder asked to make sure HURKL can't be lost. Verified which login owns each piece (GitHub `iluvyrmom`; Netlify `josh@hurkl.com`; Supabase org holding `Hurkl-production`, `your-big-job`, `deferrd`) and recorded it in `docs/account-ownership.md`, along with the unmerged October/November branches (HAL agents, owner dashboard, DEFERRD) that exist only on GitHub branches, not `main`. The Anthropic account behind Mason's key is still unidentified — not guessed; flagged for the founder. Standing rule: `josh@hurkl.com` is the intended owner of every HURKL-owned account (already in `CLAUDE.md`); `docs/account-ownership.md` is where the verified current state lives. No new numbered principle.
+
 <!-- Next entry: ### YYYY-MM-DD — ... -->
 
 
