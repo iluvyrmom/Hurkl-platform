@@ -6,3 +6,6 @@ package-lock.json
 
 # Prose docs keep their own hand-written style; Prettier here is for code only.
 *.md
+
+# Exact copy of the live owner-push Edge Function (kept byte-for-byte in its original style).
+owner-app/supabase/functions/owner-push/

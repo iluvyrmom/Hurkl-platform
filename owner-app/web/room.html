@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#0B0B0D" />
+    <!-- The room link is a secret: never send it to other sites, never let search engines list it. -->
+    <meta name="referrer" content="no-referrer" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Job Room</title>
+    <link rel="icon" href="/icon-192.png" />
+    <link rel="stylesheet" href="/app.css" />
+    <link rel="stylesheet" href="/jobrooms.css" />
+  </head>
+  <body class="guest-room">
+    <header class="top">
+      <div class="top-inner">
+        <div class="top-text">
+          <div class="eyebrow">Job Room</div>
+          <div class="brand" id="roomName">Loading…</div>
+          <div class="sub" id="companyName"></div>
+        </div>
+      </div>
+    </header>
+
+    <main class="wrap">
+      <p class="loading" id="loading">Opening your Job Room…</p>
+
+      <section id="problem" class="card" hidden>
+        <h1 id="problemTitle">This link isn't working</h1>
+        <p class="muted" id="problemText"></p>
+      </section>
+
+      <section id="nameCard" class="card" hidden>
+        <h1>Welcome</h1>
+        <p class="muted">
+          This is a private space to share photos and ideas for an upcoming job. What's your name?
+          It shows next to your messages.
+        </p>
+        <form id="nameForm" novalidate>
+          <label for="guestName">Your name</label>
+          <input id="guestName" type="text" autocomplete="name" maxlength="60" required />
+          <button class="primary" type="submit" id="nameBtn">Continue</button>
+          <p class="error" id="nameError" role="alert"></p>
+        </form>
+      </section>
+
+      <section id="chat" hidden>
+        <p class="muted room-note">
+          Only people with this link can see this room. Photos: JPG, PNG, or HEIC, up to 10 MB each.
+        </p>
+        <div id="msgs" class="msgs" aria-live="polite"></div>
+        <div id="composerSlot"></div>
+      </section>
+    </main>
+
+    <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+
+    <script src="/config.js"></script>
+    <script src="/jobroom-ui.js"></script>
+    <script src="/room.js"></script>
+  </body>
+</html>

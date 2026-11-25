@@ -31,5 +31,5 @@
     ".next/dev/types/**/*.ts",
     "**/*.mts"
   ],
-  "exclude": ["node_modules"]
+  "exclude": ["node_modules", "owner-app/supabase/functions/*/index.ts", "owner-app/supabase/functions/owner-push"]
 }

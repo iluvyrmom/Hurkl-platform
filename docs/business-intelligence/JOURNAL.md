@@ -265,6 +265,14 @@ No new numbered principle beyond **028** (already promoted in the prior, now-sup
 
 Founder asked to make sure HURKL can't be lost. Verified which login owns each piece (GitHub `iluvyrmom`; Netlify `josh@hurkl.com`; Supabase org holding `Hurkl-production`, `your-big-job`, `deferrd`) and recorded it in `docs/account-ownership.md`, along with the unmerged October/November branches (HAL agents, owner dashboard, DEFERRD) that exist only on GitHub branches, not `main`. The Anthropic account behind Mason's key is still unidentified — not guessed; flagged for the founder. Standing rule: `josh@hurkl.com` is the intended owner of every HURKL-owned account (already in `CLAUDE.md`); `docs/account-ownership.md` is where the verified current state lives. No new numbered principle.
 
+### 2026-11-25 — Job Rooms add-on built; repo found far behind production
+
+Founder asked for "Job Rooms" in the HURKL client app: a private photo + chat space per upcoming job, shared by link with a customer or third party who has no account. Built in the real owner app (`hurkl-mason-app`, a static app on `Hurkl-production`), not in this repo's Next.js dashboard, after verifying that the app with Leads / Mason switches / Billing / From HURKL is that site (founder's screenshots confirmed it). Decisions recorded: sold as a per-company add-on that only HURKL can turn on (`companies.job_rooms_addon`, default off); owner-only (not managers, employees, or `hurkl_admin`); links expire after 90 days without activity and the owner can renew, turn off, or replace them; guests enter a name once per phone; photos JPG/PNG/HEIC up to 10 MB in a private bucket via short-lived signed links; owner alerted by the existing phone push (`owner-push`), at most once per room per 10 minutes. Full detail: `owner-app/README.md`; security decision: `SECURITY.md` §1; capability: `PRODUCT.md`.
+
+**Important finding (not a decision):** this repository no longer reflects production. `Hurkl-production` has ~29 migrations applied directly that are not in `supabase/migrations/` (owner app, billing/Stripe, Angi lead intake and follow-up, push notifications, A-1 booking/deposits, and an unrelated "Rescue Kennel" studio sharing the same database), 11 Edge Functions whose source is not in git, and the owner app itself is deployed by direct upload. Recorded in `docs/account-ownership.md`; recommended fix is to export those sources into git before more is built on top of them.
+
+The founder's request also contained an unfilled template line ("changes I want to the features at the bottom of the app: [TYPE YOUR CHANGES HERE]", and Travis's email/phone) — not acted on; asked back.
+
 <!-- Next entry: ### YYYY-MM-DD — ... -->
 
 

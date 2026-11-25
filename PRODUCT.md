@@ -94,6 +94,7 @@ Mason is **not** industry-specific. It must never be hardcoded to moving, HVAC, 
 - Emergency pause and slowdown controls, owned by the business owner.
 - Cost and usage controls, owned by the business owner.
 - Multi-company tenant isolation — no company ever sees another company's data.
+- **Job Rooms (paid add-on, built 2026-11-25, not yet live).** A private, shareable photo + chat space for one upcoming job: the owner creates a room in the owner app and texts its link to a customer, contractor, or property manager, who joins with no account and sees only that one room. HURKL turns it on per company; links can be turned off, replaced, and expire after 90 days of no activity. An owner tool, not a Mason capability — Mason does not read or post in rooms. Full detail in `owner-app/README.md`; security model in `SECURITY.md` §1.
 - Voice-first operational logging ("Talk to Mason") — natural speech capture with automatic classification and linking, built on the principle that friction kills recording. Full detail in `docs/business-intelligence/VOICE_FIRST_CAPTURE.md`.
 
 ## Growth & capacity management (future capabilities)

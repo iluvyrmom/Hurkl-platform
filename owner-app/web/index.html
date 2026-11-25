@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#0B0B0D" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="HURKL" />
+    <title>Mason · HURKL</title>
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="icon" href="/icon-192.png" />
+    <link rel="stylesheet" href="/app.css" />
+    <link rel="stylesheet" href="/jobrooms.css" />
+  </head>
+  <body>
+    <div class="backdrop" aria-hidden="true"><img src="/hurkl-logo.jpg" alt="" /></div>
+    <header class="top">
+      <div class="top-inner">
+        <div class="avatar-wrap" aria-hidden="true">
+          <img class="avatar" src="/mason-face-256.png" alt="" />
+          <span class="live-dot"></span>
+        </div>
+        <div class="top-text">
+          <div class="eyebrow">Mason · by HURKL</div>
+          <div class="brand" id="companyName">Mason</div>
+          <div class="sub">Your office manager is on duty</div>
+        </div>
+        <button class="link-btn" id="refreshBtn" type="button">Refresh</button>
+      </div>
+    </header>
+
+    <main id="app" class="wrap">
+      <p class="loading" id="loading">Loading…</p>
+
+      <!-- Sign in -->
+      <section id="signin" class="card">
+        <img
+          class="signin-logo"
+          src="/hurkl-logo-sm.jpg"
+          alt="HURKL: Helping business owners reclaim their lives."
+        />
+        <h1>Sign in</h1>
+        <p class="muted">
+          Use the email and sign-in code HURKL gave you. You only do this once on this phone.
+        </p>
+        <form id="signinForm" novalidate>
+          <label for="email">Email</label>
+          <input id="email" type="email" autocomplete="email" inputmode="email" required />
+          <label for="code">Sign-in code</label>
+          <input
+            id="code"
+            type="text"
+            inputmode="numeric"
+            autocomplete="one-time-code"
+            pattern="[0-9]{6,8}"
+            maxlength="8"
+            required
+          />
+          <button class="primary" type="submit" id="signinBtn">Sign in</button>
+          <p class="error" id="signinError" role="alert"></p>
+        </form>
+      </section>
+
+      <!-- Signed in -->
+      <div id="main">
+        <section id="notifyCard" class="card notice">
+          <h2>Get lead alerts on this phone</h2>
+          <p id="notifyText">Turn on notifications so you know the second a new lead comes in.</p>
+          <button class="primary" type="button" id="notifyBtn">Turn on notifications</button>
+          <p class="error" id="notifyError" role="alert"></p>
+        </section>
+
+        <section id="setup" class="section">
+          <h2>Setup info</h2>
+          <p class="muted" id="setupProgress">
+            Fill this in right here. It stays private to your company.
+          </p>
+          <div id="setupList" class="list"></div>
+        </section>
+
+        <section id="attention" class="section">
+          <h2>Needs you</h2>
+          <div id="attentionList" class="list"></div>
+        </section>
+
+        <section id="leads" class="section">
+          <h2>Leads</h2>
+          <div id="leadList" class="list"></div>
+        </section>
+
+        <!-- Job Rooms add-on: stays hidden unless HURKL has turned it on for this business (jobrooms-owner.js). -->
+        <section id="jobrooms" class="section" hidden>
+          <h2>Job Rooms</h2>
+          <p class="muted">
+            A private photo and chat space for one job. Text the link to a customer, contractor, or
+            property manager. They only ever see that one room.
+          </p>
+          <button class="primary" type="button" id="newRoomBtn">+ New Job Room</button>
+          <div id="newRoomBox" style="margin-top: 14px" hidden></div>
+          <div id="roomList" class="list" style="margin-top: 14px"></div>
+        </section>
+
+        <section id="switches" class="section">
+          <h2>Mason switches</h2>
+          <p class="muted">
+            Slide all the way across to change a switch. A tap won't change anything.
+          </p>
+          <div id="switchList" class="list"></div>
+        </section>
+
+        <section id="billing" class="section">
+          <h2>Billing</h2>
+          <div id="billingBox" class="card"><p class="muted">Loading…</p></div>
+        </section>
+
+        <section id="hurkl" class="section">
+          <h2>From HURKL</h2>
+          <div id="newsList" class="list"></div>
+          <a class="secondary" id="textJosh" href="sms:+15036760998">Text Josh at HURKL</a>
+        </section>
+
+        <footer class="brand-foot">
+          <img src="/hurkl-logo-sm.jpg" alt="HURKL" />
+          <p>Helping business owners reclaim their lives.</p>
+          <button class="link-btn" id="signOutBtn" type="button">Sign out of this phone</button>
+        </footer>
+      </div>
+    </main>
+
+    <!-- One Job Room, full screen (owner) -->
+    <div
+      id="roomView"
+      class="room-view"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="roomTitle"
+      hidden
+    >
+      <header class="room-top">
+        <button class="link-btn room-back" id="roomBack" type="button">‹ Back</button>
+        <div class="room-top-text">
+          <div class="eyebrow">Job Room</div>
+          <div class="room-title" id="roomTitle"></div>
+        </div>
+      </header>
+      <div class="room-body">
+        <div id="roomLinkBox"></div>
+        <div id="roomMsgs" class="msgs" aria-live="polite"></div>
+      </div>
+      <div id="roomComposerSlot"></div>
+    </div>
+
+    <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+
+    <script src="https://js.stripe.com/v3/"></script>
+    <script src="/supabase.js"></script>
+    <script src="/config.js"></script>
+    <script src="/app.js"></script>
+    <script src="/jobroom-ui.js"></script>
+    <script src="/jobrooms-owner.js"></script>
+  </body>
+</html>

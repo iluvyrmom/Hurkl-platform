@@ -18,6 +18,8 @@ Per `CLAUDE.md` ("Company boundaries and Mason ownership"), **`josh@hurkl.com` i
 | Database | Supabase project `Hurkl-production` | Supabase org containing it (also holds `your-big-job` and `deferrd`) | Verified `ACTIVE_HEALTHY`. The other two projects are paused (`INACTIVE`) — free-tier paused projects must be restored from the Supabase dashboard before their restore window lapses. |
 | AI (Mason's reasoning) | Anthropic Console | **Unknown** — the key in Netlify was set 2026-08; no Anthropic email found in the A-1 Gmail inbox | Not yet funded. Founder to confirm the account (likely `josh@hurkl.com`), or create a new key under `josh@hurkl.com` and replace the Netlify value. |
 | Telegram bot | `M_Hurklbot` (BotFather) | Founder's Telegram account | Bot token lives in Netlify env only. |
+| Owner app ("Mason · HURKL" phone app) | Netlify site `hurkl-mason-app` | Netlify account `josh@hurkl.com` | Verified 2026-11-25. **Deployed by direct upload — its source is not in git.** Job Rooms add-on source lives in `owner-app/`. |
+| Edge Functions | `Hurkl-production` (11 functions: owner-push, owner-billing, owner-invite, stripe-billing-webhook, angi-lead-webhook, lead-followup-worker, and others) | Supabase org | Verified 2026-11-25. **Source not in git.** |
 | Domain | `hurkl.com` (email `josh@hurkl.com`) | Not verified from this environment | Founder to confirm registrar login and that auto-renew is on — losing the domain also loses the `josh@hurkl.com` email, which every account above recovers through. |
 
 ## Unmerged work (exists on GitHub branches, not on `main`)
@@ -28,6 +30,10 @@ As of 2026-11-09 these branches have commits not in `main`. They are safe on Git
 - Owner dashboard (Oct 27): `dashboard/owner-overview`, `dashboard/home-screen`, `dashboard/calendar`
 - DEFERRD (Nov 1): `feat/deferrd-supabase-schema`, `feat/deferrd-money-core`, `docs/deferrd-move-plan`, `docs/deferrd-holiday-cards`
 - Older (Aug), most likely already superseded by merged work — verify before deleting: the remaining `feature/*`, `fix/*`, `docs/*`, `claude/*`, `phase-1-foundation`, `ci-controlled-failure-test` branches.
+
+## Repo vs. production drift (2026-11-25)
+
+`Hurkl-production` has ~29 migrations applied directly (2026-08-22 onward) that are not in `supabase/migrations/`, and the owner app plus 11 Edge Functions are deployed without git. If those accounts or the session that built them were lost, that code would be lost. Recommended next step: export the owner app files, Edge Function sources, and applied migration SQL into this repository (or a private one) before building more on them.
 
 ## Founder checklist to secure HURKL
 
