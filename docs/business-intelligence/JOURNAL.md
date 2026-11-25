@@ -273,6 +273,10 @@ Founder asked for "Job Rooms" in the HURKL client app: a private photo + chat sp
 
 The founder's request also contained an unfilled template line ("changes I want to the features at the bottom of the app: [TYPE YOUR CHANGES HERE]", and Travis's email/phone) — not acted on; asked back.
 
+### 2026-11-25 (later) — Launch-review decisions
+
+Founder decisions recorded: Job Rooms uses share links (not access codes) and must also allow short videos (up to 2 minutes); Angi follow-up becomes owner-adjustable (first call always immediate, two follow-up call delays picked from fixed choices, text on/off); the water shut-off picture becomes owner-customizable (HURKL stock photo or own photo; standard text or owner-edited text, with one tap back to standard); HURKL gets a parent-company override on every company setting (turn off, reset, lock); Mason's ElevenLabs voice/behavior must stay open to continuous tuning; customer data will later be shared with DEFERRD only for the business's own customer thank-you cards/coupons, under strict isolation (see `PRODUCT.md`, `SECURITY.md` §1). Nothing built or deployed from these yet — awaiting founder "go" after the launch review.
+
 <!-- Next entry: ### YYYY-MM-DD — ... -->
 
 
