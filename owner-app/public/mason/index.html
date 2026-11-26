@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0B0B0D">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Mason">
+<title>Mason</title>
+<link rel="manifest" href="/mason/manifest.webmanifest">
+<link rel="apple-touch-icon" href="/mason/mason-apple-touch-icon.png">
+<link rel="icon" href="/mason/mason-icon-192.png">
+<link rel="stylesheet" href="/app.css">
+<link rel="stylesheet" href="/mason/mason.css">
+</head>
+<body>
+<div class="backdrop" aria-hidden="true"><img src="/hurkl-logo.jpg" alt=""></div>
+<header class="top">
+  <div class="top-inner">
+    <div class="avatar-wrap" aria-hidden="true">
+      <img class="avatar" src="/mason-face-256.png" alt="">
+      <span class="live-dot"></span>
+    </div>
+    <div class="top-text">
+      <div class="eyebrow">HURKL · Office manager</div>
+      <div class="brand">Mason</div>
+      <div class="sub" id="topSub">Here for you, Josh</div>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <p class="loading" id="loading">Loading…</p>
+
+  <section id="signin" class="card" hidden>
+    <h1>Sign in</h1>
+    <p class="muted">Use your HURKL admin email and the sign-in code from HURKL. You only do this once on this phone.</p>
+    <form id="signinForm" autocomplete="on">
+      <label for="email">Email</label>
+      <input id="email" type="email" inputmode="email" autocomplete="email" required>
+      <label for="code">Sign-in code</label>
+      <input id="code" inputmode="numeric" autocomplete="one-time-code" maxlength="8" required>
+      <button class="primary" id="signinBtn" type="submit">Sign in</button>
+      <p class="error" id="signinError" role="alert"></p>
+    </form>
+  </section>
+
+  <section id="notAdmin" class="card" hidden>
+    <h1>This page is for the HURKL founder</h1>
+    <p class="muted">Your Mason app is one tap away.</p>
+    <a class="primary" href="/">Open my Mason app</a>
+  </section>
+
+  <div id="main" hidden>
+    <nav class="tabs" role="tablist" aria-label="Mason">
+      <button role="tab" data-tab="ask" aria-selected="true">Ask</button>
+      <button role="tab" data-tab="approve" aria-selected="false">Your OK <span class="badge" id="pendingBadge" hidden></span></button>
+      <button role="tab" data-tab="tasks" aria-selected="false">Tasks</button>
+      <button role="tab" data-tab="team" aria-selected="false">AI team</button>
+      <button role="tab" data-tab="connect" aria-selected="false">Connect</button>
+    </nav>
+
+    <!-- Ask -->
+    <section class="panel" data-panel="ask">
+      <div class="card">
+        <h2>What does Mason know?</h2>
+        <form id="askForm">
+          <label for="askQ" class="sr">Search Mason's memory</label>
+          <input id="askQ" placeholder="Try: billing, Travis, pricing" autocomplete="off">
+          <button class="primary" type="submit">Search Mason's memory</button>
+        </form>
+        <p class="hint">Talking with Mason out loud is the next step we're building. Today, this searches everything he remembers.</p>
+      </div>
+      <div class="list" id="askResults"></div>
+      <div class="card section">
+        <h2>Tell Mason something</h2>
+        <form id="noteForm">
+          <label for="noteKind">Type</label>
+          <select id="noteKind" class="field">
+            <option value="note">Note</option>
+            <option value="decision">Decision</option>
+            <option value="rule">Rule</option>
+            <option value="lesson">Lesson learned</option>
+            <option value="fact">Fact</option>
+            <option value="task">Task</option>
+          </select>
+          <label for="noteScope">Where it belongs</label>
+          <select id="noteScope" class="field"></select>
+          <label for="noteTitle">Short title</label>
+          <input id="noteTitle" maxlength="200" required>
+          <label for="noteBody">Details</label>
+          <textarea id="noteBody" class="field" rows="4" maxlength="8000"></textarea>
+          <button class="primary" type="submit">Save to Mason's memory</button>
+          <p class="error" id="noteError" role="alert"></p>
+        </form>
+      </div>
+    </section>
+
+    <!-- Approvals -->
+    <section class="panel" data-panel="approve" hidden>
+      <h2>Waiting for your OK</h2>
+      <p class="muted">Your AI helpers suggested these. Mason treats them as final once you approve.</p>
+      <div class="list" id="pendingList"></div>
+    </section>
+
+    <!-- Tasks -->
+    <section class="panel" data-panel="tasks" hidden>
+      <h2>Open tasks</h2>
+      <div class="list" id="taskList"></div>
+      <h2 class="section">Recently finished</h2>
+      <div class="list" id="doneList"></div>
+    </section>
+
+    <!-- AI team -->
+    <section class="panel" data-panel="team" hidden>
+      <div class="card">
+        <h2>Who's best for this job?</h2>
+        <label for="pickType">Type of job</label>
+        <select id="pickType" class="field"></select>
+        <div id="pickResult" class="pick"></div>
+      </div>
+      <h2 class="section">Mason's AI team</h2>
+      <div class="list" id="rosterList"></div>
+    </section>
+
+    <!-- Connect -->
+    <section class="panel" data-panel="connect" hidden>
+      <div class="card">
+        <h2>Plug an AI into Mason</h2>
+        <p class="muted">Each AI gets its own key. Then it reads Mason's memory at the start of every session and reports back when it's done.</p>
+        <label for="keyName">Which AI is this for?</label>
+        <input id="keyName" maxlength="60" placeholder="Example: Claude (my phone)">
+        <button class="primary" id="makeKeyBtn" type="button">Make a key</button>
+        <div id="newKey" hidden>
+          <p class="notice-text">Copy this key now. For your safety, Mason shows it only this once.</p>
+          <div class="keybox" id="newKeyValue"></div>
+          <button class="secondary" id="copyKeyBtn" type="button">Copy key</button>
+        </div>
+        <h3>Steps for Claude</h3>
+        <ol class="steps">
+          <li>Open <b>claude.ai</b> in your phone's browser, then <b>Customize → Connectors</b>.</li>
+          <li>Tap <b>+</b>, then <b>Add custom connector</b>. Name it <b>Mason</b>.</li>
+          <li>Server address: <span class="keybox small" id="plugUrl"></span> <button class="link-btn" id="copyUrlBtn" type="button">Copy address</button></li>
+          <li>Under <b>Request headers</b>, add <b>Authorization</b> with the value <b>Bearer</b>, a space, then your key.</li>
+          <li>Tap <b>Add</b>. In any chat, say: <i>"Start with Mason's briefing."</i></li>
+        </ol>
+      </div>
+      <h2 class="section">Keys in use</h2>
+      <div class="list" id="keyList"></div>
+    </section>
+
+    <p class="foot"><button class="link-btn" id="signOutBtn" type="button">Sign out</button></p>
+  </div>
+</main>
+<div class="toast" id="toast" role="status" hidden></div>
+<script src="/config.js"></script>
+<script src="/supabase.js"></script>
+<script src="/mason/mason.js"></script>
+</body>
+</html>

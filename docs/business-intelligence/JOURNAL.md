@@ -272,6 +272,12 @@ Founder direction (permanent): everything HURKL runs must have exactly one offic
 - Founder approved retiring 2 duplicate repos, 1 empty repo, 2 test Netlify sites and 29 old branches (branches saved as a bundle backup first).
 - Founder clarified: `hurkl-mason-app` is Travis's owner app (keep); `hurkl-dashboard` is the founder's own checking dashboard (keep, separate purpose).
 
+### 2026-11-26 — Mason becomes the center: memory, the HURKL plug, and the AI roster (build step 1)
+
+Founder direction: Josh talks to Mason, his office manager. Every AI tool works under Mason and shares Mason's one memory instead of keeping its own; Mason picks the best and cheapest AI for each job by results; every company runs on the same brain with its own private file. Build order: 1) memory + plug + AI roster, 2) Josh talks to Mason by voice/text, 3) Mason hands jobs to AIs himself, 4) rebuild Mason's brain as the single center.
+
+Built (step 1): the Memory Specialist's store (`mason_memory`, append-only, three walls: hurkl_core / company / founder, refuses secrets, rules and decisions from AI tools wait for founder approval), the AI roster and track record (`mason_ai_roster`, `mason_ai_jobs`, `mason_ai_picks`), per-AI plug keys with daily write limits (`mason_connectors`), the HURKL plug (`mason-mcp`, remote MCP), and the founder's Mason app at `/mason/` with its own home-screen icon. Founder rule: any AI may add notes and tasks; only the founder approves rules and decisions.
+
 <!-- Next entry: ### YYYY-MM-DD — ... -->
 
 

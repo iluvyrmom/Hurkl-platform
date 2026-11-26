@@ -1,0 +1,26 @@
+[hidden]{display:none!important}
+/* Mason (founder) app — builds on the owner app's gold-on-black styles in /app.css. */
+.tabs{position:sticky;top:0;z-index:5;display:flex;flex-wrap:wrap;gap:8px;padding:10px 2px 12px;margin:0 -2px 6px;background:linear-gradient(180deg,var(--bg) 70%,transparent)}
+.tabs button{flex:1 1 28%;min-height:52px;padding:0 14px;border-radius:14px;border:2px solid #3C3A33;background:#121216;color:var(--ink);font-weight:800;font-size:18px;white-space:nowrap}
+.tabs button[aria-selected="true"]{border-color:var(--gold);background:linear-gradient(180deg,var(--gold2),var(--gold));color:var(--gold-ink)}
+.badge{display:inline-block;min-width:26px;padding:1px 8px;margin-left:4px;border-radius:999px;background:var(--red-bg);color:var(--red);font-size:16px}
+.tabs button[aria-selected="true"] .badge{background:var(--gold-ink);color:var(--gold2)}
+.panel{display:flex;flex-direction:column;gap:14px}
+textarea.field{resize:vertical;min-height:110px}
+.hint{color:var(--muted);font-size:17px;margin:12px 0 0}
+.item{background:linear-gradient(180deg,rgba(28,28,34,.84),rgba(21,21,26,.84));border:1px solid var(--line);border-radius:18px;padding:16px 18px}
+.item-title{font-weight:900;font-size:21px;line-height:1.3}
+.item-meta{color:var(--muted);font-size:16px;margin-top:4px}
+.item-body{margin-top:10px;white-space:pre-wrap;word-break:break-word}
+.row{display:flex;gap:10px;margin-top:14px}
+.row > button{flex:1;margin-top:0}
+.pick{margin-top:14px;font-size:19px}
+.pick b{color:var(--gold2)}
+.keybox{display:block;margin:10px 0;padding:14px;border-radius:12px;border:2px dashed var(--gold);background:#0F0F12;font:600 17px/1.4 ui-monospace,Menlo,monospace;word-break:break-all;color:var(--gold2)}
+.keybox.small{display:inline-block;margin:6px 0;padding:8px 10px;font-size:15px}
+.notice-text{margin:16px 0 0;font-weight:800;color:var(--amber)}
+h3{font-size:21px;margin:22px 0 6px;color:var(--gold2)}
+.steps{margin:6px 0 0;padding-left:24px}
+.steps li{margin:10px 0}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom));transform:translateX(-50%);max-width:92vw;padding:14px 18px;border-radius:14px;background:#26251F;border:1px solid var(--gold);color:var(--ink);font-weight:700;z-index:20}

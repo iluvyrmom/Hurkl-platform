@@ -1,0 +1,17 @@
+{
+  "id": "/mason/",
+  "name": "Mason",
+  "short_name": "Mason",
+  "description": "Mason, HURKL's office manager: his memory, your approvals, tasks and AI team.",
+  "start_url": "/mason/",
+  "scope": "/mason/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0B0B0D",
+  "theme_color": "#0B0B0D",
+  "icons": [
+    { "src": "/mason/mason-icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/mason/mason-icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/mason/mason-icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
