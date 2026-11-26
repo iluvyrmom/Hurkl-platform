@@ -2,6 +2,8 @@
 
 HURKL is the platform behind **Mason**, a configurable AI Office Manager for service businesses.
 
+> **Start here:** [WHERE-EVERYTHING-LIVES.md](WHERE-EVERYTHING-LIVES.md) lists the one official copy of every live HURKL piece and where its backup is.
+
 ## Mission
 
 **Helping Business Owners Reclaim Their Lives.**

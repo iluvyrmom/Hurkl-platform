@@ -261,6 +261,17 @@ Founder provided A-1's existing live site's source directly (resolving Session 0
 
 No new numbered principle beyond **028** (already promoted in the prior, now-superseded entry — see `PRINCIPLES.md`; its substance stands, just folded into Session 010's fuller escalation framing in the actual prompt code).
 
+### 2026-11-26 — Cleanup: one official copy per live piece, one labeled backup
+
+Founder direction (permanent): everything HURKL runs must have exactly one official copy, plus a clearly labeled backup kept with HURKL. No code scattered across copies. See `WHERE-EVERYTHING-LIVES.md` for the verified map.
+
+- Owner app and all 13 live Supabase functions were saved into this repo (five previously existed only inside Supabase).
+- The A-1 website got its own official repo (customer company, kept separate per the company-boundaries rule).
+- Mason's brain live deploy (2026-09-11) has no recoverable source; documented as a known gap. Do not redeploy `hurkl-platform` from this repo until it is rebuilt here.
+- Backups: Google Drive "HURKL Backups", dated zips per piece.
+- Founder approved retiring 2 duplicate repos, 1 empty repo, 2 test Netlify sites and 29 old branches (branches saved as a bundle backup first).
+- Founder clarified: `hurkl-mason-app` is Travis's owner app (keep); `hurkl-dashboard` is the founder's own checking dashboard (keep, separate purpose).
+
 <!-- Next entry: ### YYYY-MM-DD — ... -->
 
 
