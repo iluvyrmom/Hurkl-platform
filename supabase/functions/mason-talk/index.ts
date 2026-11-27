@@ -13,8 +13,9 @@
 //          default $20), message length cap, capped output tokens. Every reply's cost is saved.
 // Safety:  no tool here spends money, sends messages or changes a customer's setup; rules and
 //          decisions Mason writes wait for the founder's approval; the database refuses secrets.
-// Secrets: ANTHROPIC_API_KEY; ELEVENLABS_API_KEY (already used by the phone line); optional
-//          MASON_VOICE_ID (otherwise the ElevenLabs voice named "Mason" is used).
+// Secrets: ANTHROPIC_API_KEY; MASON_VOICE_KEY (an ElevenLabs key allowed to make speech, in the
+//          josh@hurkl.com account; the phone line keeps its own ELEVENLABS_API_KEY untouched);
+//          optional MASON_VOICE_ID (default: Mason's own cloned voice, the one the phone line uses).
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient, type SupabaseClient } from "npm:@supabase/supabase-js@2.45.4";
@@ -72,19 +73,12 @@ async function conversationFor(sb: SupabaseClient, userId: string): Promise<stri
 
 // ---------- Mason's voice ----------
 const ELEVENLABS_MODEL = "eleven_turbo_v2_5";
-let cachedVoiceId: string | null = null;
+/** Mason's own cloned voice ("Mason", josh@hurkl.com ElevenLabs account), the same voice the
+ *  Executive Drains phone line uses. Not a secret; MASON_VOICE_ID overrides it. */
+const MASON_VOICE_DEFAULT = "yrQEKfsjZmZxUPiUm0sj";
 
-async function masonVoiceId(key: string): Promise<string | null> {
-  const configured = (Deno.env.get("MASON_VOICE_ID") ?? "").trim();
-  if (configured) return configured;
-  if (cachedVoiceId) return cachedVoiceId;
-  const res = await fetch("https://api.elevenlabs.io/v2/voices?search=Mason&page_size=50", { headers: { "xi-api-key": key } });
-  if (!res.ok) throw new Error(`voice_lookup_${res.status}`);
-  const body = await res.json();
-  const voices: { voice_id: string; name?: string }[] = body?.voices ?? [];
-  const pick = voices.find((v) => String(v.name ?? "").trim().toLowerCase() === "mason") ?? voices[0];
-  cachedVoiceId = pick?.voice_id ?? null;
-  return cachedVoiceId;
+function masonVoiceId(): string {
+  return (Deno.env.get("MASON_VOICE_ID") ?? "").trim() || MASON_VOICE_DEFAULT;
 }
 
 function toBase64(bytes: Uint8Array): string {
@@ -95,11 +89,10 @@ function toBase64(bytes: Uint8Array): string {
 
 /** Mason's reply as speech, or the reason it isn't available (the app then uses the phone's voice). */
 async function elevenLabsSpeech(text: string): Promise<{ audio: string; mime: string } | { reason: string }> {
-  const key = (Deno.env.get("ELEVENLABS_API_KEY") ?? "").trim();
-  if (!key) return { reason: "no_elevenlabs_key" };
+  const key = (Deno.env.get("MASON_VOICE_KEY") ?? "").trim();
+  if (!key) return { reason: "no_mason_voice_key" };
   try {
-    const voiceId = await masonVoiceId(key);
-    if (!voiceId) return { reason: "no_mason_voice" };
+    const voiceId = masonVoiceId();
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), 20_000);
     try {
