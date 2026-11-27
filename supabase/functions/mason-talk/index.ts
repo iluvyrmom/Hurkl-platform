@@ -27,6 +27,10 @@ const CONNECTOR = "Mason (talk)";
 const ALLOWED_ORIGINS = ["https://hurkl-mason-app.netlify.app", "http://localhost:8765"];
 const CLAUDE_TIMEOUT_MS = 45_000;
 
+// On start-up, log whether the Claude key is set (yes/no only, never the key), so setup can be
+// checked from the logs without anyone opening the secrets page.
+console.log(JSON.stringify({ msg: "mason_talk_boot", anthropic_key_set: !!(Deno.env.get("ANTHROPIC_API_KEY") ?? "").trim() }));
+
 function cors(req: Request) {
   const origin = req.headers.get("origin") ?? "";
   return {
