@@ -8,7 +8,7 @@
   const sb = window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseKey, {
     auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false },
   });
-  const PLUG_URL = `${cfg.supabaseUrl}/functions/v1/mason-mcp`;
+  const PLUG_URL = "https://hurkl-mason-app.netlify.app/mcp";
   const $ = (id) => document.getElementById(id);
   const state = { companies: [], tab: "ask" };
 

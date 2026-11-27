@@ -19,3 +19,10 @@
   for = "/*.js"
   [headers.values]
     Cache-Control = "no-cache"
+
+# Short, typeable address for the HURKL plug (Mason's memory). Forwards to the Supabase function.
+[[redirects]]
+  from = "/mcp"
+  to = "https://atwaixmsvzehheotdymf.supabase.co/functions/v1/mason-mcp"
+  status = 200
+  force = true
