@@ -9,7 +9,8 @@
   "use strict";
   const cfg = window.HURKL_CONFIG;
   const sb = window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseKey, {
-    auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false, lock: async (_n, _t, fn) => fn() },
+    // detectSessionInUrl: the emailed sign-in link brings the founder back to this same page, signed in.
+    auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, lock: async (_n, _t, fn) => fn() },
   });
   const $ = (id) => document.getElementById(id);
   const authorizationId = new URLSearchParams(location.search).get("authorization_id") || "";
@@ -57,6 +58,8 @@
   }
 
   async function start() {
+    await sb.auth.getSession(); // finishes a sign-in link, if this page was opened from one
+    if (location.hash) history.replaceState(null, "", location.pathname + location.search);
     if (!/^[A-Za-z0-9_-]{8,200}$/.test(authorizationId)) {
       message("Start from the AI tool", "This page opens on its own when an AI tool like ChatGPT asks to connect to Mason.");
       return;
@@ -97,10 +100,12 @@
     $("signinError").textContent = ""; $("signinNote").textContent = "";
     if (!email) { $("signinError").textContent = "Enter your email first."; return; }
     $("sendCodeBtn").disabled = true;
-    const { error } = await sb.auth.signInWithOtp({ email, options: { shouldCreateUser: false } });
+    // The link in the email returns to this exact page (same authorization request), signed in.
+    const back = `${location.origin}${location.pathname}?authorization_id=${encodeURIComponent(authorizationId)}`;
+    const { error } = await sb.auth.signInWithOtp({ email, options: { shouldCreateUser: false, emailRedirectTo: back } });
     $("sendCodeBtn").disabled = false;
     if (error) { $("signinError").textContent = "We couldn't send a code just now. Wait a minute and try again."; return; }
-    $("signinNote").textContent = "Check your email for the code, then enter it below.";
+    $("signinNote").textContent = "Check your email on this same phone. Tap the sign-in link and you'll come right back here, or type the code below if the email has one.";
   });
 
   $("signinForm").addEventListener("submit", async (e) => {
@@ -113,7 +118,7 @@
     let { error } = await sb.auth.verifyOtp({ email, token, type: "email" });
     if (error) ({ error } = await sb.auth.verifyOtp({ email, token, type: "magiclink" }));
     $("signinBtn").disabled = false;
-    if (error) { $("signinError").textContent = "That code has expired or was already used. Tap \"Email me a sign-in code\" for a fresh one."; return; }
+    if (error) { $("signinError").textContent = "That code has expired or was already used. Tap \"Email me a sign-in link\" for a fresh one."; return; }
     show("loading");
     start();
   });
