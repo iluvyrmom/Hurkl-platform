@@ -3,6 +3,8 @@
 // POST { action: "chat", message }  → Mason's reply, after reading and writing his one memory
 //                                      through the shared toolbox (same tools as the HURKL plug).
 // POST { action: "history" }        → the latest messages of the founder's conversation.
+// POST { action: "speak", text }     → Mason's reply as speech (ElevenLabs, Mason's voice), or
+//                                      { fallback: true } so the app uses the phone's own voice.
 //
 // Who:     a signed-in HURKL admin only (checked against profiles.role, like the Mason app).
 // Memory:  conversations/messages tables (channel 'mason_app', company HURKL (Internal)).
@@ -11,7 +13,8 @@
 //          default $20), message length cap, capped output tokens. Every reply's cost is saved.
 // Safety:  no tool here spends money, sends messages or changes a customer's setup; rules and
 //          decisions Mason writes wait for the founder's approval; the database refuses secrets.
-// Secret:  ANTHROPIC_API_KEY (Supabase Edge Function secret, entered by the founder).
+// Secrets: ANTHROPIC_API_KEY; ELEVENLABS_API_KEY (already used by the phone line); optional
+//          MASON_VOICE_ID (otherwise the ElevenLabs voice named "Mason" is used).
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient, type SupabaseClient } from "npm:@supabase/supabase-js@2.45.4";
@@ -20,6 +23,7 @@ import {
   checkSpend, costUsd, LIMITS, MODELS, type ModelTurn, type Msg, pacificPeriodStarts, pickTier,
   runConversation, systemPrompt, type Tier, toClaudeTools,
 } from "../_shared/mason_talk.ts";
+import { spokenVersion } from "../_shared/speech_text.ts";
 
 const HURKL_INTERNAL = "00000000-0000-0000-0000-000000000001";
 const CHANNEL = "mason_app";
@@ -66,6 +70,58 @@ async function conversationFor(sb: SupabaseClient, userId: string): Promise<stri
   return data.id;
 }
 
+// ---------- Mason's voice ----------
+const ELEVENLABS_MODEL = "eleven_turbo_v2_5";
+let cachedVoiceId: string | null = null;
+
+async function masonVoiceId(key: string): Promise<string | null> {
+  const configured = (Deno.env.get("MASON_VOICE_ID") ?? "").trim();
+  if (configured) return configured;
+  if (cachedVoiceId) return cachedVoiceId;
+  const res = await fetch("https://api.elevenlabs.io/v2/voices?search=Mason&page_size=50", { headers: { "xi-api-key": key } });
+  if (!res.ok) throw new Error(`voice_lookup_${res.status}`);
+  const body = await res.json();
+  const voices: { voice_id: string; name?: string }[] = body?.voices ?? [];
+  const pick = voices.find((v) => String(v.name ?? "").trim().toLowerCase() === "mason") ?? voices[0];
+  cachedVoiceId = pick?.voice_id ?? null;
+  return cachedVoiceId;
+}
+
+function toBase64(bytes: Uint8Array): string {
+  let s = "";
+  for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+  return btoa(s);
+}
+
+/** Mason's reply as speech, or the reason it isn't available (the app then uses the phone's voice). */
+async function elevenLabsSpeech(text: string): Promise<{ audio: string; mime: string } | { reason: string }> {
+  const key = (Deno.env.get("ELEVENLABS_API_KEY") ?? "").trim();
+  if (!key) return { reason: "no_elevenlabs_key" };
+  try {
+    const voiceId = await masonVoiceId(key);
+    if (!voiceId) return { reason: "no_mason_voice" };
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 20_000);
+    try {
+      const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
+        method: "POST",
+        signal: ctrl.signal,
+        headers: { "xi-api-key": key, "Content-Type": "application/json", Accept: "audio/mpeg" },
+        body: JSON.stringify({
+          text, model_id: ELEVENLABS_MODEL,
+          voice_settings: { stability: 0.45, similarity_boost: 0.8, style: 0.15, use_speaker_boost: true },
+        }),
+      });
+      if (!res.ok) return { reason: `elevenlabs_${res.status}: ${(await res.text().catch(() => "")).slice(0, 160)}` };
+      return { audio: toBase64(new Uint8Array(await res.arrayBuffer())), mime: "audio/mpeg" };
+    } finally {
+      clearTimeout(timer);
+    }
+  } catch (e) {
+    return { reason: `elevenlabs_error: ${String(e).slice(0, 160)}` };
+  }
+}
+
 async function callClaude(key: string, tier: Tier, system: string, messages: Msg[], allowTools: boolean): Promise<ModelTurn> {
   const m = MODELS[tier];
   const ctrl = new AbortController();
@@ -107,7 +163,7 @@ Deno.serve(async (req: Request) => {
   const { data: profile } = await sb.from("profiles").select("role").eq("id", auth.user.id).maybeSingle();
   if (profile?.role !== "hurkl_admin") return reply(403, { error: "hurkl_admin_only" });
 
-  let body: { action?: string; message?: string } = {};
+  let body: { action?: string; message?: string; text?: string } = {};
   try { body = await req.json(); } catch { /* empty */ }
   const action = String(body.action ?? "chat");
 
@@ -118,6 +174,21 @@ Deno.serve(async (req: Request) => {
       const { data } = await sb.from("messages").select("direction, body, created_at")
         .eq("conversation_id", conversationId).order("created_at", { ascending: false }).limit(40);
       return reply(200, { messages: (data ?? []).reverse() });
+    }
+    if (action === "speak") {
+      // Only Mason's own recent replies are spoken, so his voice credit can't be spent on anything else.
+      const text = String(body.text ?? "").trim();
+      const { data: recentReplies } = await sb.from("messages").select("body")
+        .eq("conversation_id", conversationId).eq("direction", "outbound").order("created_at", { ascending: false }).limit(5);
+      if (!text || !(recentReplies ?? []).some((m: { body: string }) => m.body.trim() === text)) return reply(400, { error: "not_a_recent_reply" });
+      const said = spokenVersion(text);
+      const voice = await elevenLabsSpeech(said);
+      if ("audio" in voice) {
+        console.log(JSON.stringify({ msg: "mason_talk_speak", voice: "elevenlabs", chars: said.length }));
+        return reply(200, { ...voice, speechText: said });
+      }
+      console.warn(JSON.stringify({ msg: "mason_talk_speak_fallback", reason: voice.reason }));
+      return reply(200, { fallback: true, speechText: said });
     }
     if (action !== "chat") return reply(400, { error: "unknown_action" });
 

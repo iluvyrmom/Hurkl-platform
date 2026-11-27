@@ -97,19 +97,50 @@
     talkLoaded = true;
     const { data, error } = await withTimeout(sb.functions.invoke("mason-talk", { body: { action: "history" } }), 20000);
     $("talkThread").replaceChildren();
-    if (error || !data) { bubble("mason", "Morning, Josh. What do you need?"); talkLoaded = false; return; }
+    if (error || !data) { bubble("mason", "Hi, Josh. What do you need?"); talkLoaded = false; return; }
     const msgs = data.messages || [];
-    if (!msgs.length) bubble("mason", "Morning, Josh. Ask me anything, or tell me something to remember.");
+    if (!msgs.length) bubble("mason", "Hi, Josh. Ask me anything, or tell me something to remember.");
     msgs.forEach((m) => bubble(m.direction === "inbound" ? "you" : "mason", m.body));
   }
 
-  $("talkForm").addEventListener("submit", async (e) => {
-    e.preventDefault();
-    if (talkBusy) return;
-    const input = $("talkInput");
-    const message = input.value.trim();
-    if (!message) { input.focus(); return; }
+  // ---------- voice (mason-voice.js) ----------
+  const VOICE_TEXT = {
+    idle: "Tap the mic to talk, or type below.",
+    listening: "Listening… take your time. Mason replies when you pause.",
+    thinking: "Mason is thinking…",
+    speaking: "Mason is answering. Tap the mic to cut in.",
+    resting: "Tap the mic whenever you're ready to keep talking.",
+    allowMic: "To talk out loud, allow the microphone for this site. You can also type below.",
+    unsupported: "This browser listens by typing only. Type below, and Mason still answers out loud.",
+  };
+  const voice = window.MasonVoice ? window.MasonVoice.create({
+    onMessage: (text) => sendTalk(text),
+    onWords: (text) => { $("talkInput").value = text; },
+    onStatus: (key) => {
+      $("talkVoiceStatus").textContent = VOICE_TEXT[key] || VOICE_TEXT.idle;
+      const live = key === "listening";
+      $("talkMic").setAttribute("aria-pressed", String(live));
+      $("talkMic").textContent = live ? "Listening… tap to send" : key === "speaking" ? "Tap to cut in" : "Tap to talk";
+    },
+    fetchSpeech: async (text) => {
+      const { data, error } = await withTimeout(sb.functions.invoke("mason-talk", { body: { action: "speak", text } }), 30000);
+      return error ? { fallback: true, speechText: text } : data;
+    },
+  }) : null;
+  function showSpeaker() {
+    const on = voice ? voice.speakerOn() : false;
+    $("talkSpeaker").setAttribute("aria-pressed", String(on));
+    $("talkSpeaker").textContent = on ? "Mason's voice: on" : "Mason's voice: off (text only)";
+  }
+  $("talkMic").addEventListener("click", () => { if (voice) voice.micTapped(); });
+  $("talkSpeaker").addEventListener("click", () => { if (voice) { voice.setSpeaker(!voice.speakerOn()); showSpeaker(); } });
+  showSpeaker();
+  if (voice && !voice.supported) $("talkVoiceStatus").textContent = VOICE_TEXT.unsupported;
+
+  async function sendTalk(message) {
+    if (talkBusy || !message) return;
     talkBusy = true;
+    const input = $("talkInput");
     const btn = $("talkSend");
     btn.disabled = true;
     input.value = "";
@@ -117,19 +148,30 @@
     const thinking = bubble("mason", "Mason is thinking…", "thinking");
     const { data, error } = await withTimeout(sb.functions.invoke("mason-talk", { body: { action: "chat", message } }), 90000);
     thinking.remove();
+    btn.disabled = false;
+    talkBusy = false;
     if (error || !data || !data.reply) {
       bubble("mason", "I couldn't be reached just now. Your words are back in the box, ready to send again.");
       input.value = message;
-    } else {
-      bubble("mason", data.reply);
-      if (typeof data.spentMonthUsd === "number") {
-        $("talkSpend").textContent = `Mason's thinking cost so far: today ${money(data.spentTodayUsd)}, this month ${money(data.spentMonthUsd)}.`;
-      }
-      if (data.toolsUsed && data.toolsUsed.some((t) => ["add_memory", "add_task", "update_task"].includes(t))) loadPendingCount();
+      if (voice) voice.afterFailedReply();
+      return;
     }
-    btn.disabled = false;
-    talkBusy = false;
-    input.focus();
+    bubble("mason", data.reply);
+    if (typeof data.spentMonthUsd === "number") {
+      $("talkSpend").textContent = `Mason's thinking cost so far: today ${money(data.spentTodayUsd)}, this month ${money(data.spentMonthUsd)}.`;
+    }
+    if (data.toolsUsed && data.toolsUsed.some((t) => ["add_memory", "add_task", "update_task"].includes(t))) loadPendingCount();
+    // Only a real reply is spoken (budget and setup notices are shown, not spoken).
+    if (voice && data.tier) await voice.speakReply(data.reply);
+    else if (voice) voice.afterFailedReply();
+  }
+
+  $("talkForm").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const message = $("talkInput").value.trim();
+    if (!message) { $("talkInput").focus(); return; }
+    if (voice) voice.typed();
+    sendTalk(message);
   });
   // A computer keyboard can send with Ctrl+Enter; on the phone, the Send button.
   $("talkInput").addEventListener("keydown", (e) => {

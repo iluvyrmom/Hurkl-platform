@@ -12,7 +12,7 @@
 <link rel="apple-touch-icon" href="/mason/mason-apple-touch-icon.png">
 <link rel="icon" href="/mason/mason-icon-192.png">
 <link rel="stylesheet" href="/app.css">
-<link rel="stylesheet" href="/mason/mason.css?v=20261127-1">
+<link rel="stylesheet" href="/mason/mason.css?v=20261127-2">
 </head>
 <body>
 <div class="backdrop" aria-hidden="true"><img src="/hurkl-logo.jpg" alt=""></div>
@@ -66,13 +66,15 @@
     <section class="panel" data-panel="talk" hidden>
       <div class="card">
         <h2>Talk with Mason</h2>
-        <p class="hint" id="talkHint">Test version: type to Mason here. His voice comes next.</p>
         <div class="thread" id="talkThread" aria-live="polite"></div>
+        <button class="primary mic" id="talkMic" type="button" aria-pressed="false">Tap to talk</button>
+        <p class="voice-status" id="talkVoiceStatus" aria-live="polite">Tap the mic to talk, or type below.</p>
         <form id="talkForm" class="talk-form">
           <label for="talkInput" class="sr">Your message for Mason</label>
           <textarea id="talkInput" class="field" rows="2" maxlength="4000" placeholder="Ask Mason anything" autocomplete="off"></textarea>
           <button class="primary" id="talkSend" type="submit">Send to Mason</button>
         </form>
+        <button class="speaker" id="talkSpeaker" type="button" aria-pressed="true">Mason's voice: on</button>
         <p class="hint" id="talkSpend"></p>
       </div>
     </section>
@@ -174,6 +176,7 @@
 <div class="toast" id="toast" role="status" hidden></div>
 <script src="/config.js"></script>
 <script src="/supabase.js"></script>
-<script src="/mason/mason.js?v=20261127-1"></script>
+<script src="/mason/mason-voice.js?v=20261127-2"></script>
+<script src="/mason/mason.js?v=20261127-2"></script>
 </body>
 </html>

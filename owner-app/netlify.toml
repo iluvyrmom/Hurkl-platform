@@ -4,10 +4,10 @@
 [[headers]]
   for = "/*"
   [headers.values]
-    Content-Security-Policy = "default-src 'self'; script-src 'self' https://js.stripe.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://*.stripe.com; connect-src 'self' https://atwaixmsvzehheotdymf.supabase.co wss://atwaixmsvzehheotdymf.supabase.co https://api.stripe.com; frame-src https://js.stripe.com https://hooks.stripe.com; worker-src 'self'; manifest-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+    Content-Security-Policy = "default-src 'self'; script-src 'self' https://js.stripe.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://*.stripe.com; connect-src 'self' https://atwaixmsvzehheotdymf.supabase.co wss://atwaixmsvzehheotdymf.supabase.co https://api.stripe.com; frame-src https://js.stripe.com https://hooks.stripe.com; worker-src 'self'; manifest-src 'self'; media-src 'self' data: blob:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "no-referrer"
-    Permissions-Policy = "camera=(), microphone=(), geolocation=()"
+    Permissions-Policy = "camera=(), microphone=(self), geolocation=()"
     X-Robots-Tag = "noindex"
 
 [[headers]]
