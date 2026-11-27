@@ -249,7 +249,7 @@
   async function redeemInvite() {
     const token = new URLSearchParams(location.search).get("invite");
     if (!token) return null;
-    history.replaceState(null, "", location.pathname);
+    history.replaceState(null, "", location.pathname + location.hash);
     $("loading").textContent = "Signing you in…";
     try {
       const r = await fetch(`${cfg.supabaseUrl}/functions/v1/redeem-invite`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ token }) });
@@ -278,7 +278,9 @@
       h("option", { value: "founder" }, "My private notes"),
       ...state.companies.map((c) => h("option", { value: `company:${c.id}` }, `${c.name} only`)));
     show("main");
-    openTab("ask");
+    // A link can open a tab directly: /mason/#connect, #approve, #tasks, #team
+    const wanted = (location.hash || "").replace("#", "");
+    openTab(["ask", "approve", "tasks", "team", "connect"].includes(wanted) ? wanted : "ask");
     loadPendingCount();
   }
 
