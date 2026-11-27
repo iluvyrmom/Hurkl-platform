@@ -238,7 +238,8 @@
   function renderSwitches() {
     const list = $("switchList");
     list.replaceChildren();
-    for (const base of SWITCHES) {
+    const modules = (state.company && state.company.owner_app_modules) || [];
+    for (const base of SWITCHES.filter((x) => modules.includes(x.key))) {
       const sw = { ...base, ...(state.copy[base.key] || {}) };
       const c = state.company || {};
       const isOn = !!c[sw.col];
@@ -252,7 +253,8 @@
         makeSlider(sw, isOn, ready),
       ));
     }
-    // Emergency protocol: always on, never a switch.
+    // Emergency protocol card: only for companies whose own settings include it (Executive Drains today).
+    if (!modules.includes("emergency_water")) return;
     const pic = state.company && state.company.shutoff_image_custom;
     list.append(h("div", { class: "sw emergency" },
       h("div", { class: "sw-head" },
@@ -271,22 +273,22 @@
 
   // ---------- setup info ----------
   const SETUP = [
-    { title: "Texting approval", why: "Phone carriers require this before Mason can send text messages for your business.", fields: [
+    { module: "setup_texting", title: "Texting approval", why: "Phone carriers require this before Mason can send text messages for your business.", fields: [
       { k: "legal_business_name", label: "Legal business name (exactly as it appears with the IRS)" },
       { k: "ein", label: "EIN (federal tax ID)", ein: true },
       { k: "business_address", label: "Business mailing address" },
       { k: "business_email", label: "Business email", type: "email" },
       { k: "business_website", label: "Website (optional)", optional: true },
     ] },
-    { title: "Angi and your phone", why: "This lets Mason take over your Angi leads and reach you fast when it matters.", fields: [
+    { module: "setup_angi", title: "Angi and your phone", why: "This lets Mason take over your Angi leads and reach you fast when it matters.", fields: [
       { k: "angi_account_number", label: "Your Angi account number" },
       { k: "lead_alert_cell", label: "Cell number for your text alerts", type: "tel" },
       { k: "business_number_is_cell", label: "Which number do your customers call?", choice: [["no", "A separate business number"], ["yes", "My personal cell"]] },
       { k: "business_number", label: "Your business number (if separate)", type: "tel", optional: true },
       { k: "emergency_transfer_number", label: "Best number to reach you for emergencies", type: "tel" },
     ] },
-    { title: "Simple booking", why: "We start with a few simple jobs and grow from there as Mason learns how you work.", fields: [
-      { k: "simple_jobs", label: "Which simple jobs should Mason book first? (for example: drain cleaning, toilet replacement, estimate visits)", area: true },
+    { module: "setup_booking", title: "Simple booking", why: "We start with a few simple jobs and grow from there as Mason learns how you work.", fields: [
+      { k: "simple_jobs", label: "Which simple jobs should Mason book first? (for example: your most common small jobs and estimate visits)", area: true },
       { k: "time_slots", label: "Which 2–3 time slots would you like to offer each week? (for example: Tuesday 9–11 AM)", area: true },
       { k: "service_area", label: "Which cities or ZIP codes do you serve?", area: true },
       { k: "jobs_wanted", label: "Which jobs would you like more of? (optional)", area: true, optional: true },
@@ -299,7 +301,11 @@
     const v = info || {};
     let done = 0, total = 0;
     list.replaceChildren();
-    for (const group of SETUP) {
+    const modules = (state.company && state.company.owner_app_modules) || [];
+    const groups = SETUP.filter((g) => modules.includes(g.module));
+    const section = list.closest("section");
+    if (section) section.hidden = groups.length === 0;
+    for (const group of groups) {
       const inputs = {};
       const groupDone = group.fields.every((f) => f.optional || (f.ein ? v.ein_on_file : !!v[f.k]));
       const form = h("form", { novalidate: true });
@@ -535,11 +541,13 @@
 
   // ---------- load ----------
   async function loadCompany() {
-    const { data } = await sb.from("companies").select("id, name, auto_callback_enabled, owner_texts_enabled, shutoff_guide_enabled, business_line_enabled, business_line_ready, booking_enabled, booking_ready").eq("id", state.profile.company_id).maybeSingle();
+    const { data } = await sb.from("companies").select("id, name, auto_callback_enabled, owner_texts_enabled, shutoff_guide_enabled, business_line_enabled, business_line_ready, booking_enabled, booking_ready, owner_app_modules").eq("id", state.profile.company_id).maybeSingle();
     state.company = data;
-    const { data: copy } = await sb.from("mason_feature_copy").select("feature, title, on_text, off_text, soon_text");
+    const { data: copy } = await sb.from("mason_feature_copy").select("feature, company_id, title, on_text, off_text, soon_text");
     state.copy = {};
-    for (const r of copy || []) state.copy[r.feature] = Object.fromEntries(Object.entries({ title: r.title, on: r.on_text, off: r.off_text, soon: r.soon_text }).filter(([, v]) => v));
+    // HURKL's generic wording first, then this company's own wording on top.
+    const ordered = (copy || []).filter((r) => !r.company_id).concat((copy || []).filter((r) => r.company_id === state.profile.company_id));
+    for (const r of ordered) state.copy[r.feature] = Object.fromEntries(Object.entries({ title: r.title, on: r.on_text, off: r.off_text, soon: r.soon_text }).filter(([, v]) => v));
     $("companyName").textContent = data ? data.name : "Mason";
   }
 
