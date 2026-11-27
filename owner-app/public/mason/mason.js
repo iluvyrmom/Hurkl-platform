@@ -106,10 +106,10 @@
   // ---------- voice (mason-voice.js) ----------
   const VOICE_TEXT = {
     idle: "Tap the mic to talk, or type below.",
-    listening: "Listening… take your time. Mason replies when you pause.",
+    listening: "Listening… take your time. Mason answers when you pause.",
     thinking: "Mason is thinking…",
-    speaking: "Mason is answering. Tap the mic to cut in.",
-    resting: "Tap the mic whenever you're ready to keep talking.",
+    speaking: "Mason is answering. Tap the mic to stop him.",
+    voiceOffline: "Mason's voice is resting right now. His answer is on the screen. Tap the mic to talk again.",
     allowMic: "To talk out loud, allow the microphone for this site. You can also type below.",
     unsupported: "This browser listens by typing only. Type below, and Mason still answers out loud.",
   };
@@ -120,11 +120,11 @@
       $("talkVoiceStatus").textContent = VOICE_TEXT[key] || VOICE_TEXT.idle;
       const live = key === "listening";
       $("talkMic").setAttribute("aria-pressed", String(live));
-      $("talkMic").textContent = live ? "Listening… tap to send" : key === "speaking" ? "Tap to cut in" : "Tap to talk";
+      $("talkMic").textContent = live ? "Listening… tap to send" : key === "speaking" ? "Tap to stop" : "Tap to talk";
     },
     fetchSpeech: async (text) => {
       const { data, error } = await withTimeout(sb.functions.invoke("mason-talk", { body: { action: "speak", text } }), 30000);
-      return error ? { fallback: true, speechText: text } : data;
+      return error ? { fallback: true } : data;
     },
   }) : null;
   function showSpeaker() {

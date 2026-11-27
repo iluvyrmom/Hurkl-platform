@@ -4,7 +4,7 @@
 //                                      through the shared toolbox (same tools as the HURKL plug).
 // POST { action: "history" }        → the latest messages of the founder's conversation.
 // POST { action: "speak", text }     → Mason's reply as speech (ElevenLabs, Mason's voice), or
-//                                      { fallback: true } so the app uses the phone's own voice.
+//                                      { fallback: true } so the app shows the reply as text only.
 //
 // Who:     a signed-in HURKL admin only (checked against profiles.role, like the Mason app).
 // Memory:  conversations/messages tables (channel 'mason_app', company HURKL (Internal)).
@@ -13,10 +13,10 @@
 //          default $20), message length cap, capped output tokens. Every reply's cost is saved.
 // Safety:  no tool here spends money, sends messages or changes a customer's setup; rules and
 //          decisions Mason writes wait for the founder's approval; the database refuses secrets.
-// Secrets: ANTHROPIC_API_KEY; ELEVENLABS_API_KEY (the same josh@hurkl.com ElevenLabs key the
-//          phone line uses; MASON_VOICE_KEY overrides it if ever set). Voice: Josh's cloned
-//          "Mason" voice in the josh@hurkl.com account, the same one the phone line speaks with
-//          (checked 2026-11-27); MASON_VOICE_ID overrides it.
+// Secrets: ANTHROPIC_API_KEY; ELEVENLABS_API_KEY (the one josh@hurkl.com ElevenLabs key the
+//          phone line already uses; it needs the Text to Speech permission). Voice: Josh's cloned
+//          "Mason" voice in that account, the same one the phone line speaks with (checked
+//          2026-11-27). One key, one voice, no fallback voice.
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient, type SupabaseClient } from "npm:@supabase/supabase-js@2.45.4";
@@ -83,11 +83,11 @@ function toBase64(bytes: Uint8Array): string {
   return btoa(s);
 }
 
-/** Mason's reply as speech, or the reason it isn't available (the app then uses the phone's voice). */
+/** Mason's reply as speech, or the reason it isn't available (the app then shows the text only). */
 async function elevenLabsSpeech(text: string): Promise<{ audio: string; mime: string } | { reason: string }> {
-  const key = (Deno.env.get("MASON_VOICE_KEY") || Deno.env.get("ELEVENLABS_API_KEY") || "").trim();
+  const key = (Deno.env.get("ELEVENLABS_API_KEY") ?? "").trim();
   if (!key) return { reason: "no_elevenlabs_key" };
-  const voiceId = (Deno.env.get("MASON_VOICE_ID") ?? "").trim() || MASON_VOICE_ID;
+  const voiceId = MASON_VOICE_ID;
   try {
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), 20_000);
