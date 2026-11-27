@@ -66,9 +66,75 @@
     state.tab = tab;
     document.querySelectorAll(".tabs button").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.tab === tab)));
     document.querySelectorAll(".panel").forEach((p) => (p.hidden = p.dataset.panel !== tab));
-    ({ ask: () => {}, approve: loadPending, tasks: loadTasks, team: loadTeam, connect: loadKeys })[tab]();
+    ({ talk: loadTalk, ask: () => {}, approve: loadPending, tasks: loadTasks, team: loadTeam, connect: loadKeys })[tab]();
     window.scrollTo({ top: 0 });
   }
+
+  // ---------- Talk (step 2) ----------
+  // The founder talks to Mason; supabase/functions/mason-talk does the thinking with Mason's one
+  // memory and toolbox. Test link until go-live: /mason/#talk (remembered on this phone).
+  const TALK_TEST_KEY = "masonTalkTest";
+  function talkUnlocked() {
+    try {
+      if ((location.hash || "").replace("#", "") === "talk") localStorage.setItem(TALK_TEST_KEY, "1");
+      return localStorage.getItem(TALK_TEST_KEY) === "1";
+    } catch { return (location.hash || "").replace("#", "") === "talk"; }
+  }
+  let talkLoaded = false;
+  let talkBusy = false;
+
+  function bubble(who, words, extraClass) {
+    const b = h("div", { class: `bubble ${who}${extraClass ? " " + extraClass : ""}` }, words);
+    $("talkThread").append(b);
+    b.scrollIntoView({ block: "end", behavior: "smooth" });
+    return b;
+  }
+  function money(n) { return `$${Number(n || 0).toFixed(n >= 1 ? 2 : 3)}`; }
+
+  async function loadTalk() {
+    setTimeout(() => $("talkInput").focus(), 50);
+    if (talkLoaded) return;
+    talkLoaded = true;
+    const { data, error } = await withTimeout(sb.functions.invoke("mason-talk", { body: { action: "history" } }), 20000);
+    $("talkThread").replaceChildren();
+    if (error || !data) { bubble("mason", "Morning, Josh. What do you need?"); talkLoaded = false; return; }
+    const msgs = data.messages || [];
+    if (!msgs.length) bubble("mason", "Morning, Josh. Ask me anything, or tell me something to remember.");
+    msgs.forEach((m) => bubble(m.direction === "inbound" ? "you" : "mason", m.body));
+  }
+
+  $("talkForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    if (talkBusy) return;
+    const input = $("talkInput");
+    const message = input.value.trim();
+    if (!message) { input.focus(); return; }
+    talkBusy = true;
+    const btn = $("talkSend");
+    btn.disabled = true;
+    input.value = "";
+    bubble("you", message);
+    const thinking = bubble("mason", "Mason is thinking…", "thinking");
+    const { data, error } = await withTimeout(sb.functions.invoke("mason-talk", { body: { action: "chat", message } }), 90000);
+    thinking.remove();
+    if (error || !data || !data.reply) {
+      bubble("mason", "I couldn't be reached just now. Your words are back in the box, ready to send again.");
+      input.value = message;
+    } else {
+      bubble("mason", data.reply);
+      if (typeof data.spentMonthUsd === "number") {
+        $("talkSpend").textContent = `Mason's thinking cost so far: today ${money(data.spentTodayUsd)}, this month ${money(data.spentMonthUsd)}.`;
+      }
+      if (data.toolsUsed && data.toolsUsed.some((t) => ["add_memory", "add_task", "update_task"].includes(t))) loadPendingCount();
+    }
+    btn.disabled = false;
+    talkBusy = false;
+    input.focus();
+  });
+  // A computer keyboard can send with Ctrl+Enter; on the phone, the Send button.
+  $("talkInput").addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); $("talkForm").requestSubmit(); }
+  });
 
   // ---------- Ask ----------
   $("askForm").addEventListener("submit", async (e) => {
@@ -306,10 +372,12 @@
       h("option", { value: "founder" }, "My private notes"),
       ...state.companies.map((c) => h("option", { value: `company:${c.id}` }, `${c.name} only`)));
     show("main");
+    if (talkUnlocked()) $("talkTab").hidden = false;
     // A link can open a tab directly: /mason/#connect, #approve, #tasks, #team
     const wanted = (location.hash || "").replace("#", "");
     // A key made in the last 15 minutes is waiting to be pasted: open straight to it.
-    openTab(["ask", "approve", "tasks", "team", "connect"].includes(wanted) ? wanted : (savedNewKey() ? "connect" : "ask"));
+    const tabs = ["ask", "approve", "tasks", "team", "connect"].concat($("talkTab").hidden ? [] : ["talk"]);
+    openTab(tabs.includes(wanted) ? wanted : (savedNewKey() ? "connect" : "ask"));
     loadPendingCount();
   }
 

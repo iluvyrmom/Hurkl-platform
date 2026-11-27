@@ -24,3 +24,11 @@ h3{font-size:21px;margin:22px 0 6px;color:var(--gold2)}
 .steps li{margin:10px 0}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom));transform:translateX(-50%);max-width:92vw;padding:14px 18px;border-radius:14px;background:#26251F;border:1px solid var(--gold);color:var(--ink);font-weight:700;z-index:20}
+/* Talk with Mason */
+.thread{display:flex;flex-direction:column;gap:12px;margin:14px 0;max-height:60vh;overflow-y:auto;scroll-behavior:smooth}
+.bubble{max-width:88%;padding:14px 16px;border-radius:18px;font-size:20px;line-height:1.45;white-space:pre-wrap;word-break:break-word}
+.bubble.you{align-self:flex-end;background:linear-gradient(180deg,var(--gold2),var(--gold));color:var(--gold-ink);border-bottom-right-radius:6px}
+.bubble.mason{align-self:flex-start;background:#17171C;border:1px solid var(--line);border-bottom-left-radius:6px}
+.bubble.thinking{color:var(--muted);font-style:italic}
+.talk-form textarea.field{min-height:72px}
+.talk-form button{margin-top:10px;width:100%}

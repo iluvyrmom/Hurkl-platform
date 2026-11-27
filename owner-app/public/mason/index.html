@@ -12,7 +12,7 @@
 <link rel="apple-touch-icon" href="/mason/mason-apple-touch-icon.png">
 <link rel="icon" href="/mason/mason-icon-192.png">
 <link rel="stylesheet" href="/app.css">
-<link rel="stylesheet" href="/mason/mason.css">
+<link rel="stylesheet" href="/mason/mason.css?v=20261127-1">
 </head>
 <body>
 <div class="backdrop" aria-hidden="true"><img src="/hurkl-logo.jpg" alt=""></div>
@@ -54,12 +54,28 @@
 
   <div id="main" hidden>
     <nav class="tabs" role="tablist" aria-label="Mason">
+      <button role="tab" data-tab="talk" aria-selected="false" id="talkTab" hidden>Talk</button>
       <button role="tab" data-tab="ask" aria-selected="true">Ask</button>
       <button role="tab" data-tab="approve" aria-selected="false">Your OK <span class="badge" id="pendingBadge" hidden></span></button>
       <button role="tab" data-tab="tasks" aria-selected="false">Tasks</button>
       <button role="tab" data-tab="team" aria-selected="false">AI team</button>
       <button role="tab" data-tab="connect" aria-selected="false">Connect</button>
     </nav>
+
+    <!-- Talk (step 2 test: shown at /mason/#talk until go-live) -->
+    <section class="panel" data-panel="talk" hidden>
+      <div class="card">
+        <h2>Talk with Mason</h2>
+        <p class="hint" id="talkHint">Test version: type to Mason here. His voice comes next.</p>
+        <div class="thread" id="talkThread" aria-live="polite"></div>
+        <form id="talkForm" class="talk-form">
+          <label for="talkInput" class="sr">Your message for Mason</label>
+          <textarea id="talkInput" class="field" rows="2" maxlength="4000" placeholder="Ask Mason anything" autocomplete="off"></textarea>
+          <button class="primary" id="talkSend" type="submit">Send to Mason</button>
+        </form>
+        <p class="hint" id="talkSpend"></p>
+      </div>
+    </section>
 
     <!-- Ask -->
     <section class="panel" data-panel="ask">
@@ -158,6 +174,6 @@
 <div class="toast" id="toast" role="status" hidden></div>
 <script src="/config.js"></script>
 <script src="/supabase.js"></script>
-<script src="/mason/mason.js?v=20261126-3"></script>
+<script src="/mason/mason.js?v=20261127-1"></script>
 </body>
 </html>
