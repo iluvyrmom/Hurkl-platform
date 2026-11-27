@@ -63,3 +63,4 @@ itself (`supabase_migrations.schema_migrations.statements`).
 | 20261127001230 | company_specific_features |
 | 20261127001513 | streamline_and_harden |
 | 20261127100040 | mason_app_channel (file: `migrations/20261127100040_mason_app_channel.sql`) |
+| 20261127120000 | mason_plug_oauth_sign_in (file: `migrations/20261127120000_mason_plug_oauth_sign_in.sql`) |

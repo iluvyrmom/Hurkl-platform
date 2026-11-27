@@ -10,7 +10,7 @@ backup. If a copy is not listed here, it is not official.
 | HURKL owner app (Travis / Executive Drains uses this) | Netlify `hurkl-mason-app` | this repo, `owner-app/` |
 | Mason app for the founder (memory, approvals, tasks, AI team, plug keys) | Netlify `hurkl-mason-app` at `/mason/` | this repo, `owner-app/public/mason/` |
 | Mason's memory and AI roster | Supabase tables `mason_memory`, `mason_ai_roster`, `mason_ai_jobs`, `mason_connectors` | `supabase/migrations/20261126233000_mason_memory_and_ai_roster.sql` |
-| The HURKL plug (every AI connects to Mason's memory here) | Supabase Edge Function `mason-mcp` | `supabase/functions/mason-mcp/` (tools: `_shared/mason_tools.ts`) |
+| The HURKL plug (every AI connects to Mason's memory here) | Supabase Edge Function `mason-mcp` | `supabase/functions/mason-mcp/` (tools: `_shared/mason_tools.ts`). Two ways in: plug key (Claude) or sign-in through Supabase Auth's OAuth server (ChatGPT; metadata `owner-app/public/.well-known/oauth-protected-resource`, consent page `owner-app/public/oauth/consent/`) |
 | Founder talks to Mason (Talk tab in the Mason app) | Supabase Edge Function `mason-talk` | `supabase/functions/mason-talk/` + `_shared/mason_talk.ts`, same toolbox as the plug |
 | Mason's database programs (leads, Angi follow-up, owner texts, billing, alerts, shut-off guide, truck codes) | Supabase `Hurkl-production`, Edge Functions | this repo, `supabase/functions/` |
 | Database change history | Supabase `Hurkl-production` | this repo, `supabase/MIGRATIONS.md` + `supabase/migrations/` |

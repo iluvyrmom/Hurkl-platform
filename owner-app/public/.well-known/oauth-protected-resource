@@ -1,0 +1,7 @@
+{
+  "resource": "https://hurkl-mason-app.netlify.app/mcp",
+  "authorization_servers": ["https://atwaixmsvzehheotdymf.supabase.co/auth/v1"],
+  "bearer_methods_supported": ["header"],
+  "resource_name": "Mason (HURKL)",
+  "resource_documentation": "https://hurkl-mason-app.netlify.app/mason/"
+}

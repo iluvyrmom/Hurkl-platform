@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0B0B0D">
+<meta name="robots" content="noindex">
+<title>Connect to Mason</title>
+<link rel="icon" href="/mason/mason-icon-192.png">
+<link rel="stylesheet" href="/app.css">
+<link rel="stylesheet" href="/mason/mason.css?v=20261127-2">
+</head>
+<body>
+<div class="backdrop" aria-hidden="true"><img src="/hurkl-logo.jpg" alt=""></div>
+<header class="top">
+  <div class="top-inner">
+    <div class="avatar-wrap" aria-hidden="true"><img class="avatar" src="/mason-face-256.png" alt=""></div>
+    <div class="top-text">
+      <div class="eyebrow">HURKL · Office manager</div>
+      <div class="brand">Mason</div>
+      <div class="sub">Connect an AI tool to Mason</div>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <p class="loading" id="loading">Loading…</p>
+
+  <section id="signin" class="card" hidden>
+    <h1>Sign in to continue</h1>
+    <p class="muted">Use your HURKL admin email and a sign-in code.</p>
+    <form id="signinForm" autocomplete="on">
+      <label for="email">Email</label>
+      <input id="email" type="email" inputmode="email" autocomplete="email" required>
+      <button class="secondary" id="sendCodeBtn" type="button">Email me a sign-in code</button>
+      <label for="code">Sign-in code</label>
+      <input id="code" inputmode="numeric" autocomplete="one-time-code" maxlength="8">
+      <button class="primary" id="signinBtn" type="submit">Sign in</button>
+      <p class="error" id="signinError" role="alert"></p>
+      <p class="muted" id="signinNote" role="status"></p>
+    </form>
+  </section>
+
+  <section id="ask" class="card" hidden>
+    <h1 id="askTitle">Connect to Mason?</h1>
+    <p class="muted" id="askWho"></p>
+    <p>Once connected, it can:</p>
+    <ul>
+      <li>read Mason's memory, tasks and company files</li>
+      <li>add notes, lessons, facts and tasks</li>
+      <li>suggest rules and decisions, which wait for your OK in the Mason app</li>
+    </ul>
+    <p class="muted">It shares the same daily write limit as every other AI, and you can turn it off any time in the Mason app under plug keys.</p>
+    <button class="primary" id="approveBtn" type="button">Connect</button>
+    <button class="secondary" id="denyBtn" type="button">Not now</button>
+    <p class="error" id="askError" role="alert"></p>
+  </section>
+
+  <section id="message" class="card" hidden>
+    <h1 id="messageTitle"></h1>
+    <p class="muted" id="messageText"></p>
+    <a class="secondary" href="/mason/">Open my Mason app</a>
+  </section>
+</main>
+
+<script src="/config.js"></script>
+<script src="/supabase.js"></script>
+<script src="/oauth/consent/consent.js?v=20261127-1"></script>
+</body>
+</html>

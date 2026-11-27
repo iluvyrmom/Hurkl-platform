@@ -20,6 +20,21 @@
   [headers.values]
     Cache-Control = "no-cache"
 
+# Sign-in metadata for AI tools that connect by signing in (ChatGPT). Points them to Supabase
+# Auth's OAuth server; the founder approves on /oauth/consent/. Plug keys (Claude) are unchanged.
+[[headers]]
+  for = "/.well-known/*"
+  [headers.values]
+    Content-Type = "application/json"
+    Access-Control-Allow-Origin = "*"
+    Cache-Control = "no-cache"
+
+[[redirects]]
+  from = "/.well-known/oauth-protected-resource/*"
+  to = "/.well-known/oauth-protected-resource"
+  status = 200
+  force = true
+
 # Short, typeable address for the HURKL plug (Mason's memory). Forwards to the Supabase function.
 [[redirects]]
   from = "/mcp"

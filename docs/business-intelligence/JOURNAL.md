@@ -297,6 +297,16 @@ Built on branch `feat/mason-talk`:
 
 Open: the founder adds `ANTHROPIC_API_KEY` in Supabase; publishing the app change to `hurkl-mason-app` (shared with Travis's owner app) waits for the founder's explicit OK; voice (stop 3) after he tries text. Model IDs and prices for the Supabase functions now live in `_shared/mason_talk.ts`; the website brain's `lib/mason/model-config.ts` still lists Haiku 4.5 and Sonnet 5's expired starter price, to be merged in step 4.
 
+### 2026-11-27 — ChatGPT connects to Mason by signing in (OAuth)
+
+Founder asked to connect ChatGPT to the HURKL plug, limited to that. ChatGPT connectors only accept sign-in (OAuth), not a pasted key, so the plug now has two ways in with the same limits:
+- Plug key (Claude): unchanged.
+- Sign-in (ChatGPT): Supabase Auth's OAuth 2.1 server issues the token; the founder approves on `hurkl-mason-app.netlify.app/oauth/consent/`. The plug accepts a token only if this project signed it, it was issued to an OAuth client, the session is live, and the person is a HURKL admin. Each OAuth client gets its own `mason_connectors` row (same daily write limit, last-used time and "Turn off" button in the Mason app; once turned off it stays blocked). Migration `20261127120000_mason_plug_oauth_sign_in.sql`.
+- Discovery: `/.well-known/oauth-protected-resource` on hurkl-mason-app points to `https://atwaixmsvzehheotdymf.supabase.co/auth/v1`; the plug's 401 names that file.
+- Approval rules, company walls and the secret filter are unchanged (same toolbox).
+
+Open: the founder turns on the OAuth server in Supabase (Authentication > OAuth Server: enable, authorization path, dynamic client registration). Follow-up for review: a sign-in token is a normal Supabase session token for the founder, so it could also read the database directly through the app's normal access rules; once the first real token's claim names are logged, decide whether admin-level database access should exclude OAuth tokens.
+
 <!-- Next entry: ### YYYY-MM-DD — ... -->
 
 
