@@ -150,9 +150,9 @@
     for (const t of open || []) {
       const who = t.assigned_to ? `With ${t.assigned_to}` : "Not assigned yet";
       const btn = h("button", { class: "secondary", type: "button", onclick: async (e) => {
-        e.currentTarget.disabled = true;
+        const b = e.currentTarget; b.disabled = true;
         const { error } = await sb.from("mason_memory").update({ task_status: "done" }).eq("id", t.id);
-        if (error) { e.currentTarget.disabled = false; toast("That didn't save. Try again."); return; }
+        if (error) { b.disabled = false; toast("That didn't save. Try again."); return; }
         toast("Marked done."); loadTasks();
       } }, "Mark done");
       list.append(entryCard({ ...t, title: `${t.task_status === "in_progress" ? "In progress: " : ""}${t.title}` }, h("div", null, h("div", { class: "item-meta" }, who), btn)));
@@ -247,9 +247,9 @@
         h("div", { class: "item-meta" }, `Made ${day(k.created_at)} · ${k.last_used_at ? `last used ${day(k.last_used_at)}` : "ready for first use"}`),
         h("button", { class: "secondary", type: "button", onclick: async (e) => {
           if (!confirm(`Turn off the key for ${k.name}? That AI will lose access to Mason until you make it a new key.`)) return;
-          e.currentTarget.disabled = true;
+          const b = e.currentTarget; b.disabled = true;
           const { error } = await sb.rpc("mason_revoke_connector", { p_id: k.id });
-          if (error) { e.currentTarget.disabled = false; toast("That didn't go through. Try again."); return; }
+          if (error) { b.disabled = false; toast("That didn't go through. Try again."); return; }
           toast("Key turned off."); loadKeys();
         } }, "Turn off this key")));
     }
