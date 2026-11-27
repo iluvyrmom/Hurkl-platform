@@ -282,6 +282,10 @@ Built (step 1): the Memory Specialist's store (`mason_memory`, append-only, thre
 
 Founder approved: Mason is one agent with one memory and one toolbox (tools + playbooks). Separate agents only for the Critic, big/outside jobs (AI roster), and money-level permissions. HAL specialists become tools and playbooks. Recorded in `CLAUDE.md` (HAL section) and in Mason's memory. The founder-facing guide is the "Mason Playbook: How HURKL Runs" doc (claude.ai artifact BCY1GuHgDf3urEqhN7uQtR), which also holds the "Lost phone plan" (protect account access; everything runs in the cloud).
 
+### 2026-11-26 — Company walls: HURKL is the hub; each company keeps its own rules
+
+Founder direction: HURKL is an independent company, the hub with Mason at its center. Executive Drains' rules (Angi follow-up, emergency shut-off steps) are Executive Drains only; A-1's rules (prices, savings, truck codes) are A-1 only; a new company starts clean. Three platform-wide leaks of Executive Drains behavior were fixed in the database and owner app (first-payment features, the emergency lock, the owner app's emergency/Angi/setup screens) — see `supabase/migrations/20261127001000_company_specific_features.sql` and `WHERE-EVERYTHING-LIVES.md` ("Company walls"). Review pass: `mason_recommend_ai` is the single copy of the AI-pick logic; search_path and trigger-function hardening. Known pre-existing item for the brain rebuild: `submit_lead` in HURKL core still carries moving-company fields (A-1's form) and should become a company-configured form.
+
 <!-- Next entry: ### YYYY-MM-DD — ... -->
 
 
