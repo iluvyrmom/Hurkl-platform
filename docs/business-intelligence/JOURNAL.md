@@ -278,6 +278,10 @@ Founder direction: Josh talks to Mason, his office manager. Every AI tool works 
 
 Built (step 1): the Memory Specialist's store (`mason_memory`, append-only, three walls: hurkl_core / company / founder, refuses secrets, rules and decisions from AI tools wait for founder approval), the AI roster and track record (`mason_ai_roster`, `mason_ai_jobs`, `mason_ai_picks`), per-AI plug keys with daily write limits (`mason_connectors`), the HURKL plug (`mason-mcp`, remote MCP), and the founder's Mason app at `/mason/` with its own home-screen icon. Founder rule: any AI may add notes and tasks; only the founder approves rules and decisions.
 
+### 2026-11-26 — Hybrid design approved: one Mason with a toolbox
+
+Founder approved: Mason is one agent with one memory and one toolbox (tools + playbooks). Separate agents only for the Critic, big/outside jobs (AI roster), and money-level permissions. HAL specialists become tools and playbooks. Recorded in `CLAUDE.md` (HAL section) and in Mason's memory. The founder-facing guide is the "Mason Playbook: How HURKL Runs" doc (claude.ai artifact BCY1GuHgDf3urEqhN7uQtR), which also holds the "Lost phone plan" (protect account access; everything runs in the cloud).
+
 <!-- Next entry: ### YYYY-MM-DD — ... -->
 
 

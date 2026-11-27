@@ -87,6 +87,8 @@ Mason's behavior is governed by three tiers — Automatic, Approval Required, Ne
 - HAL does not introduce a fourth autonomy tier — every specialist's output still resolves to Automatic / Approval Required / Never Autonomous (`SECURITY.md` §4) once it reaches Mason's decision process.
 - Do not build autonomous production agents on top of these contracts without a specific, explicit milestone authorizing it — architecture and contracts come first.
 
+**Hybrid update, 2026-11-26 (founder-approved; supersedes "model new capabilities as HAL specialists" where they conflict):** Mason is ONE agent with one memory and one toolbox. HAL specialists are implemented as **tools and playbooks** in that toolbox (each keeping one job, limited permissions, required evidence, limits and an audit trail), not as separate agents. Separate agents are used only for: (1) the Critic, an independent reviewer; (2) big or outside jobs sent to the best AI on the roster (`mason_ai_roster`); (3) money-level permissions held by a separate worker. Safety rules live inside the tools (database constraints, RLS, caps), not only in prompts. Every session starts with Mason's briefing through the HURKL plug (`supabase/functions/mason-mcp`) and ends by writing back to Mason's memory. See `docs/business-intelligence/JOURNAL.md` (2026-11-26) and the founder's "Mason Playbook" doc.
+
 ## Company boundaries and Mason ownership (multi-company architecture)
 
 **Founder-directed, permanent.** This extends "Respect Mason's executive architecture (HAL)" above and "Do not duplicate systems" from a within-repo rule to a cross-repo/cross-company one. HURKL is being built to serve many independent companies — the architecture below must stay valid whether HURKL serves 1 company or 100,000.
