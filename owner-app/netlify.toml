@@ -35,6 +35,14 @@
   status = 200
   force = true
 
+# Supabase sends the founder to /oauth/consent (no slash); serve the page there directly so the
+# authorization_id in the address is never lost to a slash redirect.
+[[redirects]]
+  from = "/oauth/consent"
+  to = "/oauth/consent/index.html"
+  status = 200
+  force = true
+
 # Short, typeable address for the HURKL plug (Mason's memory). Forwards to the Supabase function.
 [[redirects]]
   from = "/mcp"
