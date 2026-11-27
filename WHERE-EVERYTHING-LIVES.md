@@ -18,6 +18,18 @@ backup. If a copy is not listed here, it is not official.
 | Executive Drains phone Mason | ElevenLabs agent + Supabase functions above | agent settings live in ElevenLabs; backend in `supabase/functions/` |
 | Founder's checking dashboard | Netlify `hurkl-dashboard` | worked on in a separate session; not changed here |
 
+## Company walls (HURKL is the hub; each company keeps its own rules)
+
+HURKL holds only Mason himself and HURKL's own business rules. Everything about
+a client company lives in that company's own settings and memory file:
+`companies.owner_app_modules`, `companies.first_payment_features`,
+`companies.emergency_protocol_locked`, `companies.pricing_rules`, per-company
+`mason_feature_copy` rows, and `mason_memory` entries with scope `company`.
+A new company starts clean (owner app shows text alerts only; nothing turns on
+at first payment). Executive Drains' Angi follow-up and emergency shut-off
+steps are Executive Drains only; A-1's prices, savings and truck codes are A-1
+only.
+
 ## Mason's brain (Netlify `hurkl-platform`): known gap
 
 The live deploy (`6aa493511250a09a67bc6ffc`, uploaded 2026-09-11) was built

@@ -342,19 +342,14 @@ async function callTool(ctx: Ctx, name: string, a: Record<string, unknown>) {
     }
 
     case "recommend_ai": {
+      // One copy of the pick logic: public.mason_recommend_ai (database).
       const tt = String(a.task_type ?? "");
-      const { data } = await sb.from("mason_ai_picks").select("*").eq("task_type", tt);
+      const { data, error } = await sb.rpc("mason_recommend_ai", { p_task_type: tt });
+      if (error) return text("Couldn't get Mason's pick right now.", true);
       if (!data?.length) return text(`No AI on the roster is marked for ${tt} yet.`);
-      const rank: Record<string, number> = { plugged_in: 0, api_ready: 1, opened_by_josh: 2, not_set_up: 3 };
-      const sorted = [...data].sort((x: any, y: any) => {
-        const sx = x.jobs_done ? Number(x.success_score) : 0.5, sy = y.jobs_done ? Number(y.success_score) : 0.5;
-        if (Math.abs(sx - sy) > 0.15) return sy - sx;
-        if (rank[x.connection] !== rank[y.connection]) return rank[x.connection] - rank[y.connection];
-        return (Number(x.monthly_cost_usd ?? 9999) - Number(y.monthly_cost_usd ?? 9999));
-      });
-      const top = sorted[0] as any;
+      const top = data[0] as any;
       return text(`For ${tt}, Mason picks: ${top.name} (${top.connection}${top.jobs_done ? `, ${top.jobs_done} jobs, score ${top.success_score}` : ", no track record yet"}).\n` +
-        `Others, in order: ${sorted.slice(1).map((p: any) => p.name).join(", ") || "none"}.\n` +
+        `Others, in order: ${data.slice(1).map((p: any) => p.name).join(", ") || "none"}.\n` +
         `Picks favor proven results, then what's connected, then the cheapest. Check costs before spending money.`);
     }
 

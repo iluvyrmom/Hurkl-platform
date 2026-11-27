@@ -164,16 +164,10 @@
   pickSel.addEventListener("change", showPick);
   async function showPick() {
     const tt = pickSel.value;
-    const { data } = await sb.from("mason_ai_picks").select("*").eq("task_type", tt);
+    // One copy of the pick logic lives in the database: mason_recommend_ai.
+    const { data } = await sb.rpc("mason_recommend_ai", { p_task_type: tt });
     const out = $("pickResult"); out.replaceChildren();
     if (!data || !data.length) { out.append("Mason hasn't marked anyone for this kind of job yet."); return; }
-    const rank = { plugged_in: 0, api_ready: 1, opened_by_josh: 2, not_set_up: 3 };
-    data.sort((x, y) => {
-      const sx = x.jobs_done ? Number(x.success_score) : 0.5, sy = y.jobs_done ? Number(y.success_score) : 0.5;
-      if (Math.abs(sx - sy) > 0.15) return sy - sx;
-      if (rank[x.connection] !== rank[y.connection]) return rank[x.connection] - rank[y.connection];
-      return Number(x.monthly_cost_usd ?? 9999) - Number(y.monthly_cost_usd ?? 9999);
-    });
     const top = data[0];
     out.append("Mason's pick: ", h("b", null, top.name),
       h("div", { class: "item-meta" }, top.jobs_done ? `${top.jobs_done} jobs so far, score ${top.success_score} of 1` : "Picked by strengths and cost; his track record builds as jobs are logged."),
