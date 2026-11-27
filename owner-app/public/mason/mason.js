@@ -203,6 +203,8 @@
     $("newKeyValue").textContent = data;
     $("newKey").hidden = false;
     $("keyName").value = "";
+    $("newKey").scrollIntoView({ behavior: "smooth", block: "center" });
+    toast("Your key is ready. Tap Copy key.");
     loadKeys();
   });
   $("copyKeyBtn").addEventListener("click", async () => {
