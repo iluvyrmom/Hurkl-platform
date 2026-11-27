@@ -6,8 +6,12 @@
   "use strict";
   const cfg = window.HURKL_CONFIG;
   const sb = window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseKey, {
-    auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false },
+    // No-op lock: the browser lock supabase-js uses can hang after the phone switches apps,
+    // which left buttons stuck "pressed". One tab, one session, so a lock isn't needed here.
+    auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false, lock: async (_n, _t, fn) => fn() },
   });
+  // Never let a button wait forever: give up after 15 seconds so it can be tapped again.
+  const withTimeout = (p, ms = 15000) => Promise.race([p, new Promise((r) => setTimeout(() => r({ data: null, error: { message: "timeout" } }), ms))]);
   const PLUG_URL = "https://hurkl-mason-app.netlify.app/mcp";
   const $ = (id) => document.getElementById(id);
   const state = { companies: [], tab: "ask" };
@@ -196,10 +200,11 @@
   $("makeKeyBtn").addEventListener("click", async (e) => {
     const name = $("keyName").value.trim();
     if (!name) { toast("Name the AI first, like Claude (my phone)."); return; }
-    e.currentTarget.disabled = true;
-    const { data, error } = await sb.rpc("mason_create_connector", { p_name: name });
-    e.currentTarget.disabled = false;
-    if (error || !data) { toast("That key didn't save. Try again in a moment."); return; }
+    const btn = e.currentTarget;
+    btn.disabled = true;
+    const { data, error } = await withTimeout(sb.rpc("mason_create_connector", { p_name: name }));
+    btn.disabled = false;
+    if (error || !data) { toast(error && error.message === "timeout" ? "Mason didn't answer. Close and reopen the app, then try again." : "That key didn't save. Try again in a moment."); return; }
     // Keep the new key on this phone for 15 minutes so switching apps doesn't lose it.
     try { sessionStorage.setItem("masonNewKey", JSON.stringify({ key: data, at: Date.now() })); } catch {}
     showNewKey(data);
