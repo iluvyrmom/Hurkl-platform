@@ -57,3 +57,9 @@ itself (`supabase_migrations.schema_migrations.statements`).
 | 20261126221917 | mason_savings_example_timeless |
 | 20261126222048 | mason_savings_wording_v2 |
 | 20261126223541 | mason_pricing_rules_per_company_template |
+| 20261126233442 | mason_memory_and_ai_roster |
+| 20261126233511 | mason_connector_check_fix |
+| 20261126233541 | mason_connectors_hide_token_hash |
+| 20261127001230 | company_specific_features |
+| 20261127001513 | streamline_and_harden |
+| 20261127100040 | mason_app_channel (file: `migrations/20261127100040_mason_app_channel.sql`) |
