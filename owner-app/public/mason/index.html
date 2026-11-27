@@ -133,16 +133,18 @@
         <input id="keyName" maxlength="60" placeholder="Example: Claude (my phone)">
         <button class="primary" id="makeKeyBtn" type="button">Make a key</button>
         <div id="newKey" hidden>
-          <p class="notice-text">Copy this key now. For your safety, Mason shows it only this once.</p>
+          <p class="notice-text">Your key is ready. It stays here for 15 minutes, then hides for your safety.</p>
           <div class="keybox" id="newKeyValue"></div>
-          <button class="secondary" id="copyKeyBtn" type="button">Copy key</button>
+          <button class="primary" id="copyKeyBtn" type="button">Copy key</button>
+          <button class="link-btn" id="doneKeyBtn" type="button">I'm done, hide the key</button>
         </div>
         <h3>Steps for Claude</h3>
         <ol class="steps">
           <li>Open <b>claude.ai</b> in your phone's browser, then <b>Customize → Connectors</b>.</li>
           <li>Tap <b>+</b>, then <b>Add custom connector</b>. Name it <b>Mason</b>.</li>
           <li>Server address: <span class="keybox small" id="plugUrl"></span> <button class="link-btn" id="copyUrlBtn" type="button">Copy address</button></li>
-          <li>Under <b>Request headers</b>, add <b>Authorization</b> with the value <b>Bearer</b>, a space, then your key.</li>
+          <li>Authentication: choose <b>No sign-in</b>.</li>
+          <li>Under <b>Request headers</b>, pick <b>authorization</b>. For the value, paste your copied key (it already starts with <b>Bearer</b>). Mark it <b>Required</b>.</li>
           <li>Tap <b>Add</b>. In any chat, say: <i>"Start with Mason's briefing."</i></li>
         </ol>
       </div>

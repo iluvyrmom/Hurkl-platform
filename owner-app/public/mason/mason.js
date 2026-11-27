@@ -200,18 +200,39 @@
     const { data, error } = await sb.rpc("mason_create_connector", { p_name: name });
     e.currentTarget.disabled = false;
     if (error || !data) { toast("That key didn't save. Try again in a moment."); return; }
-    $("newKeyValue").textContent = data;
-    $("newKey").hidden = false;
+    // Keep the new key on this phone for 15 minutes so switching apps doesn't lose it.
+    try { sessionStorage.setItem("masonNewKey", JSON.stringify({ key: data, at: Date.now() })); } catch {}
+    showNewKey(data);
     $("keyName").value = "";
     $("newKey").scrollIntoView({ behavior: "smooth", block: "center" });
-    toast("Your key is ready. Tap Copy key.");
+    try { await navigator.clipboard.writeText(`Bearer ${data}`); toast("Key copied. In Claude, paste it as the Request header value."); }
+    catch { toast("Your key is ready. Tap Copy key."); }
     loadKeys();
   });
+  function showNewKey(key) {
+    $("newKeyValue").textContent = `Bearer ${key}`;
+    $("newKey").hidden = false;
+  }
+  function savedNewKey() {
+    try {
+      const v = JSON.parse(sessionStorage.getItem("masonNewKey") || "null");
+      if (v && Date.now() - v.at < 15 * 60 * 1000) return v.key;
+      sessionStorage.removeItem("masonNewKey");
+    } catch {}
+    return null;
+  }
   $("copyKeyBtn").addEventListener("click", async () => {
-    try { await navigator.clipboard.writeText($("newKeyValue").textContent); toast("Key copied. Paste it into the AI's connector settings."); }
+    try { await navigator.clipboard.writeText($("newKeyValue").textContent); toast("Key copied. In Claude, paste it as the Request header value."); }
     catch { toast("Press and hold the key to copy it."); }
   });
+  $("doneKeyBtn").addEventListener("click", () => {
+    try { sessionStorage.removeItem("masonNewKey"); } catch {}
+    $("newKey").hidden = true;
+    toast("Key hidden. It keeps working in Claude.");
+  });
   async function loadKeys() {
+    const saved = savedNewKey();
+    if (saved) showNewKey(saved);
     const { data } = await sb.from("mason_connectors").select("id, name, created_at, last_used_at, revoked_at").is("revoked_at", null).order("created_at", { ascending: false });
     const list = $("keyList"); list.replaceChildren();
     if (!data || !data.length) { list.append(empty("Your first key will show here once you make it.")); return; }
@@ -282,7 +303,8 @@
     show("main");
     // A link can open a tab directly: /mason/#connect, #approve, #tasks, #team
     const wanted = (location.hash || "").replace("#", "");
-    openTab(["ask", "approve", "tasks", "team", "connect"].includes(wanted) ? wanted : "ask");
+    // A key made in the last 15 minutes is waiting to be pasted: open straight to it.
+    openTab(["ask", "approve", "tasks", "team", "connect"].includes(wanted) ? wanted : (savedNewKey() ? "connect" : "ask"));
     loadPendingCount();
   }
 
