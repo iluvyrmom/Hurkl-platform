@@ -286,6 +286,17 @@ Founder approved: Mason is one agent with one memory and one toolbox (tools + pl
 
 Founder direction: HURKL is an independent company, the hub with Mason at its center. Executive Drains' rules (Angi follow-up, emergency shut-off steps) are Executive Drains only; A-1's rules (prices, savings, truck codes) are A-1 only; a new company starts clean. Three platform-wide leaks of Executive Drains behavior were fixed in the database and owner app (first-payment features, the emergency lock, the owner app's emergency/Angi/setup screens) — see `supabase/migrations/20261127001000_company_specific_features.sql` and `WHERE-EVERYTHING-LIVES.md` ("Company walls"). Review pass: `mason_recommend_ai` is the single copy of the AI-pick logic; search_path and trigger-function hardening. Known pre-existing item for the brain rebuild: `submit_lead` in HURKL core still carries moving-company fields (A-1's form) and should become a company-configured form.
 
+### 2026-11-27 — Step 2 built: the founder talks to Mason (text first)
+
+Founder approved the "Mason Step 2 Build Map" (claude.ai artifact XhtprupKcaF9T7xAG4UpmH) and said "build step 2". Goal recorded in Mason's memory: Mason as a business JARVIS who runs everything; every step is measured against it.
+
+Built on branch `feat/mason-talk`:
+- One shared toolbox: the plug's nine tools moved to `supabase/functions/_shared/mason_tools.ts`; `mason-mcp` and `mason-talk` both use it (no second copy). Live as mason-mcp v3.
+- `mason-talk` (Supabase function): HURKL admin only; Mason's briefing plus Claude (Haiku 5.5 everyday, Sonnet 5.5 for plans and judgment calls) using the toolbox; conversation saved in `conversations`/`messages` (new channel `mason_app`, HURKL (Internal)). Limits in code: 20 messages/minute, 6 tool uses per reply, $2/day and $20/month (env-overridable), capped output. Autonomy: Automatic for reading memory and saving notes/tasks; rules and decisions stay Approval Required; no money, messaging or customer-setup tools exist (Never Autonomous unchanged).
+- Mason app Talk tab, shown only at `/mason/#talk` until the founder approves go-live.
+
+Open: the founder adds `ANTHROPIC_API_KEY` in Supabase; publishing the app change to `hurkl-mason-app` (shared with Travis's owner app) waits for the founder's explicit OK; voice (stop 3) after he tries text. Model IDs and prices for the Supabase functions now live in `_shared/mason_talk.ts`; the website brain's `lib/mason/model-config.ts` still lists Haiku 4.5 and Sonnet 5's expired starter price, to be merged in step 4.
+
 <!-- Next entry: ### YYYY-MM-DD — ... -->
 
 
