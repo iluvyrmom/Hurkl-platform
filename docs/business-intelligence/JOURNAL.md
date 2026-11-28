@@ -331,3 +331,11 @@ Founder principle: the design evolves as we learn. A new fact that improves it u
 <!-- Next entry: ### YYYY-MM-DD — ... -->
 
 
+
+### 2026-11-28 — One OpenAI key; search by meaning; Mason learns from every Verifier catch
+
+Founder-directed ("Yep..to verify you too", "Yes..learn..improve"). Live in mason-talk v14 and mason-mcp v14.
+- **One OpenAI key** (`OPENAI_API_KEY`, entered by Josh in Supabase) powers both the ChatGPT Verifier (gpt-6.1-terra) and search by meaning (text-embedding-3-small). Supabase's built-in model failed its live test; Voyage was never switched on. `MASON_VERIFIER=claude` switches back to the temporary Claude Verifier.
+- **Search by meaning**: word and meaning results are combined, with walls (scope, company, status, kind) applied inside both searches. Code handed between AIs (`draft-source-artifact`) is never search material or evidence.
+- **Learning from catches**: every check that says no is saved with its reasons (`mason_trio_checks.rejections`). Mason automatically saves one lesson per caught reply (tag `verifier-catch`, at most 10 a day), and his briefing now shows recent lessons, so the next reply uses them. These lessons need no approval (`SECURITY.md` §4, "Mason's own learning").
+- **Honest holding reply**: when no version passes, Josh is told briefly what couldn't be confirmed, and nothing unchecked from the draft is shown.
