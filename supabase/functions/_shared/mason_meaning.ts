@@ -29,7 +29,7 @@ export const MEANING_MODEL = "text-embedding-3-small";
 export const DIMENSIONS = 1024;
 /** Lowest similarity counted as related (1 = same meaning). Provisional: tuned on real entries at the
  * first live test through the setting MASON_MEANING_MIN_SIMILARITY (a number between 0 and 1). */
-export const MIN_SIMILARITY = 0.35;
+export const MIN_SIMILARITY = 0.3;
 export function minSimilarity(): number {
   try {
     // deno-lint-ignore no-explicit-any
