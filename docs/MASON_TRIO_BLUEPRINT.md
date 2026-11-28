@@ -1,6 +1,7 @@
 # Mason trio and collaboration blueprint
 
-Version 1 — founder-directed, 2026-11-27. This records Josh's agreed workflow.
+Version 1.1 — founder-directed, 2026-11-27; reviewed with Claude through Mason.
+This records Josh's agreed workflow.
 It supersedes older descriptions that make verification optional or put Memory
 & Learning below Mason. Source implementation is authorized; a live rollout is
 a separate reviewed step.
@@ -35,6 +36,16 @@ Review covers exact written and spoken wording; edits and shortened spoken
 summaries require fresh checks. Tools/playbooks handle routine specialist work;
 roster-selected workers handle substantial assignments. Money permissions remain
 separate. There is no second Mason identity or company memory system.
+
+The approved private pilot uses Mason's existing Anthropic adapter and the
+OpenAI API for the Independent Verifier, with distinct role identities and a
+different provider for drafting and verification. Provider adapters remain
+replaceable. Receipts identify the actual provider; metadata alone cannot prove
+which service ran, so adapters must produce receipts from real provider calls.
+Josh enters the verifier key directly in Supabase, never in chat or memory.
+Claude Duet is the periodic watcher: it checks for stuck work and reports through
+Mason. It does not replace the verifier on every response. The watcher is not
+implemented or scheduled by this branch.
 
 Josh approved routine customer conversations within company-approved instructions.
 This bounded exception replaces the earlier blanket messaging restriction.
@@ -84,6 +95,14 @@ or scrape/control consumer chat applications.
 
 ## Build order and truthful status
 
+Claude acknowledged all nine parts of v1 in task
+`79851040-90f3-4bbb-9797-57f419aff7bf` and reviewed the workflow. ChatGPT owns
+the complete-read/thread tools, briefing/prompt fixes, this blueprint and the
+tested coordinator. Claude owns production private-Talk adapters (approved
+evidence, actual OpenAI verification, atomic budget reservation and memory
+commit) and live integration checks after independent source review. The
+workflow review is not approval of code Claude has not yet read.
+
 | Piece | Status / remaining evidence |
 | --- | --- |
 | Shared connection | Verified round trip, including Claude's acknowledgment. |
@@ -95,8 +114,9 @@ or scrape/control consumer chat applications.
 
 No broad production redeploy is part of this branch. Do not redeploy the sealed
 `hurkl-platform` site from this checkout. Confirm the latest deployed OAuth
-wrapper/source before redeploying an MCP entry point: the authentication patch
-may be newer than this branch's base.
+wrapper/source before redeploying an MCP entry point. This branch was rebased on
+the newer `feat/chatgpt-oauth` revision
+`b2758f0286cc8decf519e5017b69d0caaee1117f`; preserve its OAuth changes.
 
 ## Cost controls
 

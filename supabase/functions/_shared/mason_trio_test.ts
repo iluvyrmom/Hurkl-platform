@@ -1,5 +1,6 @@
 import { deepStrictEqual as eq, ok } from "node:assert";
 import {
+  DEFAULT_TRIO_PROVIDERS,
   runTrio,
   type TrioContext,
   type TrioEnvelope,
@@ -21,6 +22,7 @@ const context: TrioContext = {
 };
 const receipt = (reviewerId: string, e: TrioEnvelope): TrioReceipt => ({
   reviewerId,
+  provider: reviewerId === "verifier" ? "openai" : "anthropic",
   approved: true,
   digest: e.digest,
   contextVersion: e.contextVersion,
@@ -31,6 +33,7 @@ function fixture(overrides: Partial<TrioPorts> = {}) {
   const events: string[] = [];
   const ports: TrioPorts = {
     actors: { mason: "mason", memory: "memory", verifier: "verifier" },
+    providers: DEFAULT_TRIO_PROVIDERS,
     authorizeStep: async (name) => {
       events.push(`budget:${name}`);
       return true;
@@ -115,6 +118,7 @@ Deno.test("missing evidence or stale/reused receipts cannot pass the release gat
     { contextVersion: "old-version" },
     { digest: "unchecked-wording" },
     { reviewerId: "mason" },
+    { provider: "anthropic" },
   ]) {
     const { ports, events } = fixture({
       verify: async (e) => ({ ...receipt("verifier", e), ...change }),
@@ -175,6 +179,23 @@ Deno.test(
     eq((await runTrio(request, ports)).status, "verified");
     ports.actors = { mason: "same-worker", memory: "memory", verifier: "same-worker" };
     eq((await runTrio(request, ports)).status, "blocked");
+  },
+);
+
+Deno.test(
+  "the pilot defaults to OpenAI verification and rejects a shared provider before work",
+  async () => {
+    eq(DEFAULT_TRIO_PROVIDERS.verifier, "openai");
+    for (const provider of ["anthropic", " ANTHROPIC "]) {
+      const { ports, events } = fixture({
+        providers: { ...DEFAULT_TRIO_PROVIDERS, verifier: provider },
+      });
+      const r = await runTrio(request, ports);
+      eq(r.status, "blocked");
+      eq(events, []);
+    }
+    const missing = fixture({ providers: undefined as any });
+    eq((await runTrio(request, missing.ports)).status, "blocked");
   },
 );
 

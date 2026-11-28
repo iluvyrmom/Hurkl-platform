@@ -20,6 +20,7 @@ export type TrioEnvelope = Readonly<
 >;
 export type TrioReceipt = Readonly<{
   reviewerId: string;
+  provider: string;
   approved: boolean;
   digest: string;
   contextVersion: string;
@@ -29,8 +30,16 @@ export type TrioReceipt = Readonly<{
 type Stage = "gather" | "draft" | "memory_review" | "verification" | "commit";
 type Control = Readonly<{ signal: AbortSignal; attempt: number }>;
 
+// Provider adapters remain replaceable; the approved pilot uses an OpenAI verifier.
+export const DEFAULT_TRIO_PROVIDERS = Object.freeze({
+  mason: "anthropic",
+  memory: "anthropic",
+  verifier: "openai",
+});
+
 export type TrioPorts = {
   actors: Readonly<{ mason: string; memory: string; verifier: string }>;
+  providers: Readonly<{ mason: string; memory: string; verifier: string }>;
   // Must reserve/check the SAME aggregate budget for every role before any provider call.
   // The adapter owns price lookup, atomic reservations, usage settlement and persistence.
   authorizeStep: (stage: Stage, control: Control) => Promise<boolean>;
@@ -119,12 +128,14 @@ async function envelopeFor(
 function receiptValid(
   receipt: TrioReceipt,
   reviewerId: string,
+  provider: string,
   envelope: TrioEnvelope,
   context: TrioContext,
 ) {
   const sources = new Set(context.evidence.map((e) => e.id));
   return (
     receipt?.reviewerId === reviewerId &&
+    receipt.provider === provider &&
     receipt.approved === true &&
     receipt.digest === envelope.digest &&
     receipt.contextVersion === context.version &&
@@ -176,13 +187,22 @@ export async function runTrio(
     !validScope(requestInput.scope)
   )
     return blocked("invalid_configuration");
-  const actors = ports.actors;
+  const actors = Object.freeze({ ...ports.actors });
+  const providers = Object.freeze({ ...ports.providers });
   if (
-    !actors ||
+    [actors.mason, actors.memory, actors.verifier].some((id) => !id) ||
     Object.values(actors).some((id) => typeof id !== "string" || !id.trim()) ||
     new Set(Object.values(actors)).size !== 3
   )
     return blocked("reviewers_must_be_independent");
+  if (
+    [providers.mason, providers.memory, providers.verifier].some(
+      (provider) => typeof provider !== "string" || !provider.trim(),
+    )
+  )
+    return blocked("invalid_provider_configuration");
+  if (providers.mason.trim().toLowerCase() === providers.verifier.trim().toLowerCase())
+    return blocked("verifier_requires_independent_provider");
   const request = Object.freeze({
     ...requestInput,
     scope: Object.freeze({ ...requestInput.scope }),
@@ -240,8 +260,8 @@ export async function runTrio(
       const memory = await step("memory_review", (c) => ports.reviewMemory(envelope, context, c));
       const verifier = await step("verification", (c) => ports.verify(envelope, context, c));
       if (
-        receiptValid(memory, actors.memory, envelope, context) &&
-        receiptValid(verifier, actors.verifier, envelope, context)
+        receiptValid(memory, actors.memory, providers.memory, envelope, context) &&
+        receiptValid(verifier, actors.verifier, providers.verifier, envelope, context)
       ) {
         // Copy receipts so a worker cannot mutate its verdict after this gate.
         const receipts = Object.freeze(
