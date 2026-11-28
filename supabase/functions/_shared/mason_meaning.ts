@@ -1,22 +1,22 @@
 // HURKL — search Mason's memory by meaning (build map Part A, piece 1).
 //
-// Each memory entry gets a meaning fingerprint (embedding) from Voyage AI's voyage-4-lite model,
-// chosen by the founder 2026-11-28. Searches use both word matching and meaning, combined by rank,
-// so "the drain guy" finds entries that only say "Travis".
+// Each memory entry gets a meaning fingerprint (embedding) from OpenAI's text-embedding-3-small,
+// shortened to 1024 numbers. Searches use both word matching and meaning, combined by rank, so
+// "the drain guy" finds entries that only say "Travis".
 //
-// Why Voyage and not Supabase's built-in gte-small: in the live test on 2026-11-28 the built-in
-// model hit Supabase's per-request processing limit (HTTP 546), and Supabase logged that built-in
-// inference "is being considered for deprecation".
+// Provider history (2026-11-28): Supabase's built-in gte-small failed the live test (HTTP 546 on
+// the per-request processing limit, and Supabase logged it may be deprecated). The founder then
+// chose Voyage, and once the OpenAI account worked he put in one OpenAI key for both the Verifier
+// and this, so HURKL has one fewer account and key. Voyage was never switched on.
 //
 // One copy, used by the toolbox (search_memory) and by the trio's Memory step in mason-talk.
 // Walls (scope, company, status, kind) are applied inside both searches, never after.
-// Off unless the secret VOYAGE_API_KEY is set. Any Voyage failure (no key, limit reached, timeout)
-// falls back to word search; a search never fails because of meaning search.
-// Limits per request: at most 2 Voyage calls (one batch of missing fingerprints, one question),
+// Off unless the secret OPENAI_API_KEY is set, or MASON_MEANING_SEARCH is "off". Any failure (no
+// key, limit reached, timeout) falls back to word search; a search never fails because of it.
+// Limits per request: at most 2 calls (one batch of missing fingerprints, one question),
 // BACKFILL_BATCH entries per batch, an 8-second timeout, no retries. Token use is logged.
-// Cost: voyage-4-lite's first 200 million tokens are free per account; after that $0.02 per million
-// (docs.voyageai.com/docs/pricing, checked 2026-11-28). Without a card on file Voyage allows only
-// 3 requests and 10,000 tokens a minute.
+// Cost: $0.02 per million tokens (OpenAI pricing, checked 2026-11-28); all 160 entries about
+// a tenth of a cent. It comes out of the same prepaid OpenAI credit as the Verifier.
 
 import type { SupabaseClient } from "npm:@supabase/supabase-js@2.45.4";
 
@@ -25,7 +25,7 @@ export type Embed = (texts: string[], kind: "document" | "query") => Promise<num
 export type MemoryEntry = { id: string; kind: string; title: string; body: string | null; [k: string]: unknown };
 export type SearchFilters = { scope?: string | null; companyId?: string | null; kind?: string | null; includeHistory?: boolean };
 
-export const MEANING_MODEL = "voyage-4-lite";
+export const MEANING_MODEL = "text-embedding-3-small";
 export const DIMENSIONS = 1024;
 /** Lowest similarity counted as related (1 = same meaning). Provisional: tuned on real entries at the
  * first live test through the setting MASON_MEANING_MIN_SIMILARITY (a number between 0 and 1). */
@@ -39,7 +39,7 @@ export function minSimilarity(): number {
     return MIN_SIMILARITY;
   }
 }
-export const BACKFILL_BATCH = 8;
+export const BACKFILL_BATCH = 25;
 const TIMEOUT_MS = 8000;
 const MAX_TEXT = 4000;
 
@@ -53,17 +53,17 @@ export async function sha256(text: string): Promise<string> {
   return Array.from(new Uint8Array(d)).map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
-function envKey(): string {
+function env(name: string): string {
   try {
     // deno-lint-ignore no-explicit-any
-    return String((globalThis as any).Deno?.env?.get?.("VOYAGE_API_KEY") ?? "").trim();
+    return String((globalThis as any).Deno?.env?.get?.(name) ?? "").trim();
   } catch {
     return "";
   }
 }
 
-/** Read the vectors out of a Voyage reply, in input order. Throws on anything unexpected. */
-export function parseVoyage(body: unknown, count: number): number[][] {
+/** Read the vectors out of an embeddings reply, in input order. Throws on anything unexpected. */
+export function parseEmbeddings(body: unknown, count: number): number[][] {
   // deno-lint-ignore no-explicit-any
   const b = body as any;
   const rows: { embedding: number[]; index?: number }[] = Array.isArray(b?.data) ? b.data : [];
@@ -78,26 +78,24 @@ export function parseVoyage(body: unknown, count: number): number[][] {
   return out;
 }
 
-/** Voyage voyage-4-lite, or null when no key is set (meaning search off). */
-export function voyageEmbed(fetchFn: typeof fetch = fetch, key = envKey()): Embed | null {
-  if (!key) return null;
+/** OpenAI text-embedding-3-small at 1024 numbers, or null when switched off or no key is set. */
+export function openaiEmbed(fetchFn: typeof fetch = fetch, key = env("OPENAI_API_KEY")): Embed | null {
+  if (!key || env("MASON_MEANING_SEARCH") === "off") return null;
   return async (texts, kind) => {
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
     try {
-      const res = await fetchFn("https://api.voyageai.com/v1/embeddings", {
+      const res = await fetchFn("https://api.openai.com/v1/embeddings", {
         method: "POST",
+        redirect: "error",
         signal: ctrl.signal,
         headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-        body: JSON.stringify({
-          input: texts.map((t) => t.slice(0, MAX_TEXT)), model: MEANING_MODEL, input_type: kind,
-          output_dimension: DIMENSIONS, truncation: true,
-        }),
+        body: JSON.stringify({ input: texts.map((t) => t.slice(0, MAX_TEXT)), model: MEANING_MODEL, dimensions: DIMENSIONS }),
       });
       const body = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(`voyage_${res.status}`);
-      console.log(JSON.stringify({ msg: "mason_meaning_voyage", kind, inputs: texts.length, tokens: body?.usage?.total_tokens ?? null }));
-      return parseVoyage(body, texts.length);
+      if (!res.ok) throw new Error(`embeddings_${res.status}`);
+      console.log(JSON.stringify({ msg: "mason_meaning_embed", kind, inputs: texts.length, tokens: body?.usage?.total_tokens ?? null }));
+      return parseEmbeddings(body, texts.length);
     } finally {
       clearTimeout(timer);
     }

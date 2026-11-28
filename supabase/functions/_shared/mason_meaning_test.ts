@@ -1,5 +1,5 @@
 import { deepStrictEqual as eq, ok, rejects } from "node:assert";
-import { DIMENSIONS, entryText, fillMissingMeaning, fuseRankings, meaningHits, parseVoyage, saveMeaning, voyageEmbed } from "./mason_meaning.ts";
+import { DIMENSIONS, entryText, fillMissingMeaning, fuseRankings, meaningHits, parseEmbeddings, saveMeaning, openaiEmbed } from "./mason_meaning.ts";
 
 const vec = () => Array.from({ length: DIMENSIONS }, () => 1 / Math.sqrt(DIMENSIONS));
 const embedOk = (texts: string[]) => Promise.resolve(texts.map(vec));
@@ -39,11 +39,11 @@ Deno.test("rankings combine: found by both searches ranks first, no repeats, lim
   eq(fuseRankings([], ["x"], 5), ["x"]); // meaning alone still finds it ("the drain guy" → Travis)
 });
 
-Deno.test("no Voyage key means meaning search is off", () => {
-  eq(voyageEmbed(fetch, ""), null);
+Deno.test("no OpenAI key means meaning search is off", () => {
+  eq(openaiEmbed(fetch, ""), null);
 });
 
-Deno.test("Voyage call: right model, input type and size; vectors come back in input order", async () => {
+Deno.test("embeddings call: right model and size; vectors come back in input order", async () => {
   let sent: Record<string, unknown> = {};
   let auth = "";
   const fakeFetch = ((_url: string, init: RequestInit) => {
@@ -52,27 +52,27 @@ Deno.test("Voyage call: right model, input type and size; vectors come back in i
     const a = vec(); const b = vec(); b[0] = 0.5;
     return Promise.resolve(new Response(JSON.stringify({ data: [{ embedding: b, index: 1 }, { embedding: a, index: 0 }], usage: { total_tokens: 12 } })));
   }) as typeof fetch;
-  const out = await voyageEmbed(fakeFetch, "test-key")!(["one", "two"], "document");
-  eq([sent.model, sent.input_type, sent.output_dimension], ["voyage-4-lite", "document", DIMENSIONS]);
+  const out = await openaiEmbed(fakeFetch, "test-key")!(["one", "two"], "document");
+  eq([sent.model, sent.dimensions], ["text-embedding-3-small", DIMENSIONS]);
   eq(auth, "Bearer test-key");
   eq(out[1][0], 0.5);
 });
 
-Deno.test("a Voyage refusal is an error (callers fall back to word search)", async () => {
+Deno.test("a refusal is an error (callers fall back to word search)", async () => {
   const limited = (() => Promise.resolve(new Response("{}", { status: 429 }))) as typeof fetch;
-  await rejects(voyageEmbed(limited, "k")!(["q"], "query"), /voyage_429/);
+  await rejects(openaiEmbed(limited, "k")!(["q"], "query"), /embeddings_429/);
 });
 
 Deno.test("a reply with the wrong size or a missing vector is rejected", () => {
   let threw = 0;
-  try { parseVoyage({ data: [{ embedding: [1, 2, 3] }] }, 1); } catch { threw++; }
-  try { parseVoyage({ data: [] }, 1); } catch { threw++; }
+  try { parseEmbeddings({ data: [{ embedding: [1, 2, 3] }] }, 1); } catch { threw++; }
+  try { parseEmbeddings({ data: [] }, 1); } catch { threw++; }
   eq(threw, 2);
 });
 
 Deno.test("a failed fingerprint never breaks a save", async () => {
   const { sb } = fakeSb();
-  eq(await saveMeaning(sb, () => Promise.reject(new Error("voyage_429")), [{ id: "1", kind: "note", title: "t", body: "" }]), 0);
+  eq(await saveMeaning(sb, () => Promise.reject(new Error("embeddings_429")), [{ id: "1", kind: "note", title: "t", body: "" }]), 0);
   const { sb: sb2 } = fakeSb({ upsertError: "db down" });
   eq(await saveMeaning(sb2, embedOk, [{ id: "1", kind: "note", title: "t", body: "" }]), 0);
 });
@@ -82,7 +82,7 @@ Deno.test("fingerprints are saved together with their model and a content hash",
   eq(await saveMeaning(sb, embedOk, [{ id: "a", kind: "fact", title: "t", body: "b" }, { id: "b", kind: "note", title: "u", body: "" }]), 2);
   eq(calls.upserts.length, 1); // one database write for the batch
   eq(calls.upserts[0].map((r) => r.memory_id), ["a", "b"]);
-  eq(calls.upserts[0][0].model, "voyage-4-lite");
+  eq(calls.upserts[0][0].model, "text-embedding-3-small");
   eq(String(calls.upserts[0][0].content_hash).length, 64);
 });
 
@@ -103,5 +103,5 @@ Deno.test("meaning search passes the walls to the database and fails quietly", a
   eq([args.p_scope, args.p_company_id, args.p_kind, args.p_include_history], ["company", "c1", "fact", false]);
   const { sb: bad } = fakeSb({ rpcError: "boom" });
   eq(await meaningHits(bad, embedOk, "q", {}, 5), []);
-  eq(await meaningHits(sb, () => Promise.reject(new Error("voyage_429")), "q", {}, 5), []);
+  eq(await meaningHits(sb, () => Promise.reject(new Error("embeddings_429")), "q", {}, 5), []);
 });

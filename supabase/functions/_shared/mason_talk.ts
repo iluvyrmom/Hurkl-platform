@@ -15,6 +15,14 @@ export const MODELS = {
 } as const;
 export type Tier = keyof typeof MODELS;
 
+/** The independent Verifier (OpenAI, Responses API). Price is OpenAI's standard list price for
+ * gpt-6.1-terra, $1 per million input and $5 per million output tokens (openai.com pricing and
+ * launch coverage, checked 2026-11-28). Estimates only; re-check at the monthly roster review. */
+export const OPENAI_VERIFIER = { id: "gpt-6.1-terra", maxOutputTokens: 2000, usdPerMillionIn: 1, usdPerMillionOut: 5 } as const;
+export function openaiVerifierCost(inputTokens: number, outputTokens: number): number {
+  return (inputTokens / 1e6) * OPENAI_VERIFIER.usdPerMillionIn + (outputTokens / 1e6) * OPENAI_VERIFIER.usdPerMillionOut;
+}
+
 export const LIMITS = {
   /** Most toolbox uses in one reply, so a reply can never loop. */
   maxToolUses: 6,

@@ -30,6 +30,12 @@ export type TrioTalkDeps = {
   doWork: (signal: AbortSignal) => Promise<WorkResult>;
   rewrite: (args: { draft: string; feedback: readonly string[]; evidence: readonly TrioEvidence[]; signal: AbortSignal }) => Promise<{ reply: string; costUsd: number }>;
   verifyModel: (args: { envelope: TrioEnvelope; evidence: readonly TrioEvidence[]; signal: AbortSignal }) => Promise<VerifierVerdict & { costUsd: number }>;
+  /**
+   * An independent Verifier that returns its own receipt (the OpenAI transport, mason_verifier.ts).
+   * When given, it replaces verifyModel. addCost records what each check actually cost, including
+   * checks that fail, so the reply's total cost stays complete.
+   */
+  verifyReceipt?: (envelope: TrioEnvelope, context: TrioContext, control: { signal: AbortSignal; attempt: number }, addCost: (usd: number) => void) => Promise<TrioReceipt>;
   spoken: (text: string) => string;
   /** May the next step spend up to this much more? (checks today's/month's ceilings) */
   canSpend: (moreUsd: number) => Promise<boolean>;
@@ -139,6 +145,7 @@ export async function talkThroughTrio(deps: TrioTalkDeps, deadlineMs = 50_000): 
       };
     },
     verify: async (envelope, ctx, c) => {
+      if (deps.verifyReceipt) return deps.verifyReceipt(envelope, ctx, c, (usd) => { costUsd += Math.max(0, usd); });
       const v = await deps.verifyModel({ envelope, evidence: ctx.evidence, signal: c.signal });
       costUsd += v.costUsd;
       const known = new Set(ctx.evidence.map((e) => e.id));

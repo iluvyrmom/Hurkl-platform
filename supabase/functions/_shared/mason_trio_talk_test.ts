@@ -99,3 +99,23 @@ Deno.test("a crash in Mason's work becomes the holding reply, not an error", asy
   eq(r.status, "blocked");
   eq(r.reply, HOLDING_REPLY);
 });
+
+Deno.test("an independent Verifier (OpenAI) gives its own receipt; its cost counts even when a check fails", async () => {
+  let n = 0;
+  const { d } = deps({
+    providers: { mason: "anthropic", memory: "hurkl-code", verifier: "openai" },
+    allowSameProviderVerifier: false,
+    verifyReceipt: async (envelope, ctx, _c, addCost) => {
+      addCost(0.009);
+      if (++n === 1) throw new Error("verifier_provider_unavailable");
+      return { reviewerId: "verifier", provider: "openai", approved: true, digest: envelope.digest, contextVersion: ctx.version, checkedEvidenceIds: ["m1"], reasons: [] };
+    },
+  });
+  const failed = await talkThroughTrio(d);
+  eq(failed.status, "blocked"); // a Verifier failure never lets an unchecked reply out
+  ok(Math.abs(failed.costUsd - 0.011) < 1e-9);
+  const ok2 = await talkThroughTrio(d);
+  eq(ok2.status, "verified");
+  eq(ok2.independence, "independent_provider");
+  eq(ok2.receipts[1].provider, "openai");
+});

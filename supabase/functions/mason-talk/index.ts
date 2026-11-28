@@ -24,11 +24,12 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient, type SupabaseClient } from "npm:@supabase/supabase-js@2.45.4";
 import { callTool, searchEntries, TOOLS } from "../_shared/mason_tools.ts";
 import {
-  checkSpend, costUsd, LIMITS, MODELS, type ModelTurn, type Msg, pacificPeriodStarts, pickTier,
+  checkSpend, costUsd, LIMITS, MODELS, type ModelTurn, type Msg, OPENAI_VERIFIER, openaiVerifierCost, pacificPeriodStarts, pickTier,
   runConversation, systemPrompt, type Tier, toClaudeTools,
 } from "../_shared/mason_talk.ts";
 import { spokenVersion } from "../_shared/speech_text.ts";
 import { parseVerdict, talkThroughTrio, VERIFIER_SYSTEM, verifierUserMessage } from "../_shared/mason_trio_talk.ts";
+import { createOpenAIVerifier } from "../_shared/mason_verifier.ts";
 
 const HURKL_INTERNAL = "00000000-0000-0000-0000-000000000001";
 const CHANNEL = "mason_app";
@@ -237,20 +238,48 @@ Deno.serve(async (req: Request) => {
     const tier = pickTier(message);
     const started = Date.now();
     const requestId = crypto.randomUUID();
-    const verifierModel = MODELS.advanced_reasoning;
+    // The Verifier is ChatGPT (OpenAI) whenever OPENAI_API_KEY is set; MASON_VERIFIER=claude switches
+    // back to the temporary Claude Verifier (labeled same_provider_temporary) without a redeploy.
+    const openaiKey = (Deno.env.get("OPENAI_API_KEY") ?? "").trim();
+    const useOpenAI = !!openaiKey && (Deno.env.get("MASON_VERIFIER") ?? "").trim().toLowerCase() !== "claude";
+    const verifierId = useOpenAI ? OPENAI_VERIFIER.id : MODELS.advanced_reasoning.id;
+    const reserved = new Map<string, number>(); // reservation id → worst-case USD
+    const settled = new Map<string, number>(); // reservation id → actual USD from OpenAI's usage
+    const openaiVerify = useOpenAI
+      ? createOpenAIVerifier({
+        apiKey: openaiKey, model: OPENAI_VERIFIER.id, reviewerId: "verifier", question: message,
+        maxOutputTokens: OPENAI_VERIFIER.maxOutputTokens,
+        // Same daily and monthly ceilings as Mason; each call is pre-checked at its worst-case cost.
+        budget: {
+          reserve: async (plan) => {
+            const maxUsd = openaiVerifierCost(plan.inputTokenUpperBound, plan.maxOutputTokens);
+            if (!checkSpend(today + maxUsd, month + maxUsd, dailyUsd, monthlyUsd).ok) return null;
+            const id = crypto.randomUUID();
+            reserved.set(id, maxUsd);
+            return { id };
+          },
+          settle: async (u) => {
+            const worst = reserved.get(u.reservationId) ?? 0;
+            const actual = !u.chargeReservedMaximum && u.inputTokens !== null && u.outputTokens !== null
+              ? openaiVerifierCost(u.inputTokens, u.outputTokens) : worst;
+            settled.set(u.reservationId, Math.max(actual, u.chargeReservedMaximum ? worst : 0));
+            console.log(JSON.stringify({ msg: "mason_trio_verifier_usage", request: u.requestId, status: u.status, model: u.providerModel, in: u.inputTokens, out: u.outputTokens, usd: Number(settled.get(u.reservationId)!.toFixed(6)), ms: u.elapsedMs }));
+          },
+        },
+      })
+      : null;
     const tokenCost = (t: Tier, u: { inputTokens: number; outputTokens: number }) => costUsd(t, u.inputTokens, u.outputTokens);
     const conversationText = history.slice(-6).map((m) => `${m.role === "user" ? "Josh" : "Mason"}: ${typeof m.content === "string" ? m.content : ""}`).join("\n");
 
     // Every reply goes through the trio: Memory gathers, Mason answers, the Verifier checks the
-    // exact written and spoken words. Temporarily the Verifier is a stronger Claude model
-    // (founder-approved until the OpenAI key works); each result is labeled as such.
+    // exact written and spoken words.
     const outcome = await talkThroughTrio({
       requestId,
       question: message,
       briefing: briefingText,
       conversation: conversationText,
-      providers: { mason: "anthropic", memory: "hurkl-code", verifier: "anthropic" },
-      allowSameProviderVerifier: true,
+      providers: { mason: "anthropic", memory: "hurkl-code", verifier: useOpenAI ? "openai" : "anthropic" },
+      allowSameProviderVerifier: !useOpenAI,
       spoken: spokenVersion,
       // Same search as Mason's toolbox: words and meaning combined. Only active entries become evidence.
       searchMemory: async (q) => (await searchEntries({ sb, connector: CONNECTOR }, q, {}, 6)).filter((r) => r.status === "active"),
@@ -278,11 +307,27 @@ Deno.serve(async (req: Request) => {
         const text = turn.content.filter((b) => b.type === "text").map((b) => (b as { text: string }).text).join("\n").trim();
         return { reply: text, costUsd: costUsd(tier, turn.usage?.input_tokens ?? 0, turn.usage?.output_tokens ?? 0) };
       },
+      verifyReceipt: openaiVerify
+        ? async (envelope, ctx, c, addCost) => {
+          const before = new Set(reserved.keys());
+          try {
+            const r = await openaiVerify(envelope, ctx, c);
+            console.log(JSON.stringify({ msg: "mason_trio_verdict", request: requestId, approved: r.approved, reasons: r.reasons.length, model: verifierId }));
+            return r;
+          } catch (e) {
+            console.warn(JSON.stringify({ msg: "mason_trio_verifier_failed", request: requestId, model: verifierId, error: String(e).slice(0, 120) }));
+            throw e;
+          } finally {
+            // Count each check's actual cost; if OpenAI gave no usable usage, its worst case.
+            for (const [id, worst] of reserved) if (!before.has(id)) addCost(settled.get(id) ?? worst);
+          }
+        }
+        : undefined,
       verifyModel: async ({ envelope, evidence, signal }) => {
         const turn = await callClaude(key, "advanced_reasoning", VERIFIER_SYSTEM, [{ role: "user", content: verifierUserMessage(envelope, evidence) }], false, signal);
         const raw = turn.content.filter((b) => b.type === "text").map((b) => (b as { text: string }).text).join("\n");
         const v = parseVerdict(raw);
-        console.log(JSON.stringify({ msg: "mason_trio_verdict", request: requestId, approved: v.approved, reasons: v.reasons.length, model: verifierModel.id }));
+        console.log(JSON.stringify({ msg: "mason_trio_verdict", request: requestId, approved: v.approved, reasons: v.reasons.length, model: verifierId }));
         return { ...v, costUsd: costUsd("advanced_reasoning", turn.usage?.input_tokens ?? 0, turn.usage?.output_tokens ?? 0) };
       },
       canSpend: async (more) => checkSpend(today + more, month + more, dailyUsd, monthlyUsd).ok,
@@ -310,7 +355,7 @@ Deno.serve(async (req: Request) => {
     const { error: auditErr } = await sb.from("mason_trio_checks").insert({
       request_id: requestId, conversation_id: conversationId, message_id: messageId, status: outcome.status,
       blocked_reason: outcome.blockedReason, independence: outcome.independence,
-      providers: { mason: MODELS[tier].id, memory: "hurkl-code", verifier: verifierModel.id },
+      providers: { mason: MODELS[tier].id, memory: "hurkl-code", verifier: verifierId },
       attempts: outcome.attempts, stages: outcome.stages, receipts: outcome.receipts,
       context_version: outcome.contextVersion, digest: outcome.digest, cost_usd: outcome.costUsd.toFixed(6), latency_ms: latency,
     });
