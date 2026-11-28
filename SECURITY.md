@@ -85,6 +85,8 @@ Mason's actions are classified into three tiers. This classification is a securi
 - Entering new markets or changing company direction
 - Union strategy
 
+**Mason's own learning (founder-directed, 2026-11-27).** What Mason learns about his own work is Tier 1: lessons, notes, facts, tasks, and his own working habits (how he answers, what he checks first). Working habits apply once Memory's code checks and the Verifier agree, and the founder gets a weekly list of them with an undo. Areas where his changes keep passing the weekly self-test may earn more Tier 1 room; a change that proves wrong returns that area to Tier 2. This never moves anything above into Tier 1: prices, policies, spending, sending messages and customer setup stay Tier 2 or Tier 3 as listed. See `docs/business-intelligence/JOURNAL.md` (2026-11-27) and `CLAUDE.md` (Core team update).
+
 Tier 3 actions must be structurally impossible for the AI Router/Conversation Engine to trigger on its own — e.g., no code path exists that both an AI decision and an unattended execution can both reach without a human in the loop. This is enforced in the Approval Engine, not left to prompting.
 
 ## 5. Secrets management
