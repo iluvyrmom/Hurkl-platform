@@ -307,6 +307,19 @@ Founder asked to connect ChatGPT to the HURKL plug, limited to that. ChatGPT con
 
 Open: the founder turns on the OAuth server in Supabase (Authentication > OAuth Server: enable, authorization path, dynamic client registration). Follow-up for review: a sign-in token is a normal Supabase session token for the founder, so it could also read the database directly through the app's normal access rules; once the first real token's claim names are logged, decide whether admin-level database access should exclude OAuth tokens.
 
+### 2026-11-27 — The trio: Mason, Memory and the Verifier check every reply
+
+Founder-approved ("Your OK", decisions 8681a54c and 68897a0a): start with three roles. Mason is the only voice; Memory gathers what Mason relies on and checks it; the Verifier checks the exact written and spoken words against that evidence. Nothing reaches Josh unchecked. The Verifier is meant to be ChatGPT (OpenAI API); Claude Duet is the watcher.
+
+Built for the founder's private Talk (`mason-talk` v11, branch `feat/trio-talk`):
+- Coordinator `_shared/mason_trio.ts` (ChatGPT's design) wired through `_shared/mason_trio_talk.ts`. At most one correction; if a reply still can't pass, Josh gets a fixed holding reply and no unchecked words.
+- Founder requests may cite any company's entries (the hurkl_admin view); company requests stay inside their own company.
+- Every check is saved in `mason_trio_checks` (admin-only), with cost and timing. Each step is pre-checked against Mason's daily and monthly spending ceilings.
+
+TEMPORARY (founder-approved 2026-11-27, because the OpenAI credit purchase failed): the Verifier runs on Claude Sonnet, a different model from Mason's but the same provider. Each result is labeled `same_provider_temporary`. Switch to OpenAI once `OPENAI_API_KEY` is in Supabase.
+
+Known limits: Mason's own tool writes (notes, tasks) happen before the check, so the check covers what he says, not those saves. Budget pre-checks aren't atomic, which is acceptable for one user.
+
 <!-- Next entry: ### YYYY-MM-DD — ... -->
 
 
