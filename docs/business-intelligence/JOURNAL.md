@@ -320,6 +320,12 @@ TEMPORARY (founder-approved 2026-11-27, because the OpenAI credit purchase faile
 
 Known limits: Mason's own tool writes (notes, tasks) happen before the check, so the check covers what he says, not those saves. Budget pre-checks aren't atomic, which is acceptable for one user.
 
+### 2026-11-27 — Memory and learning become two separate agents
+
+Founder direction, after comparing with "The Org" layout (where one agent, "Memory & learning," does both): Mason's core is four roles, not three. Mason is the voice; Memory keeps; the Learner learns; the Verifier checks. The Learner reviews conversations and job results afterward and proposes lessons; Memory checks and stores them; rules and decisions still wait for the founder's OK. None of the four talks to the founder directly; nothing leaves Mason unverified. Recorded in `CLAUDE.md` (Core team update) and in the build map "Mason Build Map: Learning, then Step 3" (claude.ai artifact MX163Bdi7BeDaWtf6YhR7z), which also adds a weekly self-test (the learning-agent "problem generator").
+
+Founder principle: the design evolves as we learn. A new fact that improves it updates the design (and these docs), rather than the original layout being treated as fixed.
+
 <!-- Next entry: ### YYYY-MM-DD — ... -->
 
 
