@@ -8,6 +8,8 @@
 //
 // Who:     a signed-in HURKL admin only (checked against profiles.role, like the Mason app).
 // Memory:  conversations/messages tables (channel 'mason_app', company HURKL (Internal)).
+// Trio:    every reply goes through Memory, Mason and the Verifier before Josh reads or hears it
+//          (_shared/mason_trio_talk.ts + mason_trio.ts); each one is audited in mason_trio_checks.
 // Limits:  enforced here in code: 20 messages a minute, 6 tool uses a reply, a daily and a
 //          monthly spending ceiling (MASON_TALK_DAILY_USD, default $2; MASON_TALK_MONTHLY_USD,
 //          default $20), message length cap, capped output tokens. Every reply's cost is saved.
@@ -26,6 +28,7 @@ import {
   runConversation, systemPrompt, type Tier, toClaudeTools,
 } from "../_shared/mason_talk.ts";
 import { spokenVersion } from "../_shared/speech_text.ts";
+import { parseVerdict, talkThroughTrio, VERIFIER_SYSTEM, verifierUserMessage } from "../_shared/mason_trio_talk.ts";
 
 const HURKL_INTERNAL = "00000000-0000-0000-0000-000000000001";
 const CHANNEL = "mason_app";
@@ -111,10 +114,11 @@ async function elevenLabsSpeech(text: string): Promise<{ audio: string; mime: st
   }
 }
 
-async function callClaude(key: string, tier: Tier, system: string, messages: Msg[], allowTools: boolean): Promise<ModelTurn> {
+async function callClaude(key: string, tier: Tier, system: string, messages: Msg[], allowTools: boolean, outer?: AbortSignal): Promise<ModelTurn> {
   const m = MODELS[tier];
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), CLAUDE_TIMEOUT_MS);
+  if (outer) { if (outer.aborted) ctrl.abort(); else outer.addEventListener("abort", () => ctrl.abort(), { once: true }); }
   try {
     const res = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
@@ -228,40 +232,99 @@ Deno.serve(async (req: Request) => {
     });
     if (inErr) throw new Error(`save_inbound_failed: ${inErr.message}`);
 
-    const briefing = await callTool({ sb, connector: CONNECTOR }, "mason_briefing", {});
-    const system = systemPrompt(briefing?.content?.[0]?.text ?? "Briefing unavailable right now.", now.label);
+    const briefingText = (await callTool({ sb, connector: CONNECTOR }, "mason_briefing", {}))?.content?.[0]?.text ?? "Briefing unavailable right now.";
+    const system = systemPrompt(briefingText, now.label);
     const tier = pickTier(message);
     const started = Date.now();
+    const requestId = crypto.randomUUID();
+    const verifierModel = MODELS.advanced_reasoning;
+    const tokenCost = (t: Tier, u: { inputTokens: number; outputTokens: number }) => costUsd(t, u.inputTokens, u.outputTokens);
+    const conversationText = history.slice(-6).map((m) => `${m.role === "user" ? "Josh" : "Mason"}: ${typeof m.content === "string" ? m.content : ""}`).join("\n");
 
-    let result;
-    try {
-      result = await runConversation({
-        messages: merged,
-        callModel: (msgs, allowTools) => callClaude(key, tier, system, msgs, allowTools),
-        runTool: async (name, input) => {
-          const r = await callTool({ sb, connector: CONNECTOR }, name, input);
-          console.log(JSON.stringify({ msg: "mason_talk_tool", tool: name }));
-          return { text: r?.content?.[0]?.text ?? "Unknown tool.", isError: !!r?.isError || !r };
-        },
-      });
-    } catch (e) {
-      console.error(JSON.stringify({ msg: "mason_talk_claude_failed", tier, error: String(e).slice(0, 300) }));
-      return reply(200, { status: "ai_unavailable", reply: "I'm having trouble thinking right now. Your message is saved, so try me again in a minute." });
-    }
-
-    const cost = costUsd(tier, result.inputTokens, result.outputTokens);
-    const { error: outErr } = await sb.from("messages").insert({
-      conversation_id: conversationId, company_id: HURKL_INTERNAL, direction: "outbound", body: result.reply,
-      model_tier: tier, model_id: MODELS[tier].id, input_tokens: result.inputTokens, output_tokens: result.outputTokens,
-      estimated_cost_usd: cost.toFixed(6), latency_ms: Date.now() - started,
+    // Every reply goes through the trio: Memory gathers, Mason answers, the Verifier checks the
+    // exact written and spoken words. Temporarily the Verifier is a stronger Claude model
+    // (founder-approved until the OpenAI key works); each result is labeled as such.
+    const outcome = await talkThroughTrio({
+      requestId,
+      question: message,
+      briefing: briefingText,
+      conversation: conversationText,
+      providers: { mason: "anthropic", memory: "hurkl-code", verifier: "anthropic" },
+      allowSameProviderVerifier: true,
+      spoken: spokenVersion,
+      searchMemory: async (q) => {
+        const { data } = await sb.from("mason_memory").select("id, title, body, scope, company_id, status")
+          .textSearch("search", q.slice(0, 200), { type: "websearch", config: "english" }).eq("status", "active")
+          .order("created_at", { ascending: false }).limit(6);
+        return data ?? [];
+      },
+      doWork: async (signal) => {
+        const toolResults: { name: string; text: string }[] = [];
+        const r = await runConversation({
+          messages: merged,
+          callModel: (msgs, allowTools) => callClaude(key, tier, system, msgs, allowTools, signal),
+          runTool: async (name, input) => {
+            const t = await callTool({ sb, connector: CONNECTOR }, name, input);
+            const text = t?.content?.[0]?.text ?? "Unknown tool.";
+            toolResults.push({ name, text });
+            console.log(JSON.stringify({ msg: "mason_talk_tool", tool: name }));
+            return { text, isError: !!t?.isError || !t };
+          },
+        });
+        return { reply: r.reply, toolResults, costUsd: tokenCost(tier, r) };
+      },
+      rewrite: async ({ draft, feedback, evidence, signal }) => {
+        const ev = evidence.map((e) => `<evidence id="${e.id}">\n${e.body}\n</evidence>`).join("\n");
+        const turn = await callClaude(key, tier, `${system}\n\nEVIDENCE YOU MAY RELY ON\n${ev}`, [{
+          role: "user",
+          content: `Josh asked: ${message}\n\nYour draft reply:\n${draft}\n\nThe independent check found these problems:\n- ${feedback.join("\n- ")}\n\nWrite the corrected reply to Josh only. Use only the evidence; if it doesn't say, say so plainly.`,
+        }], false, signal);
+        const text = turn.content.filter((b) => b.type === "text").map((b) => (b as { text: string }).text).join("\n").trim();
+        return { reply: text, costUsd: costUsd(tier, turn.usage?.input_tokens ?? 0, turn.usage?.output_tokens ?? 0) };
+      },
+      verifyModel: async ({ envelope, evidence, signal }) => {
+        const turn = await callClaude(key, "advanced_reasoning", VERIFIER_SYSTEM, [{ role: "user", content: verifierUserMessage(envelope, evidence) }], false, signal);
+        const raw = turn.content.filter((b) => b.type === "text").map((b) => (b as { text: string }).text).join("\n");
+        const v = parseVerdict(raw);
+        console.log(JSON.stringify({ msg: "mason_trio_verdict", request: requestId, approved: v.approved, reasons: v.reasons.length, model: verifierModel.id }));
+        return { ...v, costUsd: costUsd("advanced_reasoning", turn.usage?.input_tokens ?? 0, turn.usage?.output_tokens ?? 0) };
+      },
+      canSpend: async (more) => checkSpend(today + more, month + more, dailyUsd, monthlyUsd).ok,
+      commit: async (envelope) => {
+        const { data, error } = await sb.from("messages").insert({
+          conversation_id: conversationId, company_id: HURKL_INTERNAL, direction: "outbound", body: envelope.text,
+          model_tier: tier, model_id: MODELS[tier].id, external_message_id: `trio:${requestId}`,
+        }).select("id").single();
+        if (error || !data) throw new Error(`commit_failed: ${error?.message ?? "no row"}`);
+        return data.id;
+      },
     });
-    if (outErr) console.error(JSON.stringify({ msg: "mason_talk_save_reply_failed", error: outErr.message }));
+
+    // A blocked reply still gets saved (the fixed holding reply) so the conversation stays whole.
+    let messageId = outcome.recordId;
+    if (!messageId) {
+      const { data } = await sb.from("messages").insert({
+        conversation_id: conversationId, company_id: HURKL_INTERNAL, direction: "outbound", body: outcome.reply,
+        model_tier: tier, model_id: MODELS[tier].id, external_message_id: `trio:${requestId}`,
+      }).select("id").single();
+      messageId = data?.id ?? null;
+    }
+    const latency = Date.now() - started;
+    if (messageId) await sb.from("messages").update({ estimated_cost_usd: outcome.costUsd.toFixed(6), latency_ms: latency }).eq("id", messageId);
+    const { error: auditErr } = await sb.from("mason_trio_checks").insert({
+      request_id: requestId, conversation_id: conversationId, message_id: messageId, status: outcome.status,
+      blocked_reason: outcome.blockedReason, independence: outcome.independence,
+      providers: { mason: MODELS[tier].id, memory: "hurkl-code", verifier: verifierModel.id },
+      attempts: outcome.attempts, stages: outcome.stages, receipts: outcome.receipts,
+      context_version: outcome.contextVersion, digest: outcome.digest, cost_usd: outcome.costUsd.toFixed(6), latency_ms: latency,
+    });
+    if (auditErr) console.error(JSON.stringify({ msg: "mason_trio_audit_failed", error: auditErr.message }));
     await sb.from("conversations").update({ last_message_at: new Date().toISOString() }).eq("id", conversationId);
 
-    console.log(JSON.stringify({ msg: "mason_talk_reply", tier, tools: result.toolsUsed, calls: result.modelCalls, cost }));
+    console.log(JSON.stringify({ msg: "mason_talk_reply", tier, trio: outcome.status, reason: outcome.blockedReason, attempts: outcome.attempts, cost: outcome.costUsd, latency }));
     return reply(200, {
-      reply: result.reply, tier, toolsUsed: result.toolsUsed,
-      costUsd: Number(cost.toFixed(6)), spentTodayUsd: Number((today + cost).toFixed(4)), spentMonthUsd: Number((month + cost).toFixed(4)),
+      reply: outcome.reply, tier, checked: outcome.status === "verified", independence: outcome.independence,
+      costUsd: Number(outcome.costUsd.toFixed(6)), spentTodayUsd: Number((today + outcome.costUsd).toFixed(4)), spentMonthUsd: Number((month + outcome.costUsd).toFixed(4)),
     });
   } catch (e) {
     console.error(JSON.stringify({ msg: "mason_talk_failed", action, error: String(e).slice(0, 300) }));
