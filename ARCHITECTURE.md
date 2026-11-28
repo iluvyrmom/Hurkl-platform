@@ -1,5 +1,12 @@
 # ARCHITECTURE.md — HURKL / Mason Technical Architecture
 
+**Latest founder direction, 2026-11-27:** [the trio blueprint](docs/MASON_TRIO_BLUEPRINT.md)
+defines the three peer roles, mandatory checks before every response, internal
+task conversations, automatic-dispatch gap, costs and release evidence. It
+supersedes older conflicting role/verification descriptions below. The toolbox
+remains one implementation in HURKL. The private coordinator is not yet wired
+into production Talk; source implementation is distinct from a live rollout.
+
 Status: **approved by the founder** (initial stack, build location, and cost/retention/MFA policy below). Nothing here has been implemented yet — approval covers the plan, not a working system. The §2a compatibility verification (M1.0) is complete; the Trigger.dev-vs-Inngest pick it recommends still needs founder confirmation before M1.1 scaffolding begins. See PRODUCT.md for what the system must do; this document is how.
 
 ---

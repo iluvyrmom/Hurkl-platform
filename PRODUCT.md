@@ -2,6 +2,13 @@
 
 Status: foundational document. This defines the product. Read this before making any product, architecture, or scope decision.
 
+**Founder update, 2026-11-27:** the approved core has three peer responsibilities:
+Mason, Memory & Learning, and the Independent Verifier. Every response involves
+all three; Mason is the only outward voice. Routine company conversations may
+run within that company's approved instructions; exceptions retain approval.
+See [the trio blueprint](docs/MASON_TRIO_BLUEPRINT.md) for workflow and current
+implementation/deployment status. This supersedes older conflicting descriptions.
+
 ## Mission
 
 **Helping Business Owners Reclaim Their Lives.**

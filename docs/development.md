@@ -185,3 +185,20 @@ During Phase 1 infrastructure inspection, an `ANTHROPIC_API_KEY` and an `ELEVENL
 - They are **not assumed to be authorized** for HURKL/Mason's use just because they exist somewhere in the founder's accounts.
 - The A-1 Netlify site and its environment variables have **not** been moved, deleted, or modified.
 - Before these (or any other pre-existing credential) are used by this platform, the founder needs to explicitly confirm they're appropriate to reuse here — e.g., confirming the ElevenLabs key is in fact "Mason's custom voice" referenced in `PRODUCT.md`, and that reusing the same Anthropic key (vs. issuing a dedicated one for HURKL) is intentional rather than incidental.
+
+
+## Shared Mason functions and trio checks
+
+The Supabase toolbox is shared by the external MCP connector and private Talk.
+Test its full-entry reads, task threads, scope filters and collaboration prompt
+alongside the provider-independent trio gate:
+
+```sh
+npm exec --yes --package=deno@2.9.6 -- deno check --no-config supabase/functions/_shared/mason_trio.ts
+npm exec --yes --package=deno@2.9.6 -- deno test --no-config --no-check supabase/functions/_shared/*_test.ts
+```
+
+These tests use injected roles/in-memory query adapters and no live credentials.
+They establish source behavior, not a production rollout, real reviewer quality,
+atomic database persistence or billing accuracy. See `MASON_TRIO_BLUEPRINT.md`
+for remaining integration evidence and the independent review requirement.

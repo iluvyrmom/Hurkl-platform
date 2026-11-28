@@ -91,6 +91,16 @@ Mason's behavior is governed by three tiers — Automatic, Approval Required, Ne
 
 ## Company boundaries and Mason ownership (multi-company architecture)
 
+**Latest trio update, 2026-11-27:** read `docs/MASON_TRIO_BLUEPRINT.md` before
+phase-3 work. Josh specified Mason, Memory & Learning and the Independent
+Verifier as peer core roles, mandatory on every response, with Mason as the
+sole outward voice. Josh authorized reversible source implementation in the
+current session. Do not re-request that same design approval merely because an
+older memory entry describes the previous hybrid. Database approval controls
+remain intact; merge/deployment is a separate reviewed step. Use full-entry and
+task-thread reads, retain actual authors, and distinguish saved replies from a
+dispatcher that starts another AI turn.
+
 **Founder-directed, permanent.** This extends "Respect Mason's executive architecture (HAL)" above and "Do not duplicate systems" from a within-repo rule to a cross-repo/cross-company one. HURKL is being built to serve many independent companies — the architecture below must stay valid whether HURKL serves 1 company or 100,000.
 
 **HURKL is the platform company and the technical home of Mason.** Mason Office Manager Core, HAL's specialist workforce, the Critical Review Specialist/Critic, specialist routing/orchestration, the Company Package framework, shared memory architecture, shared business capabilities, cross-company platform infrastructure, shared APIs, and platform administration are all built, maintained, improved, and versioned in HURKL. **Do not implement an independent copy of Mason Core or HAL inside a customer company's own application or repository** — Mason is built once, in HURKL, and works for every company from there.

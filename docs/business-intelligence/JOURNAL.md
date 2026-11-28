@@ -310,3 +310,24 @@ Open: the founder turns on the OAuth server in Supabase (Authentication > OAuth 
 <!-- Next entry: ### YYYY-MM-DD — ... -->
 
 
+
+
+### 2026-11-27 — Three peer roles, one voice; internal collaboration
+
+Founder direction in the ChatGPT session: Mason, Memory & Learning and an
+Independent Verifier work as peer core roles. Every response passes through all
+three, including exact written and spoken wording; Mason alone communicates
+with the owner/customer. Memory preserves approved context and verified lessons;
+failed checks cannot be bypassed. Routine customer conversations may operate
+within company-approved instructions; exceptions retain approval requirements.
+Josh explicitly requested that the agreed workflow be aligned and built.
+
+Canonical blueprint: `docs/MASON_TRIO_BLUEPRINT.md`, linked from PRODUCT,
+ARCHITECTURE, SECURITY and CLAUDE. The existing shared-memory handoff was
+acknowledged by Claude. Source inspection found a misleading blanket no-messages
+Talk instruction, task replies omitted from briefing, and 1,200-character
+previews without a full reader. The source patch corrects these and adds a
+tested, provider-independent trio coordinator. Source implementation is not a
+production rollout: live adapters, atomic budget/commit wiring and automatic
+API dispatch remain explicit milestones. No customer workflow was redeployed,
+no paid provider was activated and no security/approval gate was removed.

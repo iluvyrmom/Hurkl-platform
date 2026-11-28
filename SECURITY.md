@@ -1,5 +1,12 @@
 # SECURITY.md — HURKL / Mason Security & Privacy
 
+**Founder update, 2026-11-27:** [the trio blueprint](docs/MASON_TRIO_BLUEPRINT.md)
+requires independent Memory & Learning and Verifier checks before every written
+and spoken response. Checks bind exact wording/scope; Mason cannot bypass them.
+Routine customer replies may run within company-approved instructions; exceptions
+and sensitive actions retain approval. Internal task replies do not authorize
+customer sends, provider spending, setup changes or an automatic worker rollout.
+
 This document defines the security and privacy posture required before Mason handles any real customer data. It complements `ARCHITECTURE.md` (how systems are built) and `PRODUCT.md` (what Mason is allowed to do).
 
 ## 1. Tenant isolation

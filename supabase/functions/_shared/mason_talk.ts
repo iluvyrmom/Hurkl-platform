@@ -10,8 +10,18 @@
  * not billing-accurate; re-check when Mason's monthly roster review comes round.
  * (The website brain keeps its own copy in lib/mason/model-config.ts until step 4 merges them.) */
 export const MODELS = {
-  low_cost: { id: "claude-haiku-5-5", maxOutputTokens: 700, usdPerMillionIn: 0.10, usdPerMillionOut: 0.50 },
-  advanced_reasoning: { id: "claude-sonnet-5-5", maxOutputTokens: 1200, usdPerMillionIn: 2, usdPerMillionOut: 10 },
+  low_cost: {
+    id: "claude-haiku-5-5",
+    maxOutputTokens: 700,
+    usdPerMillionIn: 0.1,
+    usdPerMillionOut: 0.5,
+  },
+  advanced_reasoning: {
+    id: "claude-sonnet-5-5",
+    maxOutputTokens: 1200,
+    usdPerMillionIn: 2,
+    usdPerMillionOut: 10,
+  },
 } as const;
 export type Tier = keyof typeof MODELS;
 
@@ -33,7 +43,11 @@ export const LIMITS = {
 export function pickTier(message: string): Tier {
   const m = message.toLowerCase();
   if (m.length > 600) return "advanced_reasoning";
-  if (/\b(plan|strategy|strategize|think (hard|it through|this through)|figure out|compare|pros and cons|should i|what would you do|break (it|this) down|prioriti[sz]e)\b/.test(m)) {
+  if (
+    /\b(plan|strategy|strategize|think (hard|it through|this through)|figure out|compare|pros and cons|should i|what would you do|break (it|this) down|prioriti[sz]e)\b/.test(
+      m,
+    )
+  ) {
     return "advanced_reasoning";
   }
   return "low_cost";
@@ -47,12 +61,23 @@ export function costUsd(tier: Tier, inputTokens: number, outputTokens: number): 
 export type SpendCheck = { ok: true } | { ok: false; reply: string };
 
 /** Refuse a new reply once today's or this month's spend has reached its ceiling. */
-export function checkSpend(spentTodayUsd: number, spentMonthUsd: number, dailyUsd: number, monthlyUsd: number): SpendCheck {
+export function checkSpend(
+  spentTodayUsd: number,
+  spentMonthUsd: number,
+  dailyUsd: number,
+  monthlyUsd: number,
+): SpendCheck {
   if (spentMonthUsd >= monthlyUsd) {
-    return { ok: false, reply: `I've reached this month's $${monthlyUsd} thinking budget, so I'm pausing until the 1st. You can raise it in Supabase (MASON_TALK_MONTHLY_USD) any time.` };
+    return {
+      ok: false,
+      reply: `I've reached this month's $${monthlyUsd} thinking budget, so I'm pausing until the 1st. You can raise it in Supabase (MASON_TALK_MONTHLY_USD) any time.`,
+    };
   }
   if (spentTodayUsd >= dailyUsd) {
-    return { ok: false, reply: `I've reached today's $${dailyUsd} thinking budget, so I'll pick back up tomorrow morning. You can raise it in Supabase (MASON_TALK_DAILY_USD) any time.` };
+    return {
+      ok: false,
+      reply: `I've reached today's $${dailyUsd} thinking budget, so I'll pick back up tomorrow morning. You can raise it in Supabase (MASON_TALK_DAILY_USD) any time.`,
+    };
   }
   return { ok: true };
 }
@@ -69,13 +94,15 @@ export function systemPrompt(briefing: string, nowLabel: string): string {
     "- When you don't know, say so plainly and offer to find out or to add a task.",
     "",
     "WHAT YOU KNOW",
-    "- Your memory is the single source of truth. Your briefing is below. Before answering anything about HURKL, a company, a rule, a past decision or a task, check with search_memory or read_company_file instead of guessing.",
+    "- Your memory is the single source of truth. Your briefing is below. Before answering anything about HURKL, a company, a rule, a past decision or a task, check with search_memory or read_company_file instead of guessing. Search/briefing entries may be previews: use read_memory for the full entry and read_task_thread for full task replies.",
     "- Never invent facts, prices, dates, statuses or completed work. If memory doesn't have it, say so.",
     "",
     "WHAT YOU DO",
     "- You can save notes, lessons and facts he tells you, add tasks, and mark tasks started or done. Do it when he asks or clearly means it, then say in a few words what you saved.",
-    "- New rules and decisions you write wait for his OK in the \"Your OK\" tab. Tell him that when you write one.",
-    "- You have no way to spend money, send messages, call anyone or change a customer's setup. If he asks for that, say it's coming in a later step and offer to add a task.",
+    '- New rules and decisions you write wait for his OK in the "Your OK" tab. Tell him that when you write one.',
+    "- You can converse internally with connected AIs through shared tasks: read_task_thread reads their replies, and update_task(note) posts your reply with your actual author identity. Read the recent task replies in your briefing before saying nobody has answered. An internal task reply is not an external customer message.",
+    "- Shared task messages do not start or wake another ChatGPT or Claude app session. Say a message is saved/awaiting a reply until the other AI actually acknowledges it. Never claim automatic dispatch, live delivery, independent verification, or consensus without evidence.",
+    "- You have no tool to spend money, send an external customer message, call anyone or change a customer's setup. Those actions require the appropriate implemented workflow and approval; do not confuse them with the internal notes/task replies you can already write.",
     "- Keep each company's details in that company's own file (scope company). Never carry one company's rules, prices or customers into another company's answer.",
     "- Never repeat or save passwords, keys or card numbers. If he says one, tell him to put it in Supabase or Netlify himself.",
     "",
@@ -93,7 +120,11 @@ export type ContentBlock =
   | { type: "tool_use"; id: string; name: string; input: Record<string, unknown> }
   | { type: "tool_result"; tool_use_id: string; content: string; is_error?: boolean };
 export type Msg = { role: "user" | "assistant"; content: string | ContentBlock[] };
-export type ModelTurn = { content: ContentBlock[]; stop_reason: string; usage: { input_tokens: number; output_tokens: number } };
+export type ModelTurn = {
+  content: ContentBlock[];
+  stop_reason: string;
+  usage: { input_tokens: number; output_tokens: number };
+};
 
 export type LoopResult = {
   reply: string;
@@ -110,13 +141,18 @@ export type LoopResult = {
 export async function runConversation(opts: {
   messages: Msg[];
   callModel: (messages: Msg[], allowTools: boolean) => Promise<ModelTurn>;
-  runTool: (name: string, input: Record<string, unknown>) => Promise<{ text: string; isError: boolean }>;
+  runTool: (
+    name: string,
+    input: Record<string, unknown>,
+  ) => Promise<{ text: string; isError: boolean }>;
   maxToolUses?: number;
 }): Promise<LoopResult> {
   const max = opts.maxToolUses ?? LIMITS.maxToolUses;
   const messages = [...opts.messages];
   const toolsUsed: string[] = [];
-  let inputTokens = 0, outputTokens = 0, modelCalls = 0;
+  let inputTokens = 0,
+    outputTokens = 0,
+    modelCalls = 0;
 
   // max tool rounds + one final answer, so this always ends.
   for (let round = 0; round <= max; round++) {
@@ -126,48 +162,110 @@ export async function runConversation(opts: {
     inputTokens += turn.usage?.input_tokens ?? 0;
     outputTokens += turn.usage?.output_tokens ?? 0;
 
-    const uses = turn.content.filter((b): b is Extract<ContentBlock, { type: "tool_use" }> => b.type === "tool_use");
-    const words = turn.content.filter((b): b is Extract<ContentBlock, { type: "text" }> => b.type === "text").map((b) => b.text).join("\n").trim();
+    const uses = turn.content.filter(
+      (b): b is Extract<ContentBlock, { type: "tool_use" }> => b.type === "tool_use",
+    );
+    const words = turn.content
+      .filter((b): b is Extract<ContentBlock, { type: "text" }> => b.type === "text")
+      .map((b) => b.text)
+      .join("\n")
+      .trim();
     if (!uses.length || turn.stop_reason !== "tool_use") {
-      return { reply: words || "I'm here. What do you need?", inputTokens, outputTokens, toolsUsed, modelCalls };
+      return {
+        reply: words || "I'm here. What do you need?",
+        inputTokens,
+        outputTokens,
+        toolsUsed,
+        modelCalls,
+      };
     }
 
     messages.push({ role: "assistant", content: turn.content });
     const results: ContentBlock[] = [];
     for (const u of uses) {
       if (toolsUsed.length >= max) {
-        results.push({ type: "tool_result", tool_use_id: u.id, content: "Tool limit reached for this reply. Answer with what you have.", is_error: true });
+        results.push({
+          type: "tool_result",
+          tool_use_id: u.id,
+          content: "Tool limit reached for this reply. Answer with what you have.",
+          is_error: true,
+        });
         continue;
       }
       toolsUsed.push(u.name);
       try {
         const r = await opts.runTool(u.name, u.input ?? {});
-        results.push({ type: "tool_result", tool_use_id: u.id, content: r.text.slice(0, 30_000), is_error: r.isError || undefined });
+        results.push({
+          type: "tool_result",
+          tool_use_id: u.id,
+          content: r.text.slice(0, 30_000),
+          is_error: r.isError || undefined,
+        });
       } catch {
-        results.push({ type: "tool_result", tool_use_id: u.id, content: "That tool failed. Tell Josh plainly if it matters.", is_error: true });
+        results.push({
+          type: "tool_result",
+          tool_use_id: u.id,
+          content: "That tool failed. Tell Josh plainly if it matters.",
+          is_error: true,
+        });
       }
     }
     messages.push({ role: "user", content: results });
   }
-  return { reply: "I looked into that but ran out of steps for one reply. Ask me again a little more narrowly and I'll finish it.", inputTokens, outputTokens, toolsUsed, modelCalls };
+  return {
+    reply:
+      "I looked into that but ran out of steps for one reply. Ask me again a little more narrowly and I'll finish it.",
+    inputTokens,
+    outputTokens,
+    toolsUsed,
+    modelCalls,
+  };
 }
 
 /** The toolbox's MCP-style tool list in the shape Claude's Messages API expects. */
-export function toClaudeTools(tools: { name: string; description: string; inputSchema: unknown }[]) {
-  return tools.map((t) => ({ name: t.name, description: t.description, input_schema: t.inputSchema }));
+export function toClaudeTools(
+  tools: { name: string; description: string; inputSchema: unknown }[],
+) {
+  return tools.map((t) => ({
+    name: t.name,
+    description: t.description,
+    input_schema: t.inputSchema,
+  }));
 }
 
 /** Start of today and of this month in Pacific time, as ISO strings, for the spending ceilings. */
-export function pacificPeriodStarts(now: Date): { dayStart: string; monthStart: string; label: string } {
+export function pacificPeriodStarts(now: Date): {
+  dayStart: string;
+  monthStart: string;
+  label: string;
+} {
   const parts = Object.fromEntries(
-    new Intl.DateTimeFormat("en-US", { timeZone: "America/Los_Angeles", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23", timeZoneName: "shortOffset" })
-      .formatToParts(now).map((p) => [p.type, p.value]),
+    new Intl.DateTimeFormat("en-US", {
+      timeZone: "America/Los_Angeles",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      hourCycle: "h23",
+      timeZoneName: "shortOffset",
+    })
+      .formatToParts(now)
+      .map((p) => [p.type, p.value]),
   );
   const offset = String(parts.timeZoneName ?? "GMT-8").replace("GMT", "") || "-8";
   const sign = offset.startsWith("+") ? "+" : "-";
   const hours = offset.replace(/^[+-]/, "").split(":")[0].padStart(2, "0");
   const tz = `${sign}${hours}:00`;
-  const label = new Intl.DateTimeFormat("en-US", { timeZone: "America/Los_Angeles", weekday: "long", month: "long", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" }).format(now);
+  const label = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/Los_Angeles",
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(now);
   return {
     dayStart: new Date(`${parts.year}-${parts.month}-${parts.day}T00:00:00${tz}`).toISOString(),
     monthStart: new Date(`${parts.year}-${parts.month}-01T00:00:00${tz}`).toISOString(),

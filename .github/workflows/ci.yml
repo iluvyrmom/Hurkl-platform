@@ -62,6 +62,11 @@ jobs:
       - name: Unit tests
         run: npm test
 
+      - name: Shared Mason function tests (no provider credentials)
+        run: |
+          npm exec --yes --package=deno@2.9.6 -- deno check --no-config supabase/functions/_shared/mason_trio.ts
+          npm exec --yes --package=deno@2.9.6 -- deno test --no-config --no-check supabase/functions/_shared/*_test.ts
+
       - name: Tenant isolation integration tests (real Postgres RLS)
         run: npm run test:integration
         env:
