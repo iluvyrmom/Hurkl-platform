@@ -1,27 +1,47 @@
 // HURKL — search Mason's memory by meaning (build map Part A, piece 1).
 //
-// Each memory entry gets a meaning fingerprint from gte-small, the small model Supabase runs free
-// inside Edge Functions (no outside AI call, no bill). Searches use both word matching and
-// meaning, combined by rank, so "the drain guy" finds entries that only say "Travis".
+// Each memory entry gets a meaning fingerprint (embedding) from Voyage AI's voyage-4-lite model,
+// chosen by the founder 2026-11-28. Searches use both word matching and meaning, combined by rank,
+// so "the drain guy" finds entries that only say "Travis".
+//
+// Why Voyage and not Supabase's built-in gte-small: in the live test on 2026-11-28 the built-in
+// model hit Supabase's per-request processing limit (HTTP 546), and Supabase logged that built-in
+// inference "is being considered for deprecation".
 //
 // One copy, used by the toolbox (search_memory) and by the trio's Memory step in mason-talk.
 // Walls (scope, company, status, kind) are applied inside both searches, never after.
-// Limits: at most BACKFILL_BATCH fingerprints and BACKFILL_BUDGET_MS per request, so a search can
-// never run long; missing fingerprints fill in over the next few searches.
+// Off unless the secret VOYAGE_API_KEY is set. Any Voyage failure (no key, limit reached, timeout)
+// falls back to word search; a search never fails because of meaning search.
+// Limits per request: at most 2 Voyage calls (one batch of missing fingerprints, one question),
+// BACKFILL_BATCH entries per batch, an 8-second timeout, no retries. Token use is logged.
+// Cost: voyage-4-lite's first 200 million tokens are free per account; after that $0.02 per million
+// (docs.voyageai.com/docs/pricing, checked 2026-11-28). Without a card on file Voyage allows only
+// 3 requests and 10,000 tokens a minute.
 
 import type { SupabaseClient } from "npm:@supabase/supabase-js@2.45.4";
 
-export type Embed = (text: string) => Promise<number[]>;
+/** Fingerprints for several texts at once. "document" = a memory entry, "query" = a question. */
+export type Embed = (texts: string[], kind: "document" | "query") => Promise<number[][]>;
 export type MemoryEntry = { id: string; kind: string; title: string; body: string | null; [k: string]: unknown };
 export type SearchFilters = { scope?: string | null; companyId?: string | null; kind?: string | null; includeHistory?: boolean };
 
-export const MEANING_MODEL = "gte-small";
-export const DIMENSIONS = 384;
-/** Lowest similarity counted as "means the same thing" (1 = identical meaning). Tuned on real entries. */
-export const MIN_SIMILARITY = 0.8;
+export const MEANING_MODEL = "voyage-4-lite";
+export const DIMENSIONS = 1024;
+/** Lowest similarity counted as related (1 = same meaning). Provisional: tuned on real entries at the
+ * first live test through the setting MASON_MEANING_MIN_SIMILARITY (a number between 0 and 1). */
+export const MIN_SIMILARITY = 0.35;
+export function minSimilarity(): number {
+  try {
+    // deno-lint-ignore no-explicit-any
+    const v = Number((globalThis as any).Deno?.env?.get?.("MASON_MEANING_MIN_SIMILARITY"));
+    return Number.isFinite(v) && v >= 0 && v < 1 ? v : MIN_SIMILARITY;
+  } catch {
+    return MIN_SIMILARITY;
+  }
+}
 export const BACKFILL_BATCH = 8;
-export const BACKFILL_BUDGET_MS = 1200;
-const MAX_TEXT = 2000; // gte-small reads about 512 tokens; the start of an entry carries its meaning
+const TIMEOUT_MS = 8000;
+const MAX_TEXT = 4000;
 
 /** The words that describe an entry: what kind it is, its title, then its body. */
 export function entryText(e: Pick<MemoryEntry, "kind" | "title" | "body">): string {
@@ -33,70 +53,98 @@ export async function sha256(text: string): Promise<string> {
   return Array.from(new Uint8Array(d)).map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
-let session: { run: (t: string, o: Record<string, unknown>) => Promise<unknown> } | null = null;
-/**
- * Supabase's built-in gte-small, or null when meaning search is switched off or unavailable.
- * OFF unless the secret MASON_MEANING_SEARCH is "on": on 2026-11-28 a search that fingerprinted
- * several entries hit Supabase's per-request processing limit (HTTP 546), and Supabase logged that
- * built-in inference "is being considered for deprecation". Kept as an off switch, not deleted,
- * while the fingerprint source is decided.
- */
-export function builtInEmbed(): Embed | null {
-  let on = false;
+function envKey(): string {
+  try {
+    // deno-lint-ignore no-explicit-any
+    return String((globalThis as any).Deno?.env?.get?.("VOYAGE_API_KEY") ?? "").trim();
+  } catch {
+    return "";
+  }
+}
+
+/** Read the vectors out of a Voyage reply, in input order. Throws on anything unexpected. */
+export function parseVoyage(body: unknown, count: number): number[][] {
   // deno-lint-ignore no-explicit-any
-  try { on = (globalThis as any).Deno?.env?.get?.("MASON_MEANING_SEARCH") === "on"; } catch { /* no env access: off */ }
-  if (!on) return null;
-  // deno-lint-ignore no-explicit-any
-  const ai = (globalThis as any).Supabase?.ai;
-  if (!ai?.Session) return null;
-  return async (text: string) => {
-    session ??= new ai.Session(MEANING_MODEL);
-    const out = await session!.run(text.slice(0, MAX_TEXT), { mean_pool: true, normalize: true });
-    const v = Array.from(out as ArrayLike<number>);
-    if (v.length !== DIMENSIONS || v.some((x) => !Number.isFinite(x))) throw new Error("bad_embedding");
-    return v;
+  const b = body as any;
+  const rows: { embedding: number[]; index?: number }[] = Array.isArray(b?.data) ? b.data : [];
+  const out = new Array<number[]>(count);
+  rows.forEach((r, i) => { out[typeof r.index === "number" ? r.index : i] = r.embedding; });
+  for (let i = 0; i < count; i++) {
+    const v = out[i];
+    if (!Array.isArray(v) || v.length !== DIMENSIONS || v.some((x) => typeof x !== "number" || !Number.isFinite(x))) {
+      throw new Error("bad_embedding");
+    }
+  }
+  return out;
+}
+
+/** Voyage voyage-4-lite, or null when no key is set (meaning search off). */
+export function voyageEmbed(fetchFn: typeof fetch = fetch, key = envKey()): Embed | null {
+  if (!key) return null;
+  return async (texts, kind) => {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
+    try {
+      const res = await fetchFn("https://api.voyageai.com/v1/embeddings", {
+        method: "POST",
+        signal: ctrl.signal,
+        headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          input: texts.map((t) => t.slice(0, MAX_TEXT)), model: MEANING_MODEL, input_type: kind,
+          output_dimension: DIMENSIONS, truncation: true,
+        }),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(`voyage_${res.status}`);
+      console.log(JSON.stringify({ msg: "mason_meaning_voyage", kind, inputs: texts.length, tokens: body?.usage?.total_tokens ?? null }));
+      return parseVoyage(body, texts.length);
+    } finally {
+      clearTimeout(timer);
+    }
   };
 }
 
-/** Give fingerprints to entries that don't have one yet, newest first, within a small time budget. */
-export async function fillMissingMeaning(sb: SupabaseClient, embed: Embed, opts: { batch?: number; budgetMs?: number } = {}): Promise<number> {
-  const started = Date.now();
-  const { data, error } = await sb.rpc("mason_memory_missing_meaning", { p_limit: opts.batch ?? BACKFILL_BATCH });
+/** Give fingerprints to entries that don't have one yet: one batched call, newest entries first. */
+export async function fillMissingMeaning(sb: SupabaseClient, embed: Embed, batch = BACKFILL_BATCH): Promise<number> {
+  const { data, error } = await sb.rpc("mason_memory_missing_meaning", { p_limit: batch });
   if (error || !data?.length) return 0;
-  let done = 0;
-  for (const e of data as MemoryEntry[]) {
-    if (Date.now() - started > (opts.budgetMs ?? BACKFILL_BUDGET_MS)) break;
-    if (await saveMeaning(sb, embed, e)) done++;
-  }
-  return done;
+  return await saveMeaning(sb, embed, data as MemoryEntry[]);
 }
 
-/** Fingerprint one entry. Never throws: a missing fingerprint only means word search finds it. */
-export async function saveMeaning(sb: SupabaseClient, embed: Embed, e: MemoryEntry): Promise<boolean> {
+/** Fingerprint entries in one call. Never throws: an entry without one is still found by words. */
+export async function saveMeaning(sb: SupabaseClient, embed: Embed, entries: MemoryEntry[]): Promise<number> {
+  if (!entries.length) return 0;
   try {
-    const text = entryText(e);
-    const embedding = await embed(text);
-    const { error } = await sb.from("mason_memory_meaning").upsert({
-      memory_id: e.id, embedding: JSON.stringify(embedding), model: MEANING_MODEL, content_hash: await sha256(text),
-    }, { onConflict: "memory_id" });
-    if (error) console.warn(JSON.stringify({ msg: "mason_meaning_save_failed", error: error.message.slice(0, 200) }));
-    return !error;
+    const texts = entries.map(entryText);
+    const vectors = await embed(texts, "document");
+    const rows = await Promise.all(entries.map(async (e, i) => ({
+      memory_id: e.id, embedding: JSON.stringify(vectors[i]), model: MEANING_MODEL, content_hash: await sha256(texts[i]),
+    })));
+    const { error } = await sb.from("mason_memory_meaning").upsert(rows, { onConflict: "memory_id" });
+    if (error) {
+      console.warn(JSON.stringify({ msg: "mason_meaning_save_failed", error: error.message.slice(0, 200) }));
+      return 0;
+    }
+    return rows.length;
   } catch (err) {
     console.warn(JSON.stringify({ msg: "mason_meaning_embed_failed", error: String(err).slice(0, 200) }));
-    return false;
+    return 0;
   }
 }
 
 /** Entry ids closest in meaning to the question, inside the given walls. Empty on any failure. */
 export async function meaningHits(sb: SupabaseClient, embed: Embed, query: string, f: SearchFilters, limit: number): Promise<{ id: string; similarity: number }[]> {
   try {
-    const embedding = await embed(query);
+    const [embedding] = await embed([query], "query");
     const { data, error } = await sb.rpc("mason_memory_meaning_search", {
-      p_embedding: JSON.stringify(embedding), p_limit: limit, p_min_similarity: MIN_SIMILARITY,
+      p_embedding: JSON.stringify(embedding), p_limit: limit, p_min_similarity: minSimilarity(),
       p_scope: f.scope ?? null, p_company_id: f.companyId ?? null, p_kind: f.kind ?? null, p_include_history: !!f.includeHistory,
     });
     if (error) throw new Error(error.message);
-    return (data ?? []).map((r: { memory_id: string; similarity: number }) => ({ id: r.memory_id, similarity: Number(r.similarity) }));
+    const hits = (data ?? []).map((r: { memory_id: string; similarity: number }) => ({ id: r.memory_id, similarity: Number(r.similarity) }));
+    // Scores only (no memory text), so the match level can be tuned from the logs.
+    console.log(JSON.stringify({ msg: "mason_meaning_hits", count: hits.length, top: hits.slice(0, 5).map((h: { similarity: number }) => Number(h.similarity.toFixed(3))) }));
+    return hits;
   } catch (err) {
     console.warn(JSON.stringify({ msg: "mason_meaning_search_failed", error: String(err).slice(0, 200) }));
     return [];

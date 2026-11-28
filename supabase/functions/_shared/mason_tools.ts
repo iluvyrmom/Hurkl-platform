@@ -4,11 +4,11 @@
 // talking to Mason in the Mason app). One copy, so both always behave the same.
 // Safety lives here and in the database: secrets are refused by the database; rules and
 // decisions (and any replacement of an existing entry) wait for the founder's approval;
-// nothing is ever deleted. Makes no outside AI calls: search by meaning uses the small gte-small
-// model Supabase runs inside the function itself (mason_meaning.ts), at no extra cost.
+// nothing is ever deleted. The only outside AI call is search by meaning (Voyage fingerprints,
+// mason_meaning.ts): free within Voyage's free tokens, capped per request, word search if it fails.
 
 import type { SupabaseClient } from "npm:@supabase/supabase-js@2.45.4";
-import { builtInEmbed, type Embed, fillMissingMeaning, fuseRankings, meaningHits, saveMeaning, type SearchFilters } from "./mason_meaning.ts";
+import { type Embed, fillMissingMeaning, fuseRankings, meaningHits, saveMeaning, type SearchFilters, voyageEmbed } from "./mason_meaning.ts";
 
 export const KINDS = ["decision", "rule", "lesson", "fact", "task", "note"] as const;
 export const SCOPES = ["hurkl_core", "company", "founder"] as const;
@@ -23,10 +23,10 @@ export const INSTRUCTIONS =
   "Never send passwords, keys or card numbers. Keep each company's private details in its own company file (scope 'company').";
 
 /** Who is using the toolbox: the plug passes the AI tool's key name, mason-talk passes "Mason (talk)".
- * embed: meaning fingerprints; defaults to Supabase's built-in model, null turns meaning search off. */
+ * embed: meaning fingerprints; defaults to Voyage (when VOYAGE_API_KEY is set), null turns meaning search off. */
 export type Ctx = { sb: SupabaseClient; connector: string; embed?: Embed | null };
 
-const embedFor = (ctx: Ctx): Embed | null => (ctx.embed === undefined ? builtInEmbed() : ctx.embed);
+const embedFor = (ctx: Ctx): Embed | null => (ctx.embed === undefined ? voyageEmbed() : ctx.embed);
 
 /**
  * Search Mason's memory by words and by meaning, combined, inside the given walls.
@@ -329,7 +329,7 @@ export async function callTool(ctx: Ctx, name: string, a: Record<string, unknown
       }
       if (!pending && replaces_id) await sb.from("mason_memory").update({ status: "replaced" }).eq("id", replaces_id);
       const embed = embedFor(ctx);
-      if (embed) await saveMeaning(sb, embed, { id: data.id, kind, title, body: row.body }); // best effort; never blocks the save
+      if (embed) await saveMeaning(sb, embed, [{ id: data.id, kind, title, body: row.body }]); // best effort; never blocks the save
       return text(pending
         ? `Saved (id ${data.id}). It's waiting for the founder's approval before Mason treats it as final.`
         : `Saved (id ${data.id}).`);
