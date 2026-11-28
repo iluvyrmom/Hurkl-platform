@@ -328,7 +328,6 @@ Founder direction, same night: the founder approves business calls, not every th
 
 Founder principle: the design evolves as we learn. A new fact that improves it updates the design (and these docs), rather than the original layout being treated as fixed.
 
-<!-- Next entry: ### YYYY-MM-DD — ... -->
 
 
 
@@ -339,3 +338,5 @@ Founder-directed ("Yep..to verify you too", "Yes..learn..improve"). Live in maso
 - **Search by meaning**: word and meaning results are combined, with walls (scope, company, status, kind) applied inside both searches. Code handed between AIs (`draft-source-artifact`) is never search material or evidence.
 - **Learning from catches**: every check that says no is saved with its reasons (`mason_trio_checks.rejections`). Mason automatically saves one lesson per caught reply (tag `verifier-catch`, at most 10 a day), and his briefing now shows recent lessons, so the next reply uses them. These lessons need no approval (`SECURITY.md` §4, "Mason's own learning").
 - **Honest holding reply**: when no version passes, Josh is told briefly what couldn't be confirmed, and nothing unchecked from the draft is shown.
+
+<!-- Next entry: ### YYYY-MM-DD — ... -->
