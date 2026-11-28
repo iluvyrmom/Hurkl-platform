@@ -22,7 +22,7 @@
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient, type SupabaseClient } from "npm:@supabase/supabase-js@2.45.4";
-import { callTool, TOOLS } from "../_shared/mason_tools.ts";
+import { callTool, searchEntries, TOOLS } from "../_shared/mason_tools.ts";
 import {
   checkSpend, costUsd, LIMITS, MODELS, type ModelTurn, type Msg, pacificPeriodStarts, pickTier,
   runConversation, systemPrompt, type Tier, toClaudeTools,
@@ -252,12 +252,8 @@ Deno.serve(async (req: Request) => {
       providers: { mason: "anthropic", memory: "hurkl-code", verifier: "anthropic" },
       allowSameProviderVerifier: true,
       spoken: spokenVersion,
-      searchMemory: async (q) => {
-        const { data } = await sb.from("mason_memory").select("id, title, body, scope, company_id, status")
-          .textSearch("search", q.slice(0, 200), { type: "websearch", config: "english" }).eq("status", "active")
-          .order("created_at", { ascending: false }).limit(6);
-        return data ?? [];
-      },
+      // Same search as Mason's toolbox: words and meaning combined. Only active entries become evidence.
+      searchMemory: async (q) => (await searchEntries({ sb, connector: CONNECTOR }, q, {}, 6)).filter((r) => r.status === "active"),
       doWork: async (signal) => {
         const toolResults: { name: string; text: string }[] = [];
         const r = await runConversation({

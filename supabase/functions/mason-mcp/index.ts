@@ -18,7 +18,8 @@
 // Safety:    the database refuses anything that looks like a password, key or card number;
 //            rules/decisions (and any replacement of an existing entry) written through the plug
 //            wait for the founder's approval; nothing is ever deleted.
-// Makes no AI-model calls, so it adds no AI cost.
+// Makes no outside AI calls, so it adds no AI cost. Search by meaning uses Supabase's built-in
+// gte-small model inside the function (_shared/mason_meaning.ts).
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient, type SupabaseClient } from "npm:@supabase/supabase-js@2.45.4";

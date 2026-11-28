@@ -4,9 +4,11 @@
 // talking to Mason in the Mason app). One copy, so both always behave the same.
 // Safety lives here and in the database: secrets are refused by the database; rules and
 // decisions (and any replacement of an existing entry) wait for the founder's approval;
-// nothing is ever deleted. Makes no AI-model calls.
+// nothing is ever deleted. Makes no outside AI calls: search by meaning uses the small gte-small
+// model Supabase runs inside the function itself (mason_meaning.ts), at no extra cost.
 
 import type { SupabaseClient } from "npm:@supabase/supabase-js@2.45.4";
+import { builtInEmbed, type Embed, fillMissingMeaning, fuseRankings, meaningHits, saveMeaning, type SearchFilters } from "./mason_meaning.ts";
 
 export const KINDS = ["decision", "rule", "lesson", "fact", "task", "note"] as const;
 export const SCOPES = ["hurkl_core", "company", "founder"] as const;
@@ -20,8 +22,48 @@ export const INSTRUCTIONS =
   "update tasks, and log_ai_job for the AI roster. Rules and decisions you write wait for the founder's approval. " +
   "Never send passwords, keys or card numbers. Keep each company's private details in its own company file (scope 'company').";
 
-/** Who is using the toolbox: the plug passes the AI tool's key name, mason-talk passes "Mason (talk)". */
-export type Ctx = { sb: SupabaseClient; connector: string };
+/** Who is using the toolbox: the plug passes the AI tool's key name, mason-talk passes "Mason (talk)".
+ * embed: meaning fingerprints; defaults to Supabase's built-in model, null turns meaning search off. */
+export type Ctx = { sb: SupabaseClient; connector: string; embed?: Embed | null };
+
+const embedFor = (ctx: Ctx): Embed | null => (ctx.embed === undefined ? builtInEmbed() : ctx.embed);
+
+/**
+ * Search Mason's memory by words and by meaning, combined, inside the given walls.
+ * The one search used by search_memory (plug and Talk) and by the trio's Memory step.
+ */
+export async function searchEntries(ctx: Ctx, query: string, f: SearchFilters, limit: number): Promise<any[]> {
+  const { sb } = ctx;
+  const q = query.trim().slice(0, 200);
+  if (!q) return [];
+  const n = Math.min(Math.max(limit, 1), 20);
+  const statuses = f.includeHistory ? null : ["active", "pending_approval"];
+  const walls = (query: any) => {
+    if (statuses) query = query.in("status", statuses);
+    if (f.scope) query = query.eq("scope", f.scope);
+    if (f.companyId) query = query.eq("company_id", f.companyId);
+    if (f.kind) query = query.eq("kind", f.kind);
+    return query;
+  };
+  const embed = embedFor(ctx);
+  if (embed) await fillMissingMeaning(sb, embed); // new entries get their fingerprint within a search or two
+  const [{ data: byWords }, meaning] = await Promise.all([
+    walls(sb.from("mason_memory").select("id").textSearch("search", q, { type: "websearch", config: "english" }))
+      .order("created_at", { ascending: false }).limit(n),
+    embed ? meaningHits(sb, embed, q, f, n) : Promise.resolve([]),
+  ]);
+  let wordIds: string[] = (byWords ?? []).map((r: { id: string }) => r.id);
+  if (!wordIds.length && !meaning.length) {
+    // Last resort for short or unusual words: contains-match on the title, same walls.
+    const { data: loose } = await walls(sb.from("mason_memory").select("id").ilike("title", `%${q.replace(/[%_]/g, "").slice(0, 60)}%`)).limit(n);
+    wordIds = (loose ?? []).map((r: { id: string }) => r.id);
+  }
+  const ids = fuseRankings(wordIds, meaning.map((m) => m.id), n);
+  if (!ids.length) return [];
+  const { data: rows } = await sb.from("mason_memory").select("*").in("id", ids);
+  const byId = new Map((rows ?? []).map((r: any) => [r.id, r]));
+  return ids.map((id) => byId.get(id)).filter(Boolean);
+}
 
 export const text = (t: string, isError = false) => ({ content: [{ type: "text", text: t }], isError });
 
@@ -47,7 +89,7 @@ export const TOOLS = [
     inputSchema: {
       type: "object",
       properties: {
-        query: { type: "string", description: "Words to search for." },
+        query: { type: "string", description: "Words or a short question. Matches by meaning too, so different wording still finds it." },
         scope: { type: "string", enum: [...SCOPES], description: "Optional: hurkl_core, company or founder." },
         company: { type: "string", description: "Optional company slug or name, e.g. a1-best-moving or Executive Drains." },
         kind: { type: "string", enum: [...KINDS] },
@@ -223,21 +265,21 @@ export async function callTool(ctx: Ctx, name: string, a: Record<string, unknown
       const q = str(a.query, 200);
       if (!q) return text("Give some words to search for.", true);
       const limit = Math.min(Math.max(Number(a.limit) || 10, 1), 20);
-      let query = sb.from("mason_memory").select("*").textSearch("search", q, { type: "websearch", config: "english" }).order("created_at", { ascending: false }).limit(limit);
-      if (!a.include_history) query = query.in("status", ["active", "pending_approval"]);
-      if (a.scope && SCOPES.includes(a.scope as any)) query = query.eq("scope", a.scope as string);
-      if (a.kind && KINDS.includes(a.kind as any)) query = query.eq("kind", a.kind as string);
+      const f: SearchFilters = {
+        scope: a.scope && SCOPES.includes(a.scope as any) ? String(a.scope) : null,
+        kind: a.kind && KINDS.includes(a.kind as any) ? String(a.kind) : null,
+        includeHistory: !!a.include_history,
+      };
       if (a.company) {
         const c = await resolveCompany(sb, str(a.company, 80));
         if (!c) return text(`No single company matches "${a.company}". Companies: ${comps.map((x: any) => x.name).join(", ")}`, true);
-        query = query.eq("company_id", c.id);
+        f.companyId = c.id;
       }
-      let { data, error } = await query;
-      if (error) return text("Search failed. Try simpler words.", true);
-      if (!data?.length) {
-        // Fallback: simple contains-match on the title for short or unusual words.
-        const { data: loose } = await sb.from("mason_memory").select("*").ilike("title", `%${q.replace(/[%_]/g, "").slice(0, 60)}%`).in("status", ["active", "pending_approval"]).limit(limit);
-        data = loose ?? [];
+      let data: any[];
+      try {
+        data = await searchEntries(ctx, q, f, limit);
+      } catch {
+        return text("Search failed. Try simpler words.", true);
       }
       return text(data.length ? data.map((m) => fmtEntry(m, cmap)).join("\n") : `Nothing in Mason's memory matches "${q}".`);
     }
@@ -286,6 +328,8 @@ export async function callTool(ctx: Ctx, name: string, a: Record<string, unknown
         return text("Couldn't save that. Check the fields and try again.", true);
       }
       if (!pending && replaces_id) await sb.from("mason_memory").update({ status: "replaced" }).eq("id", replaces_id);
+      const embed = embedFor(ctx);
+      if (embed) await saveMeaning(sb, embed, { id: data.id, kind, title, body: row.body }); // best effort; never blocks the save
       return text(pending
         ? `Saved (id ${data.id}). It's waiting for the founder's approval before Mason treats it as final.`
         : `Saved (id ${data.id}).`);
