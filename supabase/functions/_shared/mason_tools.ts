@@ -80,7 +80,7 @@ export const TOOLS = [
   {
     name: "mason_briefing",
     title: "Mason briefing (start here)",
-    description: "Start-of-session briefing from Mason: active HURKL rules and decisions, open tasks, items waiting for the founder's approval, and the list of companies. Call this first in every session.",
+    description: "Start-of-session briefing from Mason: active HURKL rules and decisions, open tasks, recent lessons, items waiting for the founder's approval, and the list of companies. Call this first in every session.",
     inputSchema: { type: "object", properties: {}, additionalProperties: false },
     annotations: { readOnlyHint: true, openWorldHint: false },
   },
@@ -247,10 +247,13 @@ export async function callTool(ctx: Ctx, name: string, a: Record<string, unknown
 
   switch (name) {
     case "mason_briefing": {
-      const [{ data: rules }, { data: tasks }, { count: pending }] = await Promise.all([
+      const [{ data: rules }, { data: tasks }, { count: pending }, { data: lessons }] = await Promise.all([
         sb.from("mason_memory").select("*").in("scope", ["hurkl_core", "founder"]).eq("status", "active").in("kind", ["rule", "decision"]).order("created_at", { ascending: false }).limit(40),
         sb.from("mason_memory").select("*").eq("kind", "task").eq("status", "active").neq("task_status", "done").order("created_at", { ascending: false }).limit(30),
         sb.from("mason_memory").select("id", { count: "exact", head: true }).eq("status", "pending_approval"),
+        // Recent lessons, so what Mason learned (including Verifier catches) shapes the next reply.
+        sb.from("mason_memory").select("*").in("scope", ["hurkl_core", "founder"]).eq("status", "active").eq("kind", "lesson")
+          .not("tags", "cs", "{draft-source-artifact}").order("created_at", { ascending: false }).limit(10),
       ]);
       const out = [
         `MASON BRIEFING for ${ctx.connector}`,
@@ -258,6 +261,7 @@ export async function callTool(ctx: Ctx, name: string, a: Record<string, unknown
         `\nCOMPANIES (each has its own private file; use read_company_file):\n` + comps.map((c: any) => `• ${c.name} (${c.website_slug ?? "no slug"})`).join("\n"),
         `\nACTIVE HURKL RULES AND DECISIONS (${rules?.length ?? 0}):\n` + ((rules ?? []).map((m) => fmtEntry(m, cmap)).join("\n") || "none yet"),
         `\nOPEN TASKS (${tasks?.length ?? 0}):\n` + ((tasks ?? []).map((m) => fmtEntry(m, cmap)).join("\n") || "none"),
+        `\nRECENT LESSONS (${lessons?.length ?? 0}, newest first; apply them):\n` + ((lessons ?? []).map((m) => fmtEntry(m, cmap)).join("\n") || "none yet"),
         `\nWAITING FOR THE FOUNDER'S APPROVAL: ${pending ?? 0}`,
       ];
       return text(out.join("\n").slice(0, 60_000));

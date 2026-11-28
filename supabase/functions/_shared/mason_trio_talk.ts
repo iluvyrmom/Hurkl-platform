@@ -106,11 +106,32 @@ export type TrioTalkOutcome = {
   digest: string | null;
   recordId: string | null;
   costUsd: number;
+  /** Every check that said no, in order: who, which attempt, and why. Saved and learned from. */
+  rejections: readonly Rejection[];
 };
+export type Rejection = { reviewer: "memory" | "verifier"; attempt: number; reasons: readonly string[] };
 
-/** One founder message through the whole trio. Never throws; a failure becomes HOLDING_REPLY. */
+/**
+ * The reply Josh gets when no version passed: honest about what couldn't be confirmed, still
+ * promising nothing. Uses the Verifier's last reason (or Memory's), shortened; nothing unchecked
+ * from Mason's draft is ever included.
+ */
+export function holdingReply(rejections: readonly Rejection[]): string {
+  const last = [...rejections].reverse().find((r) => r.reasons.length);
+  const why = last?.reasons[0]?.replace(/\s+/g, " ").trim();
+  if (!why) return HOLDING_REPLY;
+  const short = why.length > 220 ? `${why.slice(0, 217).trimEnd()}...` : why;
+  return `I want to be sure before I answer that. What I couldn't confirm: ${short} Tell me a little more, or ask it a different way.`;
+}
+
+/** One founder message through the whole trio. Never throws; a failure becomes a holding reply. */
 export async function talkThroughTrio(deps: TrioTalkDeps, deadlineMs = 50_000): Promise<TrioTalkOutcome> {
   let costUsd = 0;
+  const rejections: Rejection[] = [];
+  const noted = (reviewer: Rejection["reviewer"], attempt: number, r: TrioReceipt) => {
+    if (!r.approved || r.reasons.length) rejections.push({ reviewer, attempt, reasons: [...r.reasons].slice(0, 8) });
+    return r;
+  };
   let work: WorkResult | null = null;
   let context: TrioContext | null = null;
 
@@ -137,25 +158,25 @@ export async function talkThroughTrio(deps: TrioTalkDeps, deadlineMs = 50_000): 
       reply = reply.trim().slice(0, 8000) || "I'm here. What do you need?";
       return { text: reply, speechText: deps.spoken(reply) };
     },
-    reviewMemory: async (envelope, ctx) => {
+    reviewMemory: async (envelope, ctx, c) => {
       const reasons = memoryReasons(envelope, deps.spoken);
-      return {
+      return noted("memory", c.attempt, {
         reviewerId: "memory", provider: deps.providers.memory, approved: reasons.length === 0,
         digest: envelope.digest, contextVersion: ctx.version, checkedEvidenceIds: ctx.evidence.map((e) => e.id), reasons,
-      };
+      });
     },
     verify: async (envelope, ctx, c) => {
-      if (deps.verifyReceipt) return deps.verifyReceipt(envelope, ctx, c, (usd) => { costUsd += Math.max(0, usd); });
+      if (deps.verifyReceipt) return noted("verifier", c.attempt, await deps.verifyReceipt(envelope, ctx, c, (usd) => { costUsd += Math.max(0, usd); }));
       const v = await deps.verifyModel({ envelope, evidence: ctx.evidence, signal: c.signal });
       costUsd += v.costUsd;
       const known = new Set(ctx.evidence.map((e) => e.id));
       const ids = v.evidenceIds.filter((id) => known.has(id));
       const reasons = v.approved ? [] : (v.reasons.length ? v.reasons : ["The Verifier could not confirm the reply against memory."]);
-      return {
+      return noted("verifier", c.attempt, {
         reviewerId: "verifier", provider: deps.providers.verifier, approved: v.approved && ids.length > 0,
         digest: envelope.digest, contextVersion: ctx.version, checkedEvidenceIds: ids.length ? ids : ["briefing"],
         reasons: v.approved && ids.length === 0 ? ["The Verifier must name the evidence it checked."] : reasons,
-      };
+      });
     },
     commit: async (envelope, _ctx, receipts) => {
       const recordId = await deps.commit(envelope, receipts);
@@ -171,12 +192,12 @@ export async function talkThroughTrio(deps: TrioTalkDeps, deadlineMs = 50_000): 
     return {
       status: "verified", reply: r.response.text, blockedReason: null, independence: r.independence ?? null,
       attempts: r.attempts, stages: r.stages, receipts: r.receipts, contextVersion: r.response.contextVersion,
-      digest: r.response.digest, recordId: r.recordId, costUsd,
+      digest: r.response.digest, recordId: r.recordId, costUsd, rejections,
     };
   }
   return {
-    status: "blocked", reply: HOLDING_REPLY, blockedReason: r.reason, independence: r.independence ?? null,
-    attempts: r.attempts, stages: r.stages, receipts: [], contextVersion: ctx?.version ?? null, digest: null, recordId: null, costUsd,
+    status: "blocked", reply: holdingReply(rejections), blockedReason: r.reason, independence: r.independence ?? null,
+    attempts: r.attempts, stages: r.stages, receipts: [], contextVersion: ctx?.version ?? null, digest: null, recordId: null, costUsd, rejections,
   };
 }
 

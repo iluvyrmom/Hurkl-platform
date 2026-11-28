@@ -144,6 +144,37 @@ async function callClaude(key: string, tier: Tier, system: string, messages: Msg
   }
 }
 
+/** Most lessons saved from Verifier catches in one day, so a bad day can't flood Mason's memory. */
+const MAX_CATCH_LESSONS_PER_DAY = 10;
+
+/**
+ * Every time a check says no, Mason learns from it: one lesson per reply, saved automatically
+ * (founder rule 2026-11-27: Mason's own lessons need no approval). Founder scope, because it
+ * quotes Josh's question. His briefing shows recent lessons, so the next reply uses it.
+ * Best effort: a failure here never affects the reply Josh already got.
+ */
+async function learnFromCatch(sb: SupabaseClient, question: string, outcome: { status: string; rejections: readonly { reviewer: string; attempt: number; reasons: readonly string[] }[] }) {
+  try {
+    const since = new Date(Date.now() - 24 * 3600_000).toISOString();
+    const { count } = await sb.from("mason_memory").select("id", { count: "exact", head: true })
+      .contains("tags", ["verifier-catch"]).gte("created_at", since);
+    if ((count ?? 0) >= MAX_CATCH_LESSONS_PER_DAY) return;
+    const first = outcome.rejections.find((r) => r.reasons.length)?.reasons[0] ?? "A check did not pass.";
+    const body = [
+      `Josh asked: ${question.slice(0, 300)}`,
+      ...outcome.rejections.map((r) => `${r.reviewer === "verifier" ? "Verifier" : "Memory"} (try ${r.attempt}): ${r.reasons.join(" ")}`),
+      outcome.status === "verified" ? "Outcome: the corrected reply passed." : "Outcome: no version passed; Josh got the holding reply.",
+      "Next time: answer only what memory supports, and say plainly what it doesn't.",
+    ].join("\n").slice(0, 4000);
+    const r = await callTool({ sb, connector: "Mason (learner)" }, "add_memory", {
+      kind: "lesson", scope: "founder", title: `Verifier caught: ${first}`.slice(0, 200), body, tags: ["verifier-catch"],
+    });
+    console.log(JSON.stringify({ msg: "mason_learned_from_catch", saved: !r?.isError }));
+  } catch (e) {
+    console.warn(JSON.stringify({ msg: "mason_learn_failed", error: String(e).slice(0, 160) }));
+  }
+}
+
 Deno.serve(async (req: Request) => {
   const headers = { "Content-Type": "application/json", "Cache-Control": "no-store", ...cors(req) };
   const reply = (status: number, body: Record<string, unknown>) => new Response(JSON.stringify(body), { status, headers });
@@ -358,10 +389,11 @@ Deno.serve(async (req: Request) => {
       request_id: requestId, conversation_id: conversationId, message_id: messageId, status: outcome.status,
       blocked_reason: outcome.blockedReason, independence: outcome.independence,
       providers: { mason: MODELS[tier].id, memory: "hurkl-code", verifier: verifierId },
-      attempts: outcome.attempts, stages: outcome.stages, receipts: outcome.receipts,
+      attempts: outcome.attempts, stages: outcome.stages, receipts: outcome.receipts, rejections: outcome.rejections,
       context_version: outcome.contextVersion, digest: outcome.digest, cost_usd: outcome.costUsd.toFixed(6), latency_ms: latency,
     });
     if (auditErr) console.error(JSON.stringify({ msg: "mason_trio_audit_failed", error: auditErr.message }));
+    if (outcome.rejections.length) await learnFromCatch(sb, message, outcome);
     await sb.from("conversations").update({ last_message_at: new Date().toISOString() }).eq("id", conversationId);
 
     console.log(JSON.stringify({ msg: "mason_talk_reply", tier, trio: outcome.status, reason: outcome.blockedReason, attempts: outcome.attempts, cost: outcome.costUsd, latency }));

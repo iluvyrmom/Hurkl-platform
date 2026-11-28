@@ -1,5 +1,5 @@
 import { deepStrictEqual as eq, ok } from "node:assert";
-import { buildEvidence, HOLDING_REPLY, memoryReasons, parseVerdict, talkThroughTrio, type TrioTalkDeps } from "./mason_trio_talk.ts";
+import { buildEvidence, HOLDING_REPLY, holdingReply, memoryReasons, parseVerdict, talkThroughTrio, type TrioTalkDeps } from "./mason_trio_talk.ts";
 import { spokenVersion } from "./speech_text.ts";
 
 function deps(over: Partial<TrioTalkDeps> = {}) {
@@ -55,8 +55,32 @@ Deno.test("a reply that keeps failing never goes out; Josh gets the holding repl
   const { d, log } = deps({ verifyModel: async () => ({ approved: false, evidenceIds: [], reasons: ["Invented date."], costUsd: 0.01 }) });
   const r = await talkThroughTrio(d);
   eq(r.status, "blocked");
-  eq(r.reply, HOLDING_REPLY);
+  eq(r.reply, "I want to be sure before I answer that. What I couldn't confirm: Invented date. Tell me a little more, or ask it a different way.");
   ok(!log.includes("commit"));
+  eq(r.rejections.map((x) => [x.reviewer, x.attempt, x.reasons[0]]), [["verifier", 1, "Invented date."], ["verifier", 2, "Invented date."]]);
+});
+
+Deno.test("each rejection is kept, even when the corrected reply then passes", async () => {
+  let n = 0;
+  const { d } = deps({
+    verifyModel: async () => (++n === 1
+      ? { approved: false, evidenceIds: ["m1"], reasons: ["Travis is a client, not your staff plumber."], costUsd: 0.01 }
+      : { approved: true, evidenceIds: ["m1"], reasons: [], costUsd: 0.01 }),
+  });
+  const r = await talkThroughTrio(d);
+  eq(r.status, "verified");
+  eq(r.rejections, [{ reviewer: "verifier", attempt: 1, reasons: ["Travis is a client, not your staff plumber."] }]);
+});
+
+Deno.test("the holding reply says what couldn't be confirmed, shortened; with no reason it stays generic", () => {
+  eq(holdingReply([]), HOLDING_REPLY);
+  eq(holdingReply([{ reviewer: "verifier", attempt: 1, reasons: [] }]), HOLDING_REPLY);
+  const long = holdingReply([{ reviewer: "verifier", attempt: 2, reasons: ["x".repeat(400)] }]);
+  ok(long.length < 400 && long.includes("..."));
+  ok(holdingReply([
+    { reviewer: "verifier", attempt: 1, reasons: ["first"] },
+    { reviewer: "verifier", attempt: 2, reasons: ["latest"] },
+  ]).includes("latest"));
 });
 
 Deno.test("spending ceilings stop the trio before any further AI call", async () => {
