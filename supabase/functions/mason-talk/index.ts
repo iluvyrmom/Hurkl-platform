@@ -10,12 +10,14 @@
 // Memory:  conversations/messages tables (channel 'mason_app', company HURKL (Internal)).
 // Trio:    every reply goes through Memory, Mason and the Verifier before Josh reads or hears it
 //          (_shared/mason_trio_talk.ts + mason_trio.ts); each one is audited in mason_trio_checks.
+//          Verifier: ChatGPT (OpenAI gpt-6.1-terra, _shared/mason_verifier.ts) when OPENAI_API_KEY
+//          is set; MASON_VERIFIER=claude switches back to the temporary Claude Verifier.
 // Limits:  enforced here in code: 20 messages a minute, 6 tool uses a reply, a daily and a
 //          monthly spending ceiling (MASON_TALK_DAILY_USD, default $2; MASON_TALK_MONTHLY_USD,
 //          default $20), message length cap, capped output tokens. Every reply's cost is saved.
 // Safety:  no tool here spends money, sends messages or changes a customer's setup; rules and
 //          decisions Mason writes wait for the founder's approval; the database refuses secrets.
-// Secrets: ANTHROPIC_API_KEY; ELEVENLABS_API_KEY (the one josh@hurkl.com ElevenLabs key the
+// Secrets: ANTHROPIC_API_KEY; OPENAI_API_KEY (Verifier and search by meaning); ELEVENLABS_API_KEY (the one josh@hurkl.com ElevenLabs key the
 //          phone line already uses; it needs the Text to Speech permission). Voice: Josh's cloned
 //          "Mason" voice in that account, the same one the phone line speaks with (checked
 //          2026-11-27). One key, one voice, no fallback voice.

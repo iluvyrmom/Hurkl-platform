@@ -40,6 +40,8 @@ export async function searchEntries(ctx: Ctx, query: string, f: SearchFilters, l
   const statuses = f.includeHistory ? null : ["active", "pending_approval"];
   const walls = (query: any) => {
     if (statuses) query = query.in("status", statuses);
+    // Code handed between AIs is review material, not facts: never in everyday search or evidence.
+    query = query.not("tags", "cs", "{draft-source-artifact}");
     if (f.scope) query = query.eq("scope", f.scope);
     if (f.companyId) query = query.eq("company_id", f.companyId);
     if (f.kind) query = query.eq("kind", f.kind);
